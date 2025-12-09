@@ -83,90 +83,242 @@
   },
   "entity": {
     "sensor": {
-      "soc": { "name": "Battery Level" },
-      "soh": { "name": "State of Health" },
-      "cycles": { "name": "Cycles" },
-      "fullCap": { "name": "Full Capacity" },
-      "remainCap": { "name": "Remaining Capacity" },
-      "wattsInSum": { "name": "Total In Power" },
-      "wattsOutSum": { "name": "Total Out Power" },
-      "acInPower": { "name": "AC In Power" },
-      "acOutPower": { "name": "AC Out Power" },
-      "acHvOutPower": { "name": "AC HV Out Power" },
-      "acLvOutPower": { "name": "AC LV Out Power" },
-      "solarInPower": { "name": "Solar In Power" },
-      "solarHvInPower": { "name": "Solar HV In Power" },
-      "solarLvInPower": { "name": "Solar LV In Power" },
-      "dcOutPower": { "name": "DC Out Power" },
-      "dc12vOutPower": { "name": "12V DC Out Power" },
-      "dc24vOutPower": { "name": "24V DC Out Power" },
-      "usb1OutPower": { "name": "USB 1 Out Power" },
-      "usb2OutPower": { "name": "USB 2 Out Power" },
-      "typeC1OutPower": { "name": "Type-C 1 Out Power" },
-      "typeC2OutPower": { "name": "Type-C 2 Out Power" },
-      "chgRemainTime": { "name": "Charge Remaining Time" },
-      "dsgRemainTime": { "name": "Discharge Remaining Time" },
-      "bmsTemp": { "name": "Battery Temperature" },
-      "minCellTemp": { "name": "Min Cell Temperature" },
-      "maxCellTemp": { "name": "Max Cell Temperature" },
-      "bmsVol": { "name": "Battery Voltage" },
-      "minCellVol": { "name": "Min Cell Voltage" },
-      "maxCellVol": { "name": "Max Cell Voltage" },
-      "acInVol": { "name": "AC In Voltage" },
-      "bmsCur": { "name": "Battery Current" },
-      "chgEnergy": { "name": "Total Charge Energy" },
-      "dsgEnergy": { "name": "Total Discharge Energy" },
-      "acChgPower": { "name": "AC Charging Power Setting" },
-      "maxChgSoc": { "name": "Max Charge Level Setting" },
-      "minDsgSoc": { "name": "Min Discharge Level Setting" },
-      "extra_battery_1_soc": { "name": "Extra Battery 1 Battery Level" },
-      "extra_battery_1_soh": { "name": "Extra Battery 1 State of Health" },
-      "extra_battery_1_cycles": { "name": "Extra Battery 1 Cycles" },
-      "extra_battery_1_temp": { "name": "Extra Battery 1 Temperature" },
-      "extra_battery_1_vol": { "name": "Extra Battery 1 Voltage" },
-      "extra_battery_1_cur": { "name": "Extra Battery 1 Current" },
-      "extra_battery_2_soc": { "name": "Extra Battery 2 Battery Level" },
-      "extra_battery_2_soh": { "name": "Extra Battery 2 State of Health" },
-      "extra_battery_2_cycles": { "name": "Extra Battery 2 Cycles" },
-      "extra_battery_2_temp": { "name": "Extra Battery 2 Temperature" },
-      "extra_battery_2_vol": { "name": "Extra Battery 2 Voltage" },
-      "extra_battery_2_cur": { "name": "Extra Battery 2 Current" }
+      "soc": {
+        "name": "Battery Level"
+      },
+      "soh": {
+        "name": "State of Health"
+      },
+      "cycles": {
+        "name": "Cycles"
+      },
+      "full_cap": {
+        "name": "Full Capacity"
+      },
+      "remain_cap": {
+        "name": "Remaining Capacity"
+      },
+      "watts_in_sum": {
+        "name": "Total In Power"
+      },
+      "watts_out_sum": {
+        "name": "Total Out Power"
+      },
+      "ac_in_power": {
+        "name": "AC In Power"
+      },
+      "ac_out_power": {
+        "name": "AC Out Power"
+      },
+      "ac_hv_out_power": {
+        "name": "AC HV Out Power"
+      },
+      "ac_lv_out_power": {
+        "name": "AC LV Out Power"
+      },
+      "solar_in_power": {
+        "name": "Solar In Power"
+      },
+      "solar_hv_in_power": {
+        "name": "Solar HV In Power"
+      },
+      "solar_lv_in_power": {
+        "name": "Solar LV In Power"
+      },
+      "dc_out_power": {
+        "name": "DC Out Power"
+      },
+      "dc12v_out_power": {
+        "name": "12V DC Out Power"
+      },
+      "dc24v_out_power": {
+        "name": "24V DC Out Power"
+      },
+      "usb1_out_power": {
+        "name": "USB 1 Out Power"
+      },
+      "usb2_out_power": {
+        "name": "USB 2 Out Power"
+      },
+      "type_c1_out_power": {
+        "name": "Type-C 1 Out Power"
+      },
+      "type_c2_out_power": {
+        "name": "Type-C 2 Out Power"
+      },
+      "chg_remain_time": {
+        "name": "Charge Remaining Time"
+      },
+      "dsg_remain_time": {
+        "name": "Discharge Remaining Time"
+      },
+      "bms_temp": {
+        "name": "Battery Temperature"
+      },
+      "min_cell_temp": {
+        "name": "Min Cell Temperature"
+      },
+      "max_cell_temp": {
+        "name": "Max Cell Temperature"
+      },
+      "bms_vol": {
+        "name": "Battery Voltage"
+      },
+      "min_cell_vol": {
+        "name": "Min Cell Voltage"
+      },
+      "max_cell_vol": {
+        "name": "Max Cell Voltage"
+      },
+      "ac_in_vol": {
+        "name": "AC In Voltage"
+      },
+      "bms_cur": {
+        "name": "Battery Current"
+      },
+      "chg_energy": {
+        "name": "Total Charge Energy"
+      },
+      "dsg_energy": {
+        "name": "Total Discharge Energy"
+      },
+      "ac_chg_power": {
+        "name": "AC Charging Power Setting"
+      },
+      "max_chg_soc": {
+        "name": "Max Charge Level Setting"
+      },
+      "min_dsg_soc": {
+        "name": "Min Discharge Level Setting"
+      },
+      "extra_battery_1_soc": {
+        "name": "Extra Battery 1 Battery Level"
+      },
+      "extra_battery_1_soh": {
+        "name": "Extra Battery 1 State of Health"
+      },
+      "extra_battery_1_cycles": {
+        "name": "Extra Battery 1 Cycles"
+      },
+      "extra_battery_1_temp": {
+        "name": "Extra Battery 1 Temperature"
+      },
+      "extra_battery_1_vol": {
+        "name": "Extra Battery 1 Voltage"
+      },
+      "extra_battery_1_cur": {
+        "name": "Extra Battery 1 Current"
+      },
+      "extra_battery_2_soc": {
+        "name": "Extra Battery 2 Battery Level"
+      },
+      "extra_battery_2_soh": {
+        "name": "Extra Battery 2 State of Health"
+      },
+      "extra_battery_2_cycles": {
+        "name": "Extra Battery 2 Cycles"
+      },
+      "extra_battery_2_temp": {
+        "name": "Extra Battery 2 Temperature"
+      },
+      "extra_battery_2_vol": {
+        "name": "Extra Battery 2 Voltage"
+      },
+      "extra_battery_2_cur": {
+        "name": "Extra Battery 2 Current"
+      }
     },
     "binary_sensor": {
-      "acInConnected": { "name": "AC Input Connected" },
-      "solarConnected": { "name": "Solar Input Connected" },
-      "isCharging": { "name": "Charging" },
-      "isDischarging": { "name": "Discharging" },
-      "acOutEnabled": { "name": "AC Output Enabled" },
-      "dcOutEnabled": { "name": "DC Output Enabled" },
-      "batteryLow": { "name": "Battery Low" },
-      "batteryFull": { "name": "Battery Full" },
-      "overTemp": { "name": "Over Temperature" },
-      "extra_battery_1_connected": { "name": "Extra Battery 1 Connected" },
-      "extra_battery_1_batteryLow": { "name": "Extra Battery 1 Battery Low" },
-      "extra_battery_1_batteryFull": { "name": "Extra Battery 1 Battery Full" },
-      "extra_battery_1_overTemp": { "name": "Extra Battery 1 Over Temperature" },
-      "extra_battery_2_connected": { "name": "Extra Battery 2 Connected" },
-      "extra_battery_2_batteryLow": { "name": "Extra Battery 2 Battery Low" },
-      "extra_battery_2_batteryFull": { "name": "Extra Battery 2 Battery Full" },
-      "extra_battery_2_overTemp": { "name": "Extra Battery 2 Over Temperature" }
+      "ac_in_connected": {
+        "name": "AC Input Connected"
+      },
+      "solar_connected": {
+        "name": "Solar Input Connected"
+      },
+      "is_charging": {
+        "name": "Charging"
+      },
+      "is_discharging": {
+        "name": "Discharging"
+      },
+      "ac_out_enabled": {
+        "name": "AC Output Enabled"
+      },
+      "dc_out_enabled": {
+        "name": "DC Output Enabled"
+      },
+      "battery_low": {
+        "name": "Battery Low"
+      },
+      "battery_full": {
+        "name": "Battery Full"
+      },
+      "over_temp": {
+        "name": "Over Temperature"
+      },
+      "extra_battery_1_connected": {
+        "name": "Extra Battery 1 Connected"
+      },
+      "extra_battery_1_battery_low": {
+        "name": "Extra Battery 1 Battery Low"
+      },
+      "extra_battery_1_battery_full": {
+        "name": "Extra Battery 1 Battery Full"
+      },
+      "extra_battery_1_over_temp": {
+        "name": "Extra Battery 1 Over Temperature"
+      },
+      "extra_battery_2_connected": {
+        "name": "Extra Battery 2 Connected"
+      },
+      "extra_battery_2_battery_low": {
+        "name": "Extra Battery 2 Battery Low"
+      },
+      "extra_battery_2_battery_full": {
+        "name": "Extra Battery 2 Battery Full"
+      },
+      "extra_battery_2_over_temp": {
+        "name": "Extra Battery 2 Over Temperature"
+      }
     },
     "switch": {
-      "acOutState": { "name": "AC Output" },
-      "dcOutState": { "name": "DC Output" },
-      "dc12vOutState": { "name": "12V DC Output" },
-      "beepState": { "name": "Beeper" },
-      "xBoostState": { "name": "X-Boost" }
+      "ac_out_state": {
+        "name": "AC Output"
+      },
+      "dc_out_state": {
+        "name": "DC Output"
+      },
+      "dc12v_out_state": {
+        "name": "12V DC Output"
+      },
+      "beep_state": {
+        "name": "Beeper"
+      },
+      "x_boost_state": {
+        "name": "X-Boost"
+      }
     },
     "number": {
-      "acChgPower": { "name": "AC Charging Power" },
-      "maxChgSoc": { "name": "Max Charge Level" },
-      "minDsgSoc": { "name": "Min Discharge Level" }
+      "ac_chg_power": {
+        "name": "AC Charging Power"
+      },
+      "max_chg_soc": {
+        "name": "Max Charge Level"
+      },
+      "min_dsg_soc": {
+        "name": "Min Discharge Level"
+      }
     },
     "select": {
-      "acStandbyTime": { "name": "AC Standby Time" },
-      "dcStandbyTime": { "name": "DC Standby Time" },
-      "lcdStandbyTime": { "name": "Screen Standby Time" }
+      "ac_standby_time": {
+        "name": "AC Standby Time"
+      },
+      "dc_standby_time": {
+        "name": "DC Standby Time"
+      },
+      "lcd_standby_time": {
+        "name": "Screen Standby Time"
+      }
     }
   }
 }

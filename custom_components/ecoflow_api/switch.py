@@ -18,7 +18,7 @@ _LOGGER = logging.getLogger(__name__)
 
 # Switch definitions for Delta Pro 3
 DELTA_PRO_3_SWITCH_DEFINITIONS = {
-    "acOutState": {
+    "ac_out_state": {
         "name": "AC Output",
         "key": "acOutState",
         "icon_on": "mdi:power-plug",
@@ -26,7 +26,7 @@ DELTA_PRO_3_SWITCH_DEFINITIONS = {
         "device_class": SwitchDeviceClass.OUTLET,
         "method": "async_set_ac_output",
     },
-    "dcOutState": {
+    "dc_out_state": {
         "name": "DC Output",
         "key": "dcOutState",
         "icon_on": "mdi:current-dc",
@@ -34,7 +34,7 @@ DELTA_PRO_3_SWITCH_DEFINITIONS = {
         "device_class": SwitchDeviceClass.OUTLET,
         "method": "async_set_dc_output",
     },
-    "dc12vOutState": {
+    "dc12v_out_state": {
         "name": "12V DC Output",
         "key": "dc12vOutState",
         "icon_on": "mdi:car-battery",
@@ -42,7 +42,7 @@ DELTA_PRO_3_SWITCH_DEFINITIONS = {
         "device_class": SwitchDeviceClass.OUTLET,
         "method": "async_set_12v_dc_output",
     },
-    "beepState": {
+    "beep_state": {
         "name": "Beeper",
         "key": "beepState",
         "icon_on": "mdi:volume-high",
@@ -50,7 +50,7 @@ DELTA_PRO_3_SWITCH_DEFINITIONS = {
         "device_class": SwitchDeviceClass.SWITCH,
         "method": "async_set_beep",
     },
-    "xBoostState": {
+    "x_boost_state": {
         "name": "X-Boost",
         "key": "xBoostState",
         "icon_on": "mdi:lightning-bolt",

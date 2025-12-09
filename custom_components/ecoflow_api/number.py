@@ -19,7 +19,7 @@ _LOGGER = logging.getLogger(__name__)
 
 # Number definitions for Delta Pro 3
 DELTA_PRO_3_NUMBER_DEFINITIONS = {
-    "acChgPower": {
+    "ac_chg_power": {
         "name": "AC Charging Power",
         "key": "acChgPower",
         "min": 200,
@@ -31,7 +31,7 @@ DELTA_PRO_3_NUMBER_DEFINITIONS = {
         "mode": NumberMode.SLIDER,
         "method": "async_set_ac_charging_power",
     },
-    "maxChgSoc": {
+    "max_chg_soc": {
         "name": "Max Charge Level",
         "key": "maxChgSoc",
         "min": 50,
@@ -43,7 +43,7 @@ DELTA_PRO_3_NUMBER_DEFINITIONS = {
         "mode": NumberMode.SLIDER,
         "method": "async_set_max_charge_level",
     },
-    "minDsgSoc": {
+    "min_dsg_soc": {
         "name": "Min Discharge Level",
         "key": "minDsgSoc",
         "min": 0,
