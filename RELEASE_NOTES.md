@@ -1,95 +1,58 @@
-# 🎉 EcoFlow API Integration v1.1.2 - Signature Fix (WORKING!)
+# 🔧 EcoFlow API Integration v1.1.3 - Timestamp Fix
 
-**ТЕПЕР РЕАЛЬНО ПРАЦЮЄ!** Виправлення підпису для PUT запитів протестовано та підтверджено!
+Виправлення помилки timestamp сенсорів.
 
-## ✅ Що виправлено
+## 🐛 Що виправлено
 
-### Правильна генерація підпису для PUT запитів
+### Timestamp Sensor Error
 
-**Проблема:** Версія 1.1.1 помилково НЕ включала параметри JSON body в підпис, що призводило до помилки:
+**Проблема:** При використанні контролів (number/switch/select) з'являлася помилка:
 ```
-API error (code 8521): signature is wrong
-```
-
-**Рішення:** Тепер підпис для PUT запитів правильно включає **всі параметри з JSON body** у вирівняному (flattened) вигляді, як вимагає [документація EcoFlow API](https://developer-eu.ecoflow.com/us/document/deltaPro3).
-
-**Приклад підпису для PUT запиту:**
-```
-cmdFunc=254&cmdId=17&dest=2&dirDest=1&dirSrc=1&needAck=true&params.cfgPlugInInfoAcInChgPowMax=1500&sn=XXX&accessKey=XXX&nonce=XXX&timestamp=XXX
+Failed to perform the action number/set_value. 
+Invalid datetime: sensor.ecoflow_delta_pro_3_cloud_timestamp has timestamp 
+device class but provides state 2025-12-10 04:33:33:<class 'str'> 
+resulting in ''str' object has no attribute 'tzinfo''
 ```
 
-### Додаткові виправлення
+**Причина:** Timestamp сенсори повертали строку замість datetime об'єкта.
 
-- ✅ Boolean значення правильно конвертуються в lowercase (`true`/`false`)
-- ✅ Вкладені параметри правильно вирівнюються (`params.cfgBeepEn`)
+**Рішення:** 
+- Timestamp значення тепер правильно конвертуються в timezone-aware datetime об'єкти
+- Додано обробку помилок парсингу з логуванням
+- Використовується UTC timezone якщо timezone не вказано
 
-## 🧪 Протестовано та підтверджено
+## ✅ Що працює
 
-Тест на реальному пристрої Delta Pro 3:
-- **AC Charging Power**: 1200W → 1500W ✅
-- **API відповідь**: `{"code":"0","message":"Success"}` ✅
-- **Підпис прийнято**: Без помилок ✅
+Версія 1.1.3 містить всі виправлення з 1.1.2:
 
-## 📊 Що тепер працює
+### ✅ Device Controls (Протестовано!)
+- **Number entities**: AC Charging Power, charge levels, brightness, тощо
+- **Switch entities**: AC/DC outputs, X-Boost, Beeper, тощо
+- **Select entities**: Standby times, output frequency, тощо
 
-Всі елементи керування тепер працюють коректно:
+### ✅ Sensors
+- Всі сенсори даних (battery, power, temperature, тощо)
+- **Timestamp сенсори** тепер працюють правильно
 
-### ✅ Number (Числові значення)
-- AC Charging Power (200-2900W)
-- Max Charge Level (0-100%)
-- Min Discharge Level (0-100%)
-- LCD Brightness (0-100%)
-- Screen Off Time (0-3600s)
-- Generator Start/Stop SOC
-- Solar current limits
-- Power In/Out settings
-- Standby times
+## 📦 Оновлення
 
-### ✅ Switch (Перемикачі)
-- AC Output HV/LV
-- DC Output (12V, 24V)
-- X-Boost
-- Beeper
-- AC Energy Saving
-- Generator Auto Start
-- And more...
-
-### ✅ Select (Списки вибору)
-- AC/DC Standby Time
-- Device Standby Time
-- AC Output Frequency
-- Battery charge/discharge mode
-
-## 📦 Встановлення через HACS
-
+### Через HACS:
 1. Відкрийте **HACS** → **Integrations**
 2. Знайдіть **EcoFlow API** 
-3. Натисніть **Update** (версія 1.1.2)
+3. Натисніть **Update** (версія 1.1.3)
 4. **Перезапустіть Home Assistant**
 
-## 🔄 Оновлення вручну
-
-1. Завантажте: [ecoflow-api-v1.1.2.zip](https://github.com/TarasKhust/hassio-ecoflow-api/releases/download/v1.1.2/ecoflow-api-v1.1.2.zip)
+### Вручну:
+1. Завантажте: [ecoflow-api-v1.1.3.zip](https://github.com/TarasKhust/hassio-ecoflow-api/releases/download/v1.1.3/ecoflow-api-v1.1.3.zip)
 2. Замініть файли в `config/custom_components/ecoflow_api/`
 3. Перезапустіть Home Assistant
 
-## 🧪 Тестування
+## 📝 Changelog
 
-Додано скрипт `test_set_ac_power.py` для ручного тестування керування пристроєм. Можна використовувати як приклад для власних тестів.
-
-## 📝 Технічні деталі
-
-Згідно з офіційною документацією EcoFlow Delta Pro 3, підпис для PUT запитів генерується так:
-
-1. **Вирівнювання параметрів** - вкладені об'єкти конвертуються в flat структуру:
-   - `needAck: true` → `needAck=true`
-   - `params: {cfgBeepEn: true}` → `params.cfgBeepEn=true`
-
-2. **Сортування** - всі ключі сортуються алфавітно
-
-3. **Конкатенація** - формується рядок з параметрами + auth параметри
-
-4. **HMAC-SHA256** - генерується підпис
+- v1.1.3: Fix timestamp sensor datetime conversion
+- v1.1.2: Working signature fix (tested on real device)
+- v1.1.1: Initial signature fix attempt
+- v1.1.0: Code improvements and translations
 
 ## 🐛 Повідомити про помилку
 
