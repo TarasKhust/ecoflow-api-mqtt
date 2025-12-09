@@ -1,9 +1,8 @@
 {
 	"folders": [
 		{
-			"name": "hassio-ecoflow-api",
-			"path": "./"
-		},
+			"path": "../.."
+		}
 	],
 	"settings": {
 		"window.zoomLevel": 0.5,
