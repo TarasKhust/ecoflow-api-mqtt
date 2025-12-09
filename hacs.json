@@ -2,9 +2,7 @@
   "name": "EcoFlow API Integration",
   "homeassistant": "2024.1.0",
   "render_readme": true,
-  "country": ["UA"],
-  "zip_release": true,
-  "filename": "ecoflow_api.zip"
+  "country": ["UA"]
 }
 
 
