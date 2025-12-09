@@ -1,6 +1,7 @@
 """Sensor platform for EcoFlow API integration."""
 from __future__ import annotations
 
+from datetime import datetime
 import logging
 from typing import Any
 
@@ -22,6 +23,7 @@ from homeassistant.const import (
 )
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
 from .coordinator import EcoFlowDataCoordinator
@@ -849,6 +851,21 @@ class EcoFlowSensor(EcoFlowBaseEntity, SensorEntity):
             return None
         
         # Handle special cases
+        # Timestamp sensors - convert string to datetime
+        if self._attr_device_class == SensorDeviceClass.TIMESTAMP:
+            if isinstance(value, str):
+                try:
+                    # Parse timestamp string and make it timezone aware
+                    dt = datetime.fromisoformat(value.replace(' ', 'T'))
+                    # If no timezone, assume UTC
+                    if dt.tzinfo is None:
+                        dt = dt_util.as_utc(dt)
+                    return dt
+                except (ValueError, AttributeError) as e:
+                    _LOGGER.warning("Failed to parse timestamp '%s': %s", value, e)
+                    return None
+            return value
+        
         # Flow info status mapping
         if api_key.startswith("flowInfo"):
             flow_map = {0: "disconnected", 1: "connected", 2: "active"}
