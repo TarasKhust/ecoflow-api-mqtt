@@ -26,3 +26,4 @@ def auto_enable_custom_integrations(hass):
     ):
         yield
 
+

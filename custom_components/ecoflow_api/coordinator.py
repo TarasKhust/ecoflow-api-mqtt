@@ -34,6 +34,7 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         device_sn: str,
         device_type: str,
         update_interval: int = 15,
+        config_entry: ConfigEntry | None = None,
     ) -> None:
         """Initialize coordinator.
         
@@ -43,6 +44,7 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             device_sn: Device serial number
             device_type: Device type identifier
             update_interval: Update interval in seconds (default: 15)
+            config_entry: Config entry reference
         """
         super().__init__(
             hass,
@@ -56,6 +58,8 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.device_type = device_type
         self.update_interval_seconds = update_interval
         self._last_data: dict[str, Any] = {}
+        if config_entry:
+            self.config_entry = config_entry
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from API.

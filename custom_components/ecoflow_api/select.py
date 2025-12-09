@@ -143,7 +143,7 @@ class EcoFlowSelect(EcoFlowBaseEntity, SelectEntity):
         
         value = self._options_map[option]
         command_key = self._select_def["command_key"]
-        device_sn = self.coordinator.entry.data["device_sn"]
+        device_sn = self.coordinator.config_entry.data["device_sn"]
         
         # Build command payload according to Delta Pro 3 API format
         payload = {

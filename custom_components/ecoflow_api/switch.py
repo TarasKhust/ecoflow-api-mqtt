@@ -165,7 +165,7 @@ class EcoFlowSwitch(EcoFlowBaseEntity, SwitchEntity):
     async def _send_command(self, state: bool) -> None:
         """Send command to device."""
         command_key = self._switch_def["command_key"]
-        device_sn = self.coordinator.entry.data["device_sn"]
+        device_sn = self.coordinator.config_entry.data["device_sn"]
         
         # Build command payload according to Delta Pro 3 API format
         payload = {
