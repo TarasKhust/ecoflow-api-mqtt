@@ -70,9 +70,10 @@ class EcoFlowApiClient:
                     if isinstance(item, dict):
                         items.update(self._flatten_params(item, f"{new_key}[{i}]"))
                     else:
-                        items[f"{new_key}[{i}]"] = str(item)
+                        items[f"{new_key}[{i}]"] = str(item).lower() if isinstance(item, bool) else str(item)
             else:
-                items[new_key] = str(value)
+                # Convert boolean to lowercase string (true/false)
+                items[new_key] = str(value).lower() if isinstance(value, bool) else str(value)
         return items
 
     def _sort_and_concat_params(self, params: dict[str, Any]) -> str:
@@ -106,7 +107,7 @@ class EcoFlowApiClient:
         """Get request headers with authentication.
         
         Args:
-            params_str: Pre-formatted query string (only for GET requests)
+            params_str: Pre-formatted query string with flattened parameters
             timestamp: Timestamp string
             nonce: Nonce string
             include_content_type: Whether to include Content-Type header
@@ -115,17 +116,17 @@ class EcoFlowApiClient:
             Headers dictionary
             
         Note:
-            For POST/PUT with JSON body, params_str should be empty string.
-            The signature is generated ONLY from auth parameters (accessKey, nonce, timestamp).
-            The JSON body is NOT included in signature generation.
+            Signature generation:
+            - GET: flatten query params + auth params (accessKey, nonce, timestamp)
+            - PUT/POST: flatten JSON body params + auth params
         """
-        # Generate signature: params (if GET) + auth parameters
+        # Generate signature: flattened params + auth parameters
         auth_str = f"accessKey={self._access_key}&nonce={nonce}&timestamp={timestamp}"
         if params_str:
-            # GET request: include query params in signature
+            # Include params in signature (query params for GET, body params for PUT/POST)
             sign_str = f"{params_str}&{auth_str}"
         else:
-            # POST/PUT: signature only from auth params
+            # No params: signature only from auth params
             sign_str = auth_str
         
         _LOGGER.debug("Sign string: %s", sign_str)
@@ -181,8 +182,8 @@ class EcoFlowApiClient:
         nonce = self._generate_nonce()
         
         # For GET requests, params go in query string and signature
-        # For POST/PUT with JSON body, signature is ONLY from auth params (no body)
-        sign_params = params if method == "GET" else {}
+        # For POST/PUT, params go in body and signature includes flattened body params
+        sign_params = params if method == "GET" else (data or {})
         params_str = self._sort_and_concat_params(sign_params)
         
         # Get authenticated headers
