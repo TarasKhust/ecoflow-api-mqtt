@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.0] - 2024-12-09
+
+### Added
+- 🏗️ **Improved code structure** - Better organization of entity management
+- 📝 **Enhanced translations** - Updated English and Ukrainian translations
+- 🧪 **Better test coverage** - Improved test structure and documentation
+- 🔧 **Configuration improvements** - Enhanced config flow and diagnostics
+
+### Changed
+- 🔄 **Entity management** - Improved binary sensor, number, select, and switch entities
+- 📊 **Coordinator updates** - Better device state handling
+- 📖 **Code quality** - Refactored code for better maintainability
+
+### Fixed
+- 🐛 **Minor bug fixes** - Various small improvements and fixes
+
 ## [1.0.8] - 2024-12-09
 
 ### Added
