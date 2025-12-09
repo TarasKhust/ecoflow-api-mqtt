@@ -106,19 +106,26 @@ class EcoFlowApiClient:
         """Get request headers with authentication.
         
         Args:
-            params_str: Pre-formatted query string
+            params_str: Pre-formatted query string (only for GET requests)
             timestamp: Timestamp string
             nonce: Nonce string
             include_content_type: Whether to include Content-Type header
             
         Returns:
             Headers dictionary
+            
+        Note:
+            For POST/PUT with JSON body, params_str should be empty string.
+            The signature is generated ONLY from auth parameters (accessKey, nonce, timestamp).
+            The JSON body is NOT included in signature generation.
         """
-        # Generate signature from params string
+        # Generate signature: params (if GET) + auth parameters
         auth_str = f"accessKey={self._access_key}&nonce={nonce}&timestamp={timestamp}"
         if params_str:
+            # GET request: include query params in signature
             sign_str = f"{params_str}&{auth_str}"
         else:
+            # POST/PUT: signature only from auth params
             sign_str = auth_str
         
         _LOGGER.debug("Sign string: %s", sign_str)
@@ -174,8 +181,8 @@ class EcoFlowApiClient:
         nonce = self._generate_nonce()
         
         # For GET requests, params go in query string and signature
-        # For POST/PUT, params go in body and signature uses body params
-        sign_params = params if method == "GET" else (data or {})
+        # For POST/PUT with JSON body, signature is ONLY from auth params (no body)
+        sign_params = params if method == "GET" else {}
         params_str = self._sort_and_concat_params(sign_params)
         
         # Get authenticated headers
