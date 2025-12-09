@@ -187,3 +187,4 @@ class EcoFlowSelect(EcoFlowBaseEntity, SelectEntity):
         await method(value)
 
 
+
