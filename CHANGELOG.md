@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.2] - 2024-12-09
+
+### Fixed
+- 🐛 **ACTUALLY fixed signature generation for PUT requests** - Now correctly includes flattened JSON body parameters in signature calculation, as required by EcoFlow API documentation
+- 🔧 **Boolean conversion** - Boolean values now converted to lowercase strings (true/false) in signature
+- ✅ **Tested and verified** - AC Charging Power control tested successfully (1200W → 1500W)
+
+### Added
+- 🧪 **Test script** - Added `test_set_ac_power.py` for manual testing of device controls
+
 ## [1.1.1] - 2024-12-09
 
 ### Fixed
