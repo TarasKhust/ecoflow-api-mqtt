@@ -9,7 +9,7 @@
   "iot_class": "cloud_polling",
   "issue_tracker": "https://github.com/TarasKhust/hassio-ecoflow-api/issues",
   "requirements": ["aiohttp>=3.8.0"],
-  "version": "1.0.6"
+  "version": "1.0.7"
 }
 
 

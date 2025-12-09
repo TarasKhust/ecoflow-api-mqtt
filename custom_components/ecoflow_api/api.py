@@ -53,9 +53,9 @@ class EcoFlowApiClient:
         self._session = session
         self._base_url = API_BASE_URL
 
-    def _generate_nonce(self, length: int = 16) -> str:
-        """Generate a random nonce string."""
-        return ''.join(random.choices(string.ascii_letters + string.digits, k=length))
+    def _generate_nonce(self, length: int = 6) -> str:
+        """Generate a random 6-digit nonce string."""
+        return ''.join(random.choices(string.digits, k=length))
 
 
     def _flatten_params(self, params: dict[str, Any], parent_key: str = "") -> dict[str, str]:
