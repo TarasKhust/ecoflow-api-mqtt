@@ -232,7 +232,9 @@ class EcoFlowApiClient:
             EcoFlowApiError: If API returns an error
         """
         text = await response.text()
-        _LOGGER.debug("Response status: %s, body: %s", response.status, text)
+        _LOGGER.debug("Response status: %s", response.status)
+        _LOGGER.debug("Response headers: %s", dict(response.headers))
+        _LOGGER.debug("Response body: %s", text[:500] if len(text) > 500 else text)
         
         if response.status == 401:
             raise EcoFlowAuthError("Authentication failed - check your API credentials")
