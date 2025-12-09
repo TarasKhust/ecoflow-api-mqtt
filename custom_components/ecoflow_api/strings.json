@@ -1,0 +1,461 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "EcoFlow API Setup",
+        "description": "Choose how you want to set up your EcoFlow device",
+        "menu_options": {
+          "auto_discovery": "Automatic Discovery (Recommended)",
+          "manual_entry": "Manual Entry (Enter all details)"
+        }
+      },
+      "auto_discovery": {
+        "title": "EcoFlow API Configuration",
+        "description": "Enter your EcoFlow Developer API credentials.\n\nGet your API keys from: [EcoFlow Developer Portal]({api_docs})\n\n**Before starting:**\n1. Register at EcoFlow Developer Portal\n2. Create an application and get API keys\n3. Bind your device to the Developer account",
+        "data": {
+          "access_key": "Access Key",
+          "secret_key": "Secret Key"
+        },
+        "data_description": {
+          "access_key": "Your EcoFlow Developer API access key",
+          "secret_key": "Your EcoFlow Developer API secret key"
+        }
+      },
+      "manual_entry": {
+        "title": "Manual Device Configuration",
+        "description": "Enter all device details manually.\n\nGet your API keys from: [EcoFlow Developer Portal]({api_docs})\n\n**Required information:**\n1. API Access Key and Secret Key\n2. Device Serial Number (on device label or in app)\n3. Device Type",
+        "data": {
+          "access_key": "Access Key",
+          "secret_key": "Secret Key",
+          "device_sn": "Device Serial Number",
+          "device_type": "Device Type"
+        },
+        "data_description": {
+          "access_key": "Your EcoFlow Developer API access key",
+          "secret_key": "Your EcoFlow Developer API secret key",
+          "device_sn": "Serial number of your EcoFlow device",
+          "device_type": "Select your device model"
+        }
+      },
+      "select_device": {
+        "title": "Select Device",
+        "description": "Select a device from the list of discovered devices.",
+        "data": {
+          "device_sn": "Device",
+          "device_type": "Device Type"
+        },
+        "data_description": {
+          "device_sn": "Select your EcoFlow device",
+          "device_type": "Select your device model"
+        }
+      },
+      "manual_device": {
+        "title": "Manual Device Entry",
+        "description": "No devices were automatically discovered. Please enter device details manually.\n\n⚠️ **Important**: Your device must be bound to your Developer account at [EcoFlow Developer Portal](https://developer-eu.ecoflow.com/).",
+        "data": {
+          "device_sn": "Device Serial Number",
+          "device_type": "Device Type"
+        },
+        "data_description": {
+          "device_sn": "Serial number of your EcoFlow device (found on device label or in EcoFlow app)",
+          "device_type": "Select your device model"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Re-authenticate EcoFlow API",
+        "description": "Please enter your updated API credentials",
+        "data": {
+          "access_key": "Access Key",
+          "secret_key": "Secret Key"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Failed to connect to EcoFlow API. Please check your internet connection.",
+      "invalid_auth": "Invalid authentication credentials. Please check your access key and secret key.",
+      "invalid_device": "Device not found or not accessible. Please verify:\n1. Serial number is correct\n2. Device is online\n3. Device is bound to your Developer account at https://developer-eu.ecoflow.com/",
+      "unknown": "An unexpected error occurred. Please check the logs for details."
+    },
+    "abort": {
+      "already_configured": "This device is already configured.",
+      "reauth_successful": "Re-authentication was successful."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "EcoFlow API Options",
+        "description": "Configure update interval for sensor data polling.\n\n**Note:** Lower intervals provide faster updates but may increase API usage.",
+        "data": {
+          "update_interval": "Update Interval"
+        },
+        "data_description": {
+          "update_interval": "How often to refresh sensor data from the EcoFlow API"
+        }
+      }
+    }
+  },
+  "entity": {
+    "sensor": {
+      "bms_batt_soc": {
+        "name": "Battery Level"
+      },
+      "bms_batt_soh": {
+        "name": "Battery Health"
+      },
+      "bms_design_cap": {
+        "name": "Battery Design Capacity"
+      },
+      "bms_chg_rem_time": {
+        "name": "Charge Remaining Time"
+      },
+      "bms_dsg_rem_time": {
+        "name": "Discharge Remaining Time"
+      },
+      "bms_chg_dsg_state": {
+        "name": "Charge/Discharge State"
+      },
+      "bms_err_code": {
+        "name": "BMS Error Code"
+      },
+      "cms_batt_soc": {
+        "name": "System Battery Level"
+      },
+      "cms_batt_soh": {
+        "name": "System Battery Health"
+      },
+      "cms_batt_full_energy": {
+        "name": "System Full Energy"
+      },
+      "cms_batt_pow_in_max": {
+        "name": "Max Input Power"
+      },
+      "cms_batt_pow_out_max": {
+        "name": "Max Output Power"
+      },
+      "cms_bms_run_state": {
+        "name": "BMS Run State"
+      },
+      "cms_chg_dsg_state": {
+        "name": "System Charge/Discharge State"
+      },
+      "cms_chg_rem_time": {
+        "name": "System Charge Remaining Time"
+      },
+      "cms_dsg_rem_time": {
+        "name": "System Discharge Remaining Time"
+      },
+      "cms_max_chg_soc": {
+        "name": "Max Charge Level Setting"
+      },
+      "cms_min_dsg_soc": {
+        "name": "Min Discharge Level Setting"
+      },
+      "bms_max_cell_temp": {
+        "name": "Max Cell Temperature"
+      },
+      "bms_min_cell_temp": {
+        "name": "Min Cell Temperature"
+      },
+      "bms_max_mos_temp": {
+        "name": "Max MOS Temperature"
+      },
+      "bms_min_mos_temp": {
+        "name": "Min MOS Temperature"
+      },
+      "pow_in_sum_w": {
+        "name": "Total Input Power"
+      },
+      "pow_get_ac_in": {
+        "name": "AC Input Power"
+      },
+      "pow_get_pv_h": {
+        "name": "Solar HV Input Power"
+      },
+      "pow_get_pv_l": {
+        "name": "Solar LV Input Power"
+      },
+      "pow_get_5p8": {
+        "name": "5.8V Input Power"
+      },
+      "pow_get_4p81": {
+        "name": "4.8V Port 1 Power"
+      },
+      "pow_get_4p82": {
+        "name": "4.8V Port 2 Power"
+      },
+      "pow_out_sum_w": {
+        "name": "Total Output Power"
+      },
+      "pow_get_ac_hv_out": {
+        "name": "AC HV Output Power"
+      },
+      "pow_get_ac_lv_out": {
+        "name": "AC LV Output Power"
+      },
+      "pow_get_ac_lv_tt30_out": {
+        "name": "AC LV TT30 Output Power"
+      },
+      "pow_get_12v": {
+        "name": "12V DC Output Power"
+      },
+      "pow_get_24v": {
+        "name": "24V DC Output Power"
+      },
+      "pow_get_qcusb1": {
+        "name": "QC USB 1 Output Power"
+      },
+      "pow_get_qcusb2": {
+        "name": "QC USB 2 Output Power"
+      },
+      "pow_get_typec1": {
+        "name": "Type-C 1 Output Power"
+      },
+      "pow_get_typec2": {
+        "name": "Type-C 2 Output Power"
+      },
+      "ac_out_freq": {
+        "name": "AC Output Frequency"
+      },
+      "plug_in_info_ac_in_feq": {
+        "name": "AC Input Frequency"
+      },
+      "plug_in_info_ac_in_chg_pow_max": {
+        "name": "AC Input Max Charge Power"
+      },
+      "plug_in_info_ac_in_chg_hal_pow_max": {
+        "name": "AC Input Hardware Max Charge Power"
+      },
+      "plug_in_info_ac_out_dsg_pow_max": {
+        "name": "AC Output Max Discharge Power"
+      },
+      "plug_in_info_pv_h_chg_amp_max": {
+        "name": "Solar HV Max Charge Current"
+      },
+      "plug_in_info_pv_h_dc_amp_max": {
+        "name": "Solar HV Max DC Current"
+      },
+      "plug_in_info_pv_h_chg_vol_max": {
+        "name": "Solar HV Max Charge Voltage"
+      },
+      "plug_in_info_pv_l_chg_amp_max": {
+        "name": "Solar LV Max Charge Current"
+      },
+      "plug_in_info_pv_l_dc_amp_max": {
+        "name": "Solar LV Max DC Current"
+      },
+      "plug_in_info_pv_l_chg_vol_max": {
+        "name": "Solar LV Max Charge Voltage"
+      },
+      "plug_in_info_dcp2_sn": {
+        "name": "Extra Battery 2 Serial Number"
+      },
+      "plug_in_info_dcp_sn": {
+        "name": "Extra Battery Serial Number"
+      },
+      "flow_info_ac_hv_out": {
+        "name": "AC HV Output Flow Status"
+      },
+      "flow_info_ac_lv_out": {
+        "name": "AC LV Output Flow Status"
+      },
+      "flow_info_ac_in": {
+        "name": "AC Input Flow Status"
+      },
+      "flow_info_pv_h": {
+        "name": "Solar HV Flow Status"
+      },
+      "flow_info_pv_l": {
+        "name": "Solar LV Flow Status"
+      },
+      "flow_info_12v": {
+        "name": "12V DC Flow Status"
+      },
+      "flow_info_24v": {
+        "name": "24V DC Flow Status"
+      },
+      "flow_info_qcusb1": {
+        "name": "QC USB 1 Flow Status"
+      },
+      "flow_info_qcusb2": {
+        "name": "QC USB 2 Flow Status"
+      },
+      "flow_info_typec1": {
+        "name": "Type-C 1 Flow Status"
+      },
+      "flow_info_typec2": {
+        "name": "Type-C 2 Flow Status"
+      },
+      "ac_standby_time": {
+        "name": "AC Standby Time"
+      },
+      "dc_standby_time": {
+        "name": "DC Standby Time"
+      },
+      "ble_standby_time": {
+        "name": "Bluetooth Standby Time"
+      },
+      "screen_off_time": {
+        "name": "Screen Off Time"
+      },
+      "lcd_light": {
+        "name": "LCD Brightness"
+      },
+      "backup_reverse_soc": {
+        "name": "Backup Reserve SOC"
+      },
+      "cms_oil_on_soc": {
+        "name": "Generator Start SOC"
+      },
+      "cms_oil_off_soc": {
+        "name": "Generator Stop SOC"
+      },
+      "generator_care_mode_start_time": {
+        "name": "Generator Care Mode Start Time"
+      },
+      "generator_pv_hybrid_mode_soc_max": {
+        "name": "Generator PV Hybrid Max SOC"
+      },
+      "errcode": {
+        "name": "Error Code"
+      },
+      "mppt_err_code": {
+        "name": "MPPT Error Code"
+      },
+      "dev_sleep_state": {
+        "name": "Device Sleep State"
+      },
+      "dev_standby_time": {
+        "name": "Device Standby Time"
+      },
+      "llc_hv_lv_flag": {
+        "name": "LLC HV/LV Flag"
+      },
+      "pcs_fan_level": {
+        "name": "PCS Fan Level"
+      },
+      "multi_bp_chg_dsg_mode": {
+        "name": "Multi Battery Pack Mode"
+      },
+      "utc_timezone": {
+        "name": "UTC Timezone Offset"
+      },
+      "utc_timezone_id": {
+        "name": "Timezone ID"
+      },
+      "quota_cloud_ts": {
+        "name": "Cloud Timestamp"
+      },
+      "quota_device_ts": {
+        "name": "Device Timestamp"
+      }
+    },
+    "binary_sensor": {
+      "ac_in_connected": {
+        "name": "AC Input Connected"
+      },
+      "solar_connected": {
+        "name": "Solar Input Connected"
+      },
+      "is_charging": {
+        "name": "Charging"
+      },
+      "is_discharging": {
+        "name": "Discharging"
+      },
+      "ac_out_enabled": {
+        "name": "AC Output Enabled"
+      },
+      "dc_out_enabled": {
+        "name": "DC Output Enabled"
+      },
+      "battery_low": {
+        "name": "Battery Low"
+      },
+      "battery_full": {
+        "name": "Battery Full"
+      },
+      "over_temp": {
+        "name": "Over Temperature"
+      }
+    },
+    "switch": {
+      "ac_hv_out": {
+        "name": "AC HV Output"
+      },
+      "ac_lv_out": {
+        "name": "AC LV Output"
+      },
+      "dc_12v_out": {
+        "name": "12V DC Output"
+      },
+      "x_boost": {
+        "name": "X-Boost"
+      },
+      "beeper": {
+        "name": "Beeper"
+      },
+      "ac_energy_saving": {
+        "name": "AC Energy Saving"
+      },
+      "generator_auto_start": {
+        "name": "Generator Auto Start"
+      },
+      "gfci": {
+        "name": "GFCI"
+      }
+    },
+    "number": {
+      "max_charge_level": {
+        "name": "Max Charge Level"
+      },
+      "min_discharge_level": {
+        "name": "Min Discharge Level"
+      },
+      "ac_charge_power": {
+        "name": "AC Charging Power"
+      },
+      "lcd_brightness": {
+        "name": "LCD Brightness"
+      },
+      "screen_off_time": {
+        "name": "Screen Off Time"
+      },
+      "generator_start_soc": {
+        "name": "Generator Start SOC"
+      },
+      "generator_stop_soc": {
+        "name": "Generator Stop SOC"
+      },
+      "pv_lv_max_current": {
+        "name": "Solar LV Max Current"
+      },
+      "pv_hv_max_current": {
+        "name": "Solar HV Max Current"
+      },
+      "power_inout_max_charge": {
+        "name": "Power In/Out Max Charge"
+      },
+      "device_standby_time": {
+        "name": "Device Standby Time"
+      },
+      "ble_standby_time": {
+        "name": "Bluetooth Standby Time"
+      }
+    },
+    "select": {
+      "ac_standby_time": {
+        "name": "AC Standby Time"
+      },
+      "dc_standby_time": {
+        "name": "DC Standby Time"
+      },
+      "battery_charge_mode": {
+        "name": "Battery Charge/Discharge Mode"
+      },
+      "ac_output_frequency": {
+        "name": "AC Output Frequency"
+      }
+    }
+  }
+}
