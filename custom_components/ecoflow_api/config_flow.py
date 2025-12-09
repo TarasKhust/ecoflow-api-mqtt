@@ -68,7 +68,24 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> FlowResult:
-        """Handle the initial step - API credentials.
+        """Handle the initial step - choose setup method.
+        
+        Args:
+            user_input: User provided data
+            
+        Returns:
+            Flow result
+        """
+        # Show menu to choose between automatic discovery or manual entry
+        return self.async_show_menu(
+            step_id="user",
+            menu_options=["auto_discovery", "manual_entry"],
+        )
+
+    async def async_step_auto_discovery(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle automatic device discovery via API.
         
         Args:
             user_input: User provided data
@@ -116,8 +133,95 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["base"] = "unknown"
 
         return self.async_show_form(
-            step_id="user",
+            step_id="auto_discovery",
             data_schema=STEP_CREDENTIALS_SCHEMA,
+            errors=errors,
+            description_placeholders={
+                "api_docs": "https://developer-eu.ecoflow.com/",
+            },
+        )
+
+    async def async_step_manual_entry(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Handle manual entry of all device information.
+        
+        Args:
+            user_input: User provided data
+            
+        Returns:
+            Flow result
+        """
+        errors: dict[str, str] = {}
+        
+        # Schema for manual entry - all fields at once
+        manual_schema = vol.Schema(
+            {
+                vol.Required(CONF_ACCESS_KEY): str,
+                vol.Required(CONF_SECRET_KEY): str,
+                vol.Required(CONF_DEVICE_SN): str,
+                vol.Required(CONF_DEVICE_TYPE, default=DEVICE_TYPE_DELTA_PRO_3): vol.In(
+                    DEVICE_TYPES
+                ),
+            }
+        )
+
+        if user_input is not None:
+            try:
+                access_key = user_input[CONF_ACCESS_KEY]
+                secret_key = user_input[CONF_SECRET_KEY]
+                device_sn = user_input[CONF_DEVICE_SN]
+                device_type = user_input[CONF_DEVICE_TYPE]
+                
+                _LOGGER.info("Manual entry: SN=%s, Type=%s", device_sn, device_type)
+                
+                # Check if device is already configured
+                await self.async_set_unique_id(device_sn)
+                self._abort_if_unique_id_configured()
+                
+                # Test API credentials
+                session = async_get_clientsession(self.hass)
+                client = EcoFlowApiClient(
+                    access_key=access_key,
+                    secret_key=secret_key,
+                    session=session,
+                )
+                
+                # Try to verify device access (non-blocking)
+                try:
+                    _LOGGER.debug("Testing API connection and device access...")
+                    quota = await client.get_device_quota(device_sn)
+                    _LOGGER.info("Device verification successful: %s", quota)
+                except EcoFlowApiError as err:
+                    _LOGGER.warning(
+                        "Device verification failed (will proceed anyway): %s", err
+                    )
+                
+                # Create entry
+                device_name = DEVICE_TYPES.get(device_type, device_type)
+                return self.async_create_entry(
+                    title=f"EcoFlow {device_name} ({device_sn[-4:]})",
+                    data={
+                        CONF_ACCESS_KEY: access_key,
+                        CONF_SECRET_KEY: secret_key,
+                        CONF_DEVICE_SN: device_sn,
+                        CONF_DEVICE_TYPE: device_type,
+                    },
+                )
+
+            except EcoFlowAuthError as err:
+                _LOGGER.error("Authentication failed: %s", err)
+                errors["base"] = "invalid_auth"
+            except EcoFlowApiError as err:
+                _LOGGER.error("API error: %s", err)
+                errors["base"] = "cannot_connect"
+            except Exception as err:
+                _LOGGER.exception("Unexpected exception: %s", err)
+                errors["base"] = "unknown"
+        
+        return self.async_show_form(
+            step_id="manual_entry",
+            data_schema=manual_schema,
             errors=errors,
             description_placeholders={
                 "api_docs": "https://developer-eu.ecoflow.com/",

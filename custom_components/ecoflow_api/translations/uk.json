@@ -3,6 +3,14 @@
     "step": {
       "user": {
         "title": "Налаштування EcoFlow API",
+        "description": "Оберіть спосіб налаштування вашого пристрою EcoFlow",
+        "menu_options": {
+          "auto_discovery": "Автоматичне виявлення (Рекомендовано)",
+          "manual_entry": "Ручне введення (Ввести всі дані)"
+        }
+      },
+      "auto_discovery": {
+        "title": "Налаштування EcoFlow API",
         "description": "Введіть ваші облікові дані EcoFlow Developer API.\n\nОтримайте API ключі тут: [EcoFlow Developer Portal]({api_docs})\n\n**Перед початком:**\n1. Зареєструйтесь на EcoFlow Developer Portal\n2. Створіть додаток і отримайте API ключі\n3. Прив'яжіть ваш пристрій до Developer акаунту",
         "data": {
           "access_key": "Ключ доступу",
@@ -11,6 +19,22 @@
         "data_description": {
           "access_key": "Ваш ключ доступу EcoFlow Developer API",
           "secret_key": "Ваш секретний ключ EcoFlow Developer API"
+        }
+      },
+      "manual_entry": {
+        "title": "Ручне налаштування пристрою",
+        "description": "Введіть всі дані пристрою вручну.\n\nОтримайте API ключі тут: [EcoFlow Developer Portal]({api_docs})\n\n**Необхідна інформація:**\n1. API ключ доступу та секретний ключ\n2. Серійний номер пристрою (на наклейці або в додатку)\n3. Тип пристрою",
+        "data": {
+          "access_key": "Ключ доступу",
+          "secret_key": "Секретний ключ",
+          "device_sn": "Серійний номер пристрою",
+          "device_type": "Тип пристрою"
+        },
+        "data_description": {
+          "access_key": "Ваш ключ доступу EcoFlow Developer API",
+          "secret_key": "Ваш секретний ключ EcoFlow Developer API",
+          "device_sn": "Серійний номер вашого пристрою EcoFlow",
+          "device_type": "Виберіть модель пристрою"
         }
       },
       "select_device": {

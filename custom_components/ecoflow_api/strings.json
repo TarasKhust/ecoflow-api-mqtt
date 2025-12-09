@@ -2,6 +2,14 @@
   "config": {
     "step": {
       "user": {
+        "title": "EcoFlow API Setup",
+        "description": "Choose how you want to set up your EcoFlow device",
+        "menu_options": {
+          "auto_discovery": "Automatic Discovery (Recommended)",
+          "manual_entry": "Manual Entry (Enter all details)"
+        }
+      },
+      "auto_discovery": {
         "title": "EcoFlow API Configuration",
         "description": "Enter your EcoFlow Developer API credentials.\n\nGet your API keys from: [EcoFlow Developer Portal]({api_docs})\n\n**Before starting:**\n1. Register at EcoFlow Developer Portal\n2. Create an application and get API keys\n3. Bind your device to the Developer account",
         "data": {
@@ -11,6 +19,22 @@
         "data_description": {
           "access_key": "Your EcoFlow Developer API access key",
           "secret_key": "Your EcoFlow Developer API secret key"
+        }
+      },
+      "manual_entry": {
+        "title": "Manual Device Configuration",
+        "description": "Enter all device details manually.\n\nGet your API keys from: [EcoFlow Developer Portal]({api_docs})\n\n**Required information:**\n1. API Access Key and Secret Key\n2. Device Serial Number (on device label or in app)\n3. Device Type",
+        "data": {
+          "access_key": "Access Key",
+          "secret_key": "Secret Key",
+          "device_sn": "Device Serial Number",
+          "device_type": "Device Type"
+        },
+        "data_description": {
+          "access_key": "Your EcoFlow Developer API access key",
+          "secret_key": "Your EcoFlow Developer API secret key",
+          "device_sn": "Serial number of your EcoFlow device",
+          "device_type": "Select your device model"
         }
       },
       "select_device": {
