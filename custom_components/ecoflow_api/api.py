@@ -96,13 +96,20 @@ class EcoFlowApiClient:
         # Create query string
         return "&".join(f"{key}={value}" for key, value in sorted_items)
     
-    def _get_headers(self, params_str: str, timestamp: str, nonce: str) -> dict[str, str]:
+    def _get_headers(
+        self, 
+        params_str: str, 
+        timestamp: str, 
+        nonce: str,
+        include_content_type: bool = False
+    ) -> dict[str, str]:
         """Get request headers with authentication.
         
         Args:
             params_str: Pre-formatted query string
             timestamp: Timestamp string
             nonce: Nonce string
+            include_content_type: Whether to include Content-Type header
             
         Returns:
             Headers dictionary
@@ -127,8 +134,11 @@ class EcoFlowApiClient:
             "timestamp": timestamp,
             "nonce": nonce,
             "sign": signature,
-            "Content-Type": "application/json;charset=UTF-8",
         }
+        
+        # Only add Content-Type for POST/PUT with JSON body
+        if include_content_type:
+            headers["Content-Type"] = "application/json;charset=UTF-8"
         
         _LOGGER.debug(
             "Generated headers: accessKey=%s..., timestamp=%s, nonce=%s, sign=%s...",
@@ -169,7 +179,9 @@ class EcoFlowApiClient:
         params_str = self._sort_and_concat_params(sign_params)
         
         # Get authenticated headers
-        headers = self._get_headers(params_str, timestamp, nonce)
+        # Content-Type only for POST/PUT with JSON body
+        include_content_type = method in ("POST", "PUT") and data is not None
+        headers = self._get_headers(params_str, timestamp, nonce, include_content_type)
         
         # Build URL with query string for GET
         if method == "GET" and params_str:
