@@ -66,21 +66,21 @@ AC_FREQUENCY_OPTIONS = {
 
 # Select definitions for Delta Pro 3
 DELTA_PRO_3_SELECT_DEFINITIONS = {
-    "acStandbyTime": {
+    "ac_standby_time": {
         "name": "AC Standby Time",
         "key": "acStandbyTime",
         "options": AC_STANDBY_OPTIONS,
         "icon": "mdi:timer-outline",
         "method": "async_set_ac_standby_time",
     },
-    "dcStandbyTime": {
+    "dc_standby_time": {
         "name": "DC Standby Time",
         "key": "dcStandbyTime",
         "options": DC_STANDBY_OPTIONS,
         "icon": "mdi:timer-outline",
         "method": "async_set_dc_standby_time",
     },
-    "lcdStandbyTime": {
+    "lcd_standby_time": {
         "name": "Screen Standby Time",
         "key": "lcdOffTime",
         "options": LCD_STANDBY_OPTIONS,

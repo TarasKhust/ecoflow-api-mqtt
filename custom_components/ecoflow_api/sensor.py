@@ -57,7 +57,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.TOTAL_INCREASING,
         "icon": "mdi:battery-sync",
     },
-    "fullCap": {
+    "full_cap": {
         "name": "Full Capacity",
         "key": "fullCap",
         "unit": UnitOfEnergy.WATT_HOUR,
@@ -65,7 +65,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:battery-high",
     },
-    "remainCap": {
+    "remain_cap": {
         "name": "Remaining Capacity",
         "key": "remainCap",
         "unit": UnitOfEnergy.WATT_HOUR,
@@ -74,7 +74,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "icon": "mdi:battery-medium",
     },
     # Power - Input
-    "wattsInSum": {
+    "watts_in_sum": {
         "name": "Total In Power",
         "key": "wattsInSum",
         "unit": UnitOfPower.WATT,
@@ -82,7 +82,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:transmission-tower-import",
     },
-    "acInPower": {
+    "ac_in_power": {
         "name": "AC In Power",
         "key": "acInPower",
         "unit": UnitOfPower.WATT,
@@ -90,7 +90,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:power-plug",
     },
-    "solarInPower": {
+    "solar_in_power": {
         "name": "Solar In Power",
         "key": "solarInPower",
         "unit": UnitOfPower.WATT,
@@ -98,7 +98,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:solar-power",
     },
-    "solarHvInPower": {
+    "solar_hv_in_power": {
         "name": "Solar HV In Power",
         "key": "solarHvInPower",
         "unit": UnitOfPower.WATT,
@@ -106,7 +106,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:solar-power",
     },
-    "solarLvInPower": {
+    "solar_lv_in_power": {
         "name": "Solar LV In Power",
         "key": "solarLvInPower",
         "unit": UnitOfPower.WATT,
@@ -115,7 +115,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "icon": "mdi:solar-power",
     },
     # Power - Output
-    "wattsOutSum": {
+    "watts_out_sum": {
         "name": "Total Out Power",
         "key": "wattsOutSum",
         "unit": UnitOfPower.WATT,
@@ -123,7 +123,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:transmission-tower-export",
     },
-    "acOutPower": {
+    "ac_out_power": {
         "name": "AC Out Power",
         "key": "acOutPower",
         "unit": UnitOfPower.WATT,
@@ -131,7 +131,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:power-socket",
     },
-    "acHvOutPower": {
+    "ac_hv_out_power": {
         "name": "AC HV Out Power",
         "key": "acHvOutPower",
         "unit": UnitOfPower.WATT,
@@ -139,7 +139,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:power-socket",
     },
-    "acLvOutPower": {
+    "ac_lv_out_power": {
         "name": "AC LV Out Power",
         "key": "acLvOutPower",
         "unit": UnitOfPower.WATT,
@@ -147,7 +147,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:power-socket",
     },
-    "dcOutPower": {
+    "dc_out_power": {
         "name": "DC Out Power",
         "key": "dcOutPower",
         "unit": UnitOfPower.WATT,
@@ -155,7 +155,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:current-dc",
     },
-    "dc12vOutPower": {
+    "dc12v_out_power": {
         "name": "12V DC Out Power",
         "key": "dc12vOutPower",
         "unit": UnitOfPower.WATT,
@@ -163,7 +163,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:current-dc",
     },
-    "dc24vOutPower": {
+    "dc24v_out_power": {
         "name": "24V DC Out Power",
         "key": "dc24vOutPower",
         "unit": UnitOfPower.WATT,
@@ -171,7 +171,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:current-dc",
     },
-    "usb1OutPower": {
+    "usb1_out_power": {
         "name": "USB 1 Out Power",
         "key": "usb1OutPower",
         "unit": UnitOfPower.WATT,
@@ -179,7 +179,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:usb",
     },
-    "usb2OutPower": {
+    "usb2_out_power": {
         "name": "USB 2 Out Power",
         "key": "usb2OutPower",
         "unit": UnitOfPower.WATT,
@@ -187,7 +187,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:usb",
     },
-    "typeC1OutPower": {
+    "type_c1_out_power": {
         "name": "Type-C 1 Out Power",
         "key": "typeC1OutPower",
         "unit": UnitOfPower.WATT,
@@ -195,7 +195,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:usb-c-port",
     },
-    "typeC2OutPower": {
+    "type_c2_out_power": {
         "name": "Type-C 2 Out Power",
         "key": "typeC2OutPower",
         "unit": UnitOfPower.WATT,
@@ -204,7 +204,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "icon": "mdi:usb-c-port",
     },
     # Time
-    "chgRemainTime": {
+    "chg_remain_time": {
         "name": "Charge Remaining Time",
         "key": "chgRemainTime",
         "unit": UnitOfTime.MINUTES,
@@ -212,7 +212,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:battery-charging",
     },
-    "dsgRemainTime": {
+    "dsg_remain_time": {
         "name": "Discharge Remaining Time",
         "key": "dsgRemainTime",
         "unit": UnitOfTime.MINUTES,
@@ -221,7 +221,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "icon": "mdi:battery-arrow-down",
     },
     # Temperature
-    "bmsTemp": {
+    "bms_temp": {
         "name": "Battery Temperature",
         "key": "bmsTemp",
         "unit": UnitOfTemperature.CELSIUS,
@@ -229,7 +229,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": None,
     },
-    "minCellTemp": {
+    "min_cell_temp": {
         "name": "Min Cell Temperature",
         "key": "minCellTemp",
         "unit": UnitOfTemperature.CELSIUS,
@@ -237,7 +237,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": None,
     },
-    "maxCellTemp": {
+    "max_cell_temp": {
         "name": "Max Cell Temperature",
         "key": "maxCellTemp",
         "unit": UnitOfTemperature.CELSIUS,
@@ -246,7 +246,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "icon": None,
     },
     # Voltage
-    "bmsVol": {
+    "bms_vol": {
         "name": "Battery Voltage",
         "key": "bmsVol",
         "unit": UnitOfElectricPotential.VOLT,
@@ -254,7 +254,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": None,
     },
-    "minCellVol": {
+    "min_cell_vol": {
         "name": "Min Cell Voltage",
         "key": "minCellVol",
         "unit": UnitOfElectricPotential.MILLIVOLT,
@@ -262,7 +262,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": None,
     },
-    "maxCellVol": {
+    "max_cell_vol": {
         "name": "Max Cell Voltage",
         "key": "maxCellVol",
         "unit": UnitOfElectricPotential.MILLIVOLT,
@@ -270,7 +270,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": None,
     },
-    "acInVol": {
+    "ac_in_vol": {
         "name": "AC In Voltage",
         "key": "acInVol",
         "unit": UnitOfElectricPotential.VOLT,
@@ -279,7 +279,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "icon": None,
     },
     # Current
-    "bmsCur": {
+    "bms_cur": {
         "name": "Battery Current",
         "key": "bmsCur",
         "unit": UnitOfElectricCurrent.AMPERE,
@@ -288,7 +288,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "icon": None,
     },
     # Energy
-    "chgEnergy": {
+    "chg_energy": {
         "name": "Total Charge Energy",
         "key": "chgEnergy",
         "unit": UnitOfEnergy.WATT_HOUR,
@@ -296,7 +296,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.TOTAL_INCREASING,
         "icon": "mdi:transmission-tower-import",
     },
-    "dsgEnergy": {
+    "dsg_energy": {
         "name": "Total Discharge Energy",
         "key": "dsgEnergy",
         "unit": UnitOfEnergy.WATT_HOUR,
@@ -305,7 +305,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "icon": "mdi:transmission-tower-export",
     },
     # Settings (displayed as sensors)
-    "acChgPower": {
+    "ac_chg_power": {
         "name": "AC Charging Power Setting",
         "key": "acChgPower",
         "unit": UnitOfPower.WATT,
@@ -313,7 +313,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:lightning-bolt",
     },
-    "maxChgSoc": {
+    "max_chg_soc": {
         "name": "Max Charge Level Setting",
         "key": "maxChgSoc",
         "unit": PERCENTAGE,
@@ -321,7 +321,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:battery-charging-90",
     },
-    "minDsgSoc": {
+    "min_dsg_soc": {
         "name": "Min Discharge Level Setting",
         "key": "minDsgSoc",
         "unit": PERCENTAGE,
@@ -356,14 +356,14 @@ EXTRA_BATTERY_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.TOTAL_INCREASING,
         "icon": "mdi:battery-sync",
     },
-    "fullCap": {
+    "full_cap": {
         "name": "Full Capacity",
         "unit": UnitOfEnergy.WATT_HOUR,
         "device_class": SensorDeviceClass.ENERGY_STORAGE,
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:battery-high",
     },
-    "remainCap": {
+    "remain_cap": {
         "name": "Remaining Capacity",
         "unit": UnitOfEnergy.WATT_HOUR,
         "device_class": SensorDeviceClass.ENERGY_STORAGE,
@@ -378,14 +378,14 @@ EXTRA_BATTERY_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": None,
     },
-    "minCellTemp": {
+    "min_cell_temp": {
         "name": "Min Cell Temperature",
         "unit": UnitOfTemperature.CELSIUS,
         "device_class": SensorDeviceClass.TEMPERATURE,
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": None,
     },
-    "maxCellTemp": {
+    "max_cell_temp": {
         "name": "Max Cell Temperature",
         "unit": UnitOfTemperature.CELSIUS,
         "device_class": SensorDeviceClass.TEMPERATURE,
@@ -400,14 +400,14 @@ EXTRA_BATTERY_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": None,
     },
-    "minCellVol": {
+    "min_cell_vol": {
         "name": "Min Cell Voltage",
         "unit": UnitOfElectricPotential.MILLIVOLT,
         "device_class": SensorDeviceClass.VOLTAGE,
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": None,
     },
-    "maxCellVol": {
+    "max_cell_vol": {
         "name": "Max Cell Voltage",
         "unit": UnitOfElectricPotential.MILLIVOLT,
         "device_class": SensorDeviceClass.VOLTAGE,
@@ -423,14 +423,14 @@ EXTRA_BATTERY_SENSOR_DEFINITIONS = {
         "icon": None,
     },
     # Power
-    "inPower": {
+    "in_power": {
         "name": "In Power",
         "unit": UnitOfPower.WATT,
         "device_class": SensorDeviceClass.POWER,
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:battery-charging",
     },
-    "outPower": {
+    "out_power": {
         "name": "Out Power",
         "unit": UnitOfPower.WATT,
         "device_class": SensorDeviceClass.POWER,

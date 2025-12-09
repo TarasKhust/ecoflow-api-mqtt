@@ -22,7 +22,7 @@ _LOGGER = logging.getLogger(__name__)
 
 # Binary sensor definitions for Delta Pro 3
 DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS = {
-    "acInConnected": {
+    "ac_in_connected": {
         "name": "AC Input Connected",
         "key": "acInConnected",
         "device_class": BinarySensorDeviceClass.PLUG,
@@ -32,7 +32,7 @@ DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS = {
         "derive_from": "acInPower",
         "derive_condition": lambda v: v is not None and v > 0,
     },
-    "solarConnected": {
+    "solar_connected": {
         "name": "Solar Input Connected",
         "key": "solarConnected",
         "device_class": BinarySensorDeviceClass.PLUG,
@@ -42,7 +42,7 @@ DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS = {
         "derive_from": "solarInPower",
         "derive_condition": lambda v: v is not None and v > 0,
     },
-    "isCharging": {
+    "is_charging": {
         "name": "Charging",
         "key": "isCharging",
         "device_class": BinarySensorDeviceClass.BATTERY_CHARGING,
@@ -52,7 +52,7 @@ DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS = {
         "derive_from": "wattsInSum",
         "derive_condition": lambda v: v is not None and v > 0,
     },
-    "isDischarging": {
+    "is_discharging": {
         "name": "Discharging",
         "key": "isDischarging",
         "device_class": BinarySensorDeviceClass.POWER,
@@ -62,7 +62,7 @@ DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS = {
         "derive_from": "wattsOutSum",
         "derive_condition": lambda v: v is not None and v > 0,
     },
-    "acOutEnabled": {
+    "ac_out_enabled": {
         "name": "AC Output Enabled",
         "key": "acOutState",
         "device_class": BinarySensorDeviceClass.POWER,
@@ -70,7 +70,7 @@ DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS = {
         "icon_off": "mdi:power-socket-off",
         "derived": False,
     },
-    "dcOutEnabled": {
+    "dc_out_enabled": {
         "name": "DC Output Enabled",
         "key": "dcOutState",
         "device_class": BinarySensorDeviceClass.POWER,
@@ -78,7 +78,7 @@ DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS = {
         "icon_off": "mdi:current-dc",
         "derived": False,
     },
-    "batteryLow": {
+    "battery_low": {
         "name": "Battery Low",
         "key": "batteryLow",
         "device_class": BinarySensorDeviceClass.BATTERY,
@@ -88,7 +88,7 @@ DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS = {
         "derive_from": "soc",
         "derive_condition": lambda v: v is not None and v < 20,
     },
-    "batteryFull": {
+    "battery_full": {
         "name": "Battery Full",
         "key": "batteryFull",
         "device_class": BinarySensorDeviceClass.BATTERY,
@@ -98,7 +98,7 @@ DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS = {
         "derive_from": "soc",
         "derive_condition": lambda v: v is not None and v >= 100,
     },
-    "overTemp": {
+    "over_temp": {
         "name": "Over Temperature",
         "key": "overTemp",
         "device_class": BinarySensorDeviceClass.HEAT,
@@ -119,7 +119,7 @@ EXTRA_BATTERY_BINARY_SENSOR_DEFINITIONS = {
         "icon_off": "mdi:battery-off",
         "check_key": "Soc",  # If we have SOC data, battery is connected
     },
-    "batteryLow": {
+    "battery_low": {
         "name": "Battery Low",
         "device_class": BinarySensorDeviceClass.BATTERY,
         "icon_on": "mdi:battery-alert",
@@ -127,7 +127,7 @@ EXTRA_BATTERY_BINARY_SENSOR_DEFINITIONS = {
         "check_key": "Soc",
         "condition": lambda v: v is not None and v < 20,
     },
-    "batteryFull": {
+    "battery_full": {
         "name": "Battery Full",
         "device_class": BinarySensorDeviceClass.BATTERY,
         "icon_on": "mdi:battery-check",
@@ -135,7 +135,7 @@ EXTRA_BATTERY_BINARY_SENSOR_DEFINITIONS = {
         "check_key": "Soc",
         "condition": lambda v: v is not None and v >= 100,
     },
-    "overTemp": {
+    "over_temp": {
         "name": "Over Temperature",
         "device_class": BinarySensorDeviceClass.HEAT,
         "icon_on": "mdi:thermometer-alert",
