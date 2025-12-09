@@ -225,3 +225,4 @@ Verify signature generation matches EcoFlow API docs:
 3. HMAC-SHA256 with secret key
 4. Convert to hex string
 
+

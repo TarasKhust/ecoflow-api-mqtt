@@ -229,7 +229,7 @@ class EcoFlowNumber(EcoFlowBaseEntity, NumberEntity):
     async def async_set_native_value(self, value: float) -> None:
         """Set new value."""
         command_key = self._number_def["command_key"]
-        device_sn = self.coordinator.entry.data["device_sn"]
+        device_sn = self.coordinator.config_entry.data["device_sn"]
         
         # Convert to int for API
         int_value = int(value)

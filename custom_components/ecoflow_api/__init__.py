@@ -73,6 +73,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         device_sn=entry.data[CONF_DEVICE_SN],
         device_type=entry.data.get(CONF_DEVICE_TYPE, "unknown"),
         update_interval=update_interval,
+        config_entry=entry,
     )
 
     # Fetch initial data
