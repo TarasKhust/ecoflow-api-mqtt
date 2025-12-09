@@ -96,7 +96,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 self._client = client
                 self._devices = devices if isinstance(devices, list) else []
                 
-                _LOGGER.info("Found %d devices", len(self._devices))
+                _LOGGER.info("Found %d devices: %s", len(self._devices), self._devices)
                 
                 if self._devices:
                     # Proceed to device selection
@@ -141,17 +141,24 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             device_sn = user_input[CONF_DEVICE_SN]
             device_type = user_input.get(CONF_DEVICE_TYPE, DEVICE_TYPE_DELTA_PRO_3)
             
+            _LOGGER.info("Selected device: SN=%s, Type=%s", device_sn, device_type)
+            
             # Check if device is already configured
             await self.async_set_unique_id(device_sn)
             self._abort_if_unique_id_configured()
             
-            # Verify device access
+            # Try to verify device access (non-blocking - just warn if fails)
             try:
                 if self._client:
-                    await self._client.get_device_quota(device_sn)
+                    _LOGGER.debug("Verifying device access for SN: %s", device_sn)
+                    quota = await self._client.get_device_quota(device_sn)
+                    _LOGGER.info("Device verification successful: %s", quota)
             except EcoFlowApiError as err:
-                _LOGGER.error("Device verification failed: %s", err)
-                errors["base"] = "invalid_device"
+                _LOGGER.warning(
+                    "Device verification failed (will proceed anyway): %s", err
+                )
+                # Don't set error - allow setup to continue
+                # The coordinator will handle verification during runtime
             
             if not errors:
                 device_name = DEVICE_TYPES.get(device_type, device_type)
@@ -226,17 +233,24 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             device_sn = user_input[CONF_DEVICE_SN]
             device_type = user_input[CONF_DEVICE_TYPE]
             
+            _LOGGER.info("Manual device entry: SN=%s, Type=%s", device_sn, device_type)
+            
             # Check if device is already configured
             await self.async_set_unique_id(device_sn)
             self._abort_if_unique_id_configured()
             
-            # Verify device access
+            # Try to verify device access (non-blocking - just warn if fails)
             try:
                 if self._client:
-                    await self._client.get_device_quota(device_sn)
+                    _LOGGER.debug("Verifying device access for SN: %s", device_sn)
+                    quota = await self._client.get_device_quota(device_sn)
+                    _LOGGER.info("Device verification successful: %s", quota)
             except EcoFlowApiError as err:
-                _LOGGER.error("Device verification failed: %s", err)
-                errors["base"] = "invalid_device"
+                _LOGGER.warning(
+                    "Device verification failed (will proceed anyway): %s", err
+                )
+                # Don't set error - allow setup to continue
+                # The coordinator will handle verification during runtime
             
             if not errors:
                 device_name = DEVICE_TYPES.get(device_type, device_type)
