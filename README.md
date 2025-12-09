@@ -49,11 +49,27 @@ Home Assistant integration for EcoFlow devices using the **official EcoFlow Deve
 1. Go to **Settings** → **Devices & Services**
 2. Click **Add Integration**
 3. Search for "EcoFlow API"
-4. Enter your credentials:
+4. Choose setup method:
+   - **Automatic Discovery**: Enter credentials, integration finds your devices
+   - **Manual Entry**: Manually enter device serial number and type
+5. Enter your credentials:
    - **Access Key**: Your EcoFlow Developer API access key
    - **Secret Key**: Your EcoFlow Developer API secret key
-   - **Device Serial Number**: Your device's serial number
-   - **Device Type**: Select your device model
+   - **Device Serial Number**: Your device's serial number (manual mode)
+   - **Device Type**: Select your device model (manual mode)
+
+### Options
+
+After setup, you can configure additional options:
+
+1. Go to **Settings** → **Devices & Services**
+2. Find "EcoFlow API" integration
+3. Click **Configure**
+4. Adjust settings:
+   - **Update Interval**: How often to poll the device (5-60 seconds, default: 15s)
+     - 5s: Fast updates (more API calls)
+     - 15s: Recommended balance
+     - 60s: Slower updates (fewer API calls)
 
 ## 📊 Entities
 
@@ -168,10 +184,26 @@ mode: single
 | River 2 | 🔄 Planned | Coming soon |
 | River 2 Max | 🔄 Planned | Coming soon |
 
+## 🧪 Testing
+
+The integration includes comprehensive tests to ensure reliability:
+
+```bash
+# Quick structure check (no dependencies required)
+python check_structure.py
+
+# Full test suite (requires pytest)
+pip install -r requirements-test.txt
+pytest tests/ -v
+```
+
+See [tests/README.md](tests/README.md) for detailed testing documentation.
+
 ## 📚 Documentation
 
 - [EcoFlow Developer API](https://developer-eu.ecoflow.com/us/document/introduction)
 - [Delta Pro 3 API Reference](https://developer-eu.ecoflow.com/us/document/deltaPro3)
+- [Testing Guide](tests/README.md)
 
 ## 🐛 Troubleshooting
 
@@ -188,7 +220,8 @@ mode: single
 - Ensure the device is linked to your developer account
 
 **3. Values not updating**
-- The integration polls every 30 seconds
+- The integration polls every 15 seconds by default (configurable: 5-60 seconds)
+- You can adjust the update interval in integration options
 - Check Home Assistant logs for errors
 - Try reloading the integration
 

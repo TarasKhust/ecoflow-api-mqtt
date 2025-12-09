@@ -62,6 +62,7 @@ venv.bak/
 # IDE
 .idea/
 .vscode/
+.cursorrules
 *.swp
 *.swo
 *~
@@ -77,5 +78,14 @@ home-assistant.log*
 home-assistant_v2.db
 home-assistant_v2.db-shm
 home-assistant_v2.db-wal
+
+# Test files with API credentials (DO NOT COMMIT)
+test_*.py
+get_device_data.py
+test_device_controls.py
+generate_signature.py
+EcoFlow_API_Postman_Collection.json
+POSTMAN_SETUP.md
+*_test.py
 
 
