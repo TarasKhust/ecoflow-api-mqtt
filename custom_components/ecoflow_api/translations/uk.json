@@ -1,0 +1,148 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Налаштування EcoFlow API",
+        "description": "Введіть ваші облікові дані EcoFlow Developer API.\n\nОтримайте API ключі тут: [EcoFlow Developer Portal]({api_docs})",
+        "data": {
+          "access_key": "Ключ доступу",
+          "secret_key": "Секретний ключ"
+        },
+        "data_description": {
+          "access_key": "Ваш ключ доступу EcoFlow Developer API",
+          "secret_key": "Ваш секретний ключ EcoFlow Developer API"
+        }
+      },
+      "select_device": {
+        "title": "Вибір пристрою",
+        "description": "Виберіть пристрій зі списку знайдених пристроїв.",
+        "data": {
+          "device_sn": "Пристрій",
+          "device_type": "Тип пристрою"
+        },
+        "data_description": {
+          "device_sn": "Виберіть ваш пристрій EcoFlow",
+          "device_type": "Виберіть модель пристрою"
+        }
+      },
+      "manual_device": {
+        "title": "Ручне введення пристрою",
+        "description": "Пристрої не були автоматично знайдені. Будь ласка, введіть дані пристрою вручну.",
+        "data": {
+          "device_sn": "Серійний номер пристрою",
+          "device_type": "Тип пристрою"
+        },
+        "data_description": {
+          "device_sn": "Серійний номер вашого пристрою EcoFlow (знаходиться на пристрої або в додатку EcoFlow)",
+          "device_type": "Виберіть модель пристрою"
+        }
+      },
+      "reauth_confirm": {
+        "title": "Повторна автентифікація EcoFlow API",
+        "description": "Будь ласка, введіть оновлені облікові дані API",
+        "data": {
+          "access_key": "Ключ доступу",
+          "secret_key": "Секретний ключ"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Не вдалося підключитися до EcoFlow API. Перевірте підключення до інтернету.",
+      "invalid_auth": "Недійсні облікові дані. Перевірте ключ доступу та секретний ключ.",
+      "invalid_device": "Пристрій не знайдено або недоступний. Перевірте серійний номер.",
+      "unknown": "Виникла неочікувана помилка. Перегляньте журнали для деталей."
+    },
+    "abort": {
+      "already_configured": "Цей пристрій вже налаштовано.",
+      "reauth_successful": "Повторна автентифікація успішна."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "soc": { "name": "Рівень заряду батареї" },
+      "soh": { "name": "Стан здоров'я батареї" },
+      "cycles": { "name": "Цикли заряду" },
+      "fullCap": { "name": "Повна ємність" },
+      "remainCap": { "name": "Залишкова ємність" },
+      "wattsInSum": { "name": "Загальна вхідна потужність" },
+      "wattsOutSum": { "name": "Загальна вихідна потужність" },
+      "acInPower": { "name": "Вхідна потужність AC" },
+      "acOutPower": { "name": "Вихідна потужність AC" },
+      "acHvOutPower": { "name": "Вихідна потужність AC HV" },
+      "acLvOutPower": { "name": "Вихідна потужність AC LV" },
+      "solarInPower": { "name": "Потужність сонячної панелі" },
+      "solarHvInPower": { "name": "Потужність сонячної панелі HV" },
+      "solarLvInPower": { "name": "Потужність сонячної панелі LV" },
+      "dcOutPower": { "name": "Вихідна потужність DC" },
+      "dc12vOutPower": { "name": "Вихідна потужність 12V DC" },
+      "dc24vOutPower": { "name": "Вихідна потужність 24V DC" },
+      "usb1OutPower": { "name": "Потужність USB 1" },
+      "usb2OutPower": { "name": "Потужність USB 2" },
+      "typeC1OutPower": { "name": "Потужність Type-C 1" },
+      "typeC2OutPower": { "name": "Потужність Type-C 2" },
+      "chgRemainTime": { "name": "Час до повного заряду" },
+      "dsgRemainTime": { "name": "Час до розряду" },
+      "bmsTemp": { "name": "Температура батареї" },
+      "minCellTemp": { "name": "Мін. температура комірки" },
+      "maxCellTemp": { "name": "Макс. температура комірки" },
+      "bmsVol": { "name": "Напруга батареї" },
+      "minCellVol": { "name": "Мін. напруга комірки" },
+      "maxCellVol": { "name": "Макс. напруга комірки" },
+      "acInVol": { "name": "Вхідна напруга AC" },
+      "bmsCur": { "name": "Струм батареї" },
+      "chgEnergy": { "name": "Загальна енергія заряду" },
+      "dsgEnergy": { "name": "Загальна енергія розряду" },
+      "acChgPower": { "name": "Налаштування потужності заряду AC" },
+      "maxChgSoc": { "name": "Налаштування макс. рівня заряду" },
+      "minDsgSoc": { "name": "Налаштування мін. рівня розряду" },
+      "extra_battery_1_soc": { "name": "Додаткова батарея 1 - Рівень заряду" },
+      "extra_battery_1_soh": { "name": "Додаткова батарея 1 - Стан здоров'я" },
+      "extra_battery_1_cycles": { "name": "Додаткова батарея 1 - Цикли" },
+      "extra_battery_1_temp": { "name": "Додаткова батарея 1 - Температура" },
+      "extra_battery_1_vol": { "name": "Додаткова батарея 1 - Напруга" },
+      "extra_battery_1_cur": { "name": "Додаткова батарея 1 - Струм" },
+      "extra_battery_2_soc": { "name": "Додаткова батарея 2 - Рівень заряду" },
+      "extra_battery_2_soh": { "name": "Додаткова батарея 2 - Стан здоров'я" },
+      "extra_battery_2_cycles": { "name": "Додаткова батарея 2 - Цикли" },
+      "extra_battery_2_temp": { "name": "Додаткова батарея 2 - Температура" },
+      "extra_battery_2_vol": { "name": "Додаткова батарея 2 - Напруга" },
+      "extra_battery_2_cur": { "name": "Додаткова батарея 2 - Струм" }
+    },
+    "binary_sensor": {
+      "acInConnected": { "name": "AC вхід підключено" },
+      "solarConnected": { "name": "Сонячна панель підключена" },
+      "isCharging": { "name": "Заряджається" },
+      "isDischarging": { "name": "Розряджається" },
+      "acOutEnabled": { "name": "AC вихід увімкнено" },
+      "dcOutEnabled": { "name": "DC вихід увімкнено" },
+      "batteryLow": { "name": "Низький заряд батареї" },
+      "batteryFull": { "name": "Батарея повністю заряджена" },
+      "overTemp": { "name": "Перегрів" },
+      "extra_battery_1_connected": { "name": "Додаткова батарея 1 - Підключена" },
+      "extra_battery_1_batteryLow": { "name": "Додаткова батарея 1 - Низький заряд" },
+      "extra_battery_1_batteryFull": { "name": "Додаткова батарея 1 - Повний заряд" },
+      "extra_battery_1_overTemp": { "name": "Додаткова батарея 1 - Перегрів" },
+      "extra_battery_2_connected": { "name": "Додаткова батарея 2 - Підключена" },
+      "extra_battery_2_batteryLow": { "name": "Додаткова батарея 2 - Низький заряд" },
+      "extra_battery_2_batteryFull": { "name": "Додаткова батарея 2 - Повний заряд" },
+      "extra_battery_2_overTemp": { "name": "Додаткова батарея 2 - Перегрів" }
+    },
+    "switch": {
+      "acOutState": { "name": "AC вихід" },
+      "dcOutState": { "name": "DC вихід" },
+      "dc12vOutState": { "name": "12V DC вихід" },
+      "beepState": { "name": "Звуковий сигнал" },
+      "xBoostState": { "name": "X-Boost" }
+    },
+    "number": {
+      "acChgPower": { "name": "Потужність заряду AC" },
+      "maxChgSoc": { "name": "Макс. рівень заряду" },
+      "minDsgSoc": { "name": "Мін. рівень розряду" }
+    },
+    "select": {
+      "acStandbyTime": { "name": "Час очікування AC" },
+      "dcStandbyTime": { "name": "Час очікування DC" },
+      "lcdStandbyTime": { "name": "Час очікування екрану" }
+    }
+  }
+}
