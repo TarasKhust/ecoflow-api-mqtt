@@ -472,7 +472,14 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
     def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
         """Initialize options flow."""
-        self.config_entry = config_entry
+        super().__init__()
+        # Store config_entry reference (use private variable to avoid property conflict)
+        self._entry = config_entry
+
+    @property
+    def config_entry(self) -> config_entries.ConfigEntry:
+        """Return config entry."""
+        return self._entry
 
     async def async_step_init(
         self, user_input: dict[str, Any] | None = None
