@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0-beta1] - 2025-12-10
+
+### Added
+- 🚀 **Hybrid REST API + MQTT Support** - Best of both worlds!
+  - ⚡ **Real-time updates via MQTT** - Instant sensor updates without polling
+  - 🔧 **Device control via REST API** - Reliable command execution
+  - 🔄 **Automatic fallback** - Seamlessly falls back to REST if MQTT unavailable
+  - 📊 **Battery Cycles sensor** - Now available via MQTT (`bmsCycles`)
+  - 🎛️ **MQTT configuration** - Enable/disable MQTT through Settings → Configure
+- 📡 **MQTT Client** - Full WebSocket-based MQTT implementation
+  - Broker: `mqtt.ecoflow.com:8883` (TLS)
+  - Real-time device status updates
+  - Automatic reconnection
+- 🔀 **Hybrid Coordinator** - Intelligent data merging
+  - MQTT data priority (more real-time)
+  - REST API fallback for reliability
+  - Reduced REST polling when MQTT active (4x less frequent)
+
+### Changed
+- 📦 **Dependencies** - Added `paho-mqtt>=1.6.1` for MQTT support
+- 🔧 **Coordinator** - Can now be hybrid (REST+MQTT) or REST-only
+- ⚙️ **Configuration** - MQTT settings in OptionsFlow (Settings → Configure)
+
+### Technical Details
+- ✅ **New files**: `mqtt_client.py`, `hybrid_coordinator.py`
+- ✅ **MQTT authentication**: Uses EcoFlow account credentials
+- ✅ **Connection modes**: `hybrid`, `mqtt_standby`, `rest_only`
+- ✅ **Graceful degradation**: Works without MQTT if not configured
+
+### Beta Notes
+- ⚠️ **Beta release** - Please test and report issues
+- 🧪 **MQTT is optional** - Integration works fine without it
+- 📝 **Feedback needed**: MQTT connection stability, data accuracy
+- 🔍 **Known limitations**: MQTT credentials must be EcoFlow account (email/password)
+
 ## [1.2.1] - 2025-12-10
 
 ### Added

@@ -10,6 +10,9 @@ CONF_SECRET_KEY: Final = "secret_key"
 CONF_DEVICE_SN: Final = "device_sn"
 CONF_DEVICE_TYPE: Final = "device_type"
 CONF_UPDATE_INTERVAL: Final = "update_interval"
+CONF_MQTT_ENABLED: Final = "mqtt_enabled"
+CONF_MQTT_USERNAME: Final = "mqtt_username"
+CONF_MQTT_PASSWORD: Final = "mqtt_password"
 
 # API
 API_BASE_URL: Final = "https://api-e.ecoflow.com"
@@ -295,6 +298,15 @@ DELTA_PRO_3_SENSORS: Final = {
         "unit": "Hz",
         "device_class": "frequency",
         "icon": "mdi:sine-wave",
+    },
+    
+    # MQTT-only sensors (available only when MQTT is enabled)
+    "bmsCycles": {
+        "name": "Battery Cycles",
+        "unit": "cycles",
+        "device_class": None,
+        "icon": "mdi:sync",
+        "mqtt_only": True,  # Only available via MQTT
     },
 }
 

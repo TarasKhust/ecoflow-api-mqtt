@@ -24,9 +24,13 @@ from .const import (
     CONF_DEVICE_SN,
     CONF_DEVICE_TYPE,
     CONF_UPDATE_INTERVAL,
+    CONF_MQTT_ENABLED,
+    CONF_MQTT_USERNAME,
+    CONF_MQTT_PASSWORD,
     DEFAULT_UPDATE_INTERVAL,
 )
 from .coordinator import EcoFlowDataCoordinator
+from .hybrid_coordinator import EcoFlowHybridCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -66,15 +70,37 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         DEFAULT_UPDATE_INTERVAL
     )
     
-    # Create coordinator
-    coordinator = EcoFlowDataCoordinator(
-        hass=hass,
-        client=client,
-        device_sn=entry.data[CONF_DEVICE_SN],
-        device_type=entry.data.get(CONF_DEVICE_TYPE, "unknown"),
-        update_interval=update_interval,
-        config_entry=entry,
-    )
+    # Get MQTT settings from options
+    mqtt_enabled = entry.options.get(CONF_MQTT_ENABLED, False)
+    mqtt_username = entry.options.get(CONF_MQTT_USERNAME)
+    mqtt_password = entry.options.get(CONF_MQTT_PASSWORD)
+    
+    # Create coordinator (hybrid if MQTT enabled, otherwise standard)
+    if mqtt_enabled and mqtt_username and mqtt_password:
+        _LOGGER.info("Creating hybrid coordinator (REST + MQTT) for device %s", entry.data[CONF_DEVICE_SN])
+        coordinator = EcoFlowHybridCoordinator(
+            hass=hass,
+            client=client,
+            device_sn=entry.data[CONF_DEVICE_SN],
+            device_type=entry.data.get(CONF_DEVICE_TYPE, "unknown"),
+            update_interval=update_interval,
+            config_entry=entry,
+            mqtt_username=mqtt_username,
+            mqtt_password=mqtt_password,
+            mqtt_enabled=True,
+        )
+        # Set up MQTT
+        await coordinator.async_setup()
+    else:
+        _LOGGER.info("Creating REST-only coordinator for device %s", entry.data[CONF_DEVICE_SN])
+        coordinator = EcoFlowDataCoordinator(
+            hass=hass,
+            client=client,
+            device_sn=entry.data[CONF_DEVICE_SN],
+            device_type=entry.data.get(CONF_DEVICE_TYPE, "unknown"),
+            update_interval=update_interval,
+            config_entry=entry,
+        )
 
     # Fetch initial data
     await coordinator.async_config_entry_first_refresh()
@@ -103,6 +129,12 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     Returns:
         True if unload was successful
     """
+    # Shutdown MQTT if hybrid coordinator
+    coordinator = hass.data[DOMAIN].get(entry.entry_id)
+    if coordinator and isinstance(coordinator, EcoFlowHybridCoordinator):
+        await coordinator.async_shutdown()
+        _LOGGER.info("Shut down MQTT for device %s", entry.data[CONF_DEVICE_SN])
+    
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
         hass.data[DOMAIN].pop(entry.entry_id)
         _LOGGER.info(

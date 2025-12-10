@@ -23,6 +23,9 @@ from .const import (
     CONF_DEVICE_SN,
     CONF_DEVICE_TYPE,
     CONF_UPDATE_INTERVAL,
+    CONF_MQTT_ENABLED,
+    CONF_MQTT_USERNAME,
+    CONF_MQTT_PASSWORD,
     DEVICE_TYPES,
     DEVICE_TYPE_DELTA_PRO_3,
     DEFAULT_UPDATE_INTERVAL,
@@ -45,6 +48,15 @@ STEP_MANUAL_DEVICE_SCHEMA = vol.Schema(
         vol.Required(CONF_DEVICE_TYPE, default=DEVICE_TYPE_DELTA_PRO_3): vol.In(
             DEVICE_TYPES
         ),
+    }
+)
+
+# Step 3: MQTT configuration (optional)
+STEP_MQTT_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_MQTT_ENABLED, default=False): bool,
+        vol.Optional(CONF_MQTT_USERNAME): str,
+        vol.Optional(CONF_MQTT_PASSWORD): str,
     }
 )
 
@@ -476,6 +488,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
             else self.config_entry.data.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL)
         )
 
+        # Get current MQTT settings
+        mqtt_enabled = self.config_entry.options.get(CONF_MQTT_ENABLED, False)
+        mqtt_username = self.config_entry.options.get(CONF_MQTT_USERNAME, "")
+        mqtt_password = self.config_entry.options.get(CONF_MQTT_PASSWORD, "")
+
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(
@@ -492,6 +509,18 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                             60: "60 seconds (Slow)",
                         }
                     ),
+                    vol.Required(
+                        CONF_MQTT_ENABLED,
+                        default=mqtt_enabled,
+                    ): bool,
+                    vol.Optional(
+                        CONF_MQTT_USERNAME,
+                        default=mqtt_username,
+                    ): str,
+                    vol.Optional(
+                        CONF_MQTT_PASSWORD,
+                        default=mqtt_password,
+                    ): str,
                 }
             ),
         )
