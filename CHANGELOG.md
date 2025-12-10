@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.1.4] - 2024-12-10
+
+### Fixed
+- 🐛 **Binary sensors fixed** - Corrected API key mappings for all binary sensors
+- 🔋 **Charging/Discharging detection** - Now uses correct `powInSumW` and `powOutSumW` keys
+- 🔌 **AC Input Connected** - Fixed to use `powGetAcIn` instead of non-existent `acInPower`
+- ☀️ **Solar Connected** - Fixed to use `powGetPvH` instead of non-existent `solarInPower`
+- 🪫 **Battery Low/Full** - Fixed to use `bmsBattSoc` instead of non-existent `soc`
+- 🌡️ **Over Temperature** - Fixed to use `bmsMaxCellTemp` instead of non-existent `bmsTemp`
+- ⚡ **Threshold adjustment** - Changed charging/discharging detection threshold from 0W to 10W to avoid false positives
+
 ## [1.1.3] - 2024-12-09
 
 ### Fixed

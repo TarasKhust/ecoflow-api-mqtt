@@ -1,0 +1,162 @@
+{
+	"folders": [
+		{
+			"path": "../.."
+		}
+	],
+	"settings": {
+		"window.zoomLevel": 0.5,
+		"editor.fontSize": 16,
+		"terminal.integrated.defaultProfile.windows": "Git Bash",
+		"terminal.integrated.profiles.windows": {
+			"Git Bash": {
+				"path": "C:\\Program Files\\Git\\bin\\bash.exe",
+				"args": []
+			}
+		},
+		"editor.tokenColorCustomizations": {
+			"[One Dark Pro Darker]": {
+				"textMateRules": [
+					{
+						"scope": [
+							"meta.import.type.node",
+							"meta.import.type.node.ts",
+							"meta.import.type.node.tsx",
+							"meta.import.type.@types",
+							"meta.import.type.@types.ts",
+							"meta.import.type.@types.tsx"
+						],
+						"settings": {
+							"foreground": "#E5C17C"
+						}
+					},
+					{
+						"scope": [
+							"variable.parameter",
+							"variable.parameter.function",
+							"variable.parameter.function.js",
+							"variable.parameter.function.ts",
+							"variable.parameter.function.tsx",
+							"variable.parameter.function.jsx"
+						],
+						"settings": {
+							"foreground": "#EEFFE3"
+						}
+					},
+					{
+						"scope": [
+							"entity.name.type",
+							"entity.name.type.class",
+							"entity.name.type.interface",
+							"entity.name.type.type-parameter",
+							"entity.name.type.alias"
+						],
+						"settings": {
+							"foreground": "#98C379"
+						}
+					},
+					{
+						"scope": [
+							"variable.other.import",
+							"variable.other.import.js",
+							"variable.other.import.ts",
+							"variable.other.import.tsx",
+							"variable.other.import.jsx"
+						],
+						"settings": {
+							"foreground": "#98C379"
+						}
+					},
+					{
+						"scope": [
+							"variable.other.constant",
+							"variable.other.constant.js",
+							"variable.other.constant.ts",
+							"variable.other.constant.tsx",
+							"variable.other.constant.jsx"
+						],
+						"settings": {
+							"foreground": "#f78c6c"
+						}
+					},
+					{
+						"scope": [
+							"entity.name.class",
+							"entity.name.class.js",
+							"entity.name.class.ts",
+							"entity.name.class.tsx",
+							"entity.name.class.jsx"
+						],
+						"settings": {
+							"foreground": "#E5C17C"
+						}
+					},
+					{
+						"scope": [
+							"support.class",
+							"support.class.js",
+							"support.class.ts",
+							"support.class.tsx",
+							"support.class.jsx"
+						],
+						"settings": {
+							"foreground": "#E06C75"
+						}
+					},
+					{
+						"scope": [],
+						"settings": {
+							"foreground": "#E06C75"
+						}
+					},
+					{
+						"scope": [
+							"entity.name.type.import",
+							"entity.name.type.import.js",
+							"entity.name.type.import.ts",
+							"entity.name.type.import.tsx",
+							"entity.name.type.import.jsx"
+						],
+						"settings": {
+							"foreground": "#98C379"
+						}
+					},
+					{
+						"scope": [
+							"entity.name.function.import",
+							"entity.name.function.import.js",
+							"entity.name.function.import.ts",
+							"entity.name.function.import.tsx",
+							"entity.name.function.import.jsx"
+						],
+						"settings": {
+							"foreground": "#61AEEF"
+						}
+					},
+					{
+						"scope": [
+							"entity.name.type.enum",
+							"entity.name.type.enum.ts",
+							"entity.name.type.enum.tsx"
+						],
+						"settings": {
+							"foreground": "#E5C17C"
+						}
+					},
+					{
+						"scope": [
+							"support.type.property-name.json"
+						],
+						"settings": {
+							"foreground": "#C679DD"
+						}
+					}
+				]
+			}
+		},
+		"vs-code-prettier-eslint.prettierLast": true,
+		"editor.codeActionsOnSave": {
+			"source.fixAll.eslint": "always"
+		},
+	}
+}

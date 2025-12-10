@@ -1,0 +1,24 @@
+Bug Fixes - Binary Sensors Fixed
+
+All binary sensors were using incorrect API keys that don't exist in the actual EcoFlow API response, causing them to always show 'off' state regardless of actual device state.
+
+Fixed Sensors:
+- Charging detection - Now correctly detects when device is charging
+- Discharging detection - Now correctly detects when device is discharging  
+- AC Input Connected - Now correctly shows AC power connection status
+- Solar Input Connected - Now correctly shows solar panel connection status
+- Battery Low - Now correctly triggers at <20% battery
+- Battery Full - Now correctly triggers at 100% battery
+- Over Temperature - Now correctly detects high temperature (>45°C)
+
+Technical Changes:
+- wattsInSum → powInSumW (charging detection)
+- wattsOutSum → powOutSumW (discharging detection)
+- acInPower → powGetAcIn (AC input)
+- solarInPower → powGetPvH (solar input)
+- soc → bmsBattSoc (battery level)
+- bmsTemp → bmsMaxCellTemp (temperature)
+- Threshold increased from 0W to 10W to avoid false positives
+
+This is a critical bug fix. All binary sensors should now work correctly and reflect actual device state.
+

@@ -29,7 +29,7 @@ DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS = {
         "icon_on": "mdi:power-plug",
         "icon_off": "mdi:power-plug-off",
         "derived": True,
-        "derive_from": "acInPower",
+        "derive_from": "powGetAcIn",
         "derive_condition": lambda v: v is not None and v > 0,
     },
     "solar_connected": {
@@ -39,7 +39,7 @@ DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS = {
         "icon_on": "mdi:solar-power",
         "icon_off": "mdi:solar-power-variant-outline",
         "derived": True,
-        "derive_from": "solarInPower",
+        "derive_from": "powGetPvH",
         "derive_condition": lambda v: v is not None and v > 0,
     },
     "is_charging": {
@@ -49,8 +49,8 @@ DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS = {
         "icon_on": "mdi:battery-charging",
         "icon_off": "mdi:battery",
         "derived": True,
-        "derive_from": "wattsInSum",
-        "derive_condition": lambda v: v is not None and v > 0,
+        "derive_from": "powInSumW",
+        "derive_condition": lambda v: v is not None and v > 10,
     },
     "is_discharging": {
         "name": "Discharging",
@@ -59,8 +59,8 @@ DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS = {
         "icon_on": "mdi:battery-arrow-down",
         "icon_off": "mdi:battery",
         "derived": True,
-        "derive_from": "wattsOutSum",
-        "derive_condition": lambda v: v is not None and v > 0,
+        "derive_from": "powOutSumW",
+        "derive_condition": lambda v: v is not None and v > 10,
     },
     "ac_out_enabled": {
         "name": "AC Output Enabled",
@@ -85,7 +85,7 @@ DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS = {
         "icon_on": "mdi:battery-alert",
         "icon_off": "mdi:battery",
         "derived": True,
-        "derive_from": "soc",
+        "derive_from": "bmsBattSoc",
         "derive_condition": lambda v: v is not None and v < 20,
     },
     "battery_full": {
@@ -95,7 +95,7 @@ DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS = {
         "icon_on": "mdi:battery-check",
         "icon_off": "mdi:battery",
         "derived": True,
-        "derive_from": "soc",
+        "derive_from": "bmsBattSoc",
         "derive_condition": lambda v: v is not None and v >= 100,
     },
     "over_temp": {
@@ -105,7 +105,7 @@ DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS = {
         "icon_on": "mdi:thermometer-alert",
         "icon_off": "mdi:thermometer",
         "derived": True,
-        "derive_from": "bmsTemp",
+        "derive_from": "bmsMaxCellTemp",
         "derive_condition": lambda v: v is not None and v > 45,
     },
 }
