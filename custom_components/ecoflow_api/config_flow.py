@@ -26,7 +26,6 @@ from .const import (
     DEVICE_TYPES,
     DEVICE_TYPE_DELTA_PRO_3,
     DEFAULT_UPDATE_INTERVAL,
-    UPDATE_INTERVAL_OPTIONS,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -468,18 +467,13 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
     ) -> FlowResult:
         """Manage the options."""
         if user_input is not None:
-            # Reload the config entry to apply new update interval
-            self.hass.config_entries.async_update_entry(
-                self.config_entry, options=user_input
-            )
-            await self.hass.config_entries.async_reload(self.config_entry.entry_id)
             return self.async_create_entry(title="", data=user_input)
 
         # Get current update interval
         current_interval = (
-            self.config_entry.options.get(CONF_UPDATE_INTERVAL) or
-            self.config_entry.data.get(CONF_UPDATE_INTERVAL) or
-            DEFAULT_UPDATE_INTERVAL
+            self.config_entry.options.get(CONF_UPDATE_INTERVAL)
+            if self.config_entry.options
+            else self.config_entry.data.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL)
         )
 
         return self.async_show_form(
