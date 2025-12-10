@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.1] - 2025-12-10
+
+### Added
+- 🎛️ **Dynamic Update Interval Control** - New select entity for runtime interval changes
+  - `select.ecoflow_delta_pro_3_update_interval` - Change polling frequency on the fly
+  - Options: 5s (Fast), 10s, 15s (Recommended), 30s, 60s (Slow)
+  - Changes apply immediately without restart
+  - Settings persist after Home Assistant restart
+- ⚙️ **OptionsFlow Configuration** - Configure update interval through Settings → Configure
+
+### Fixed
+- 🐛 **OptionsFlow 500 error** - Fixed "Config flow could not be loaded" error
+  - Removed unused `UPDATE_INTERVAL_OPTIONS` import
+  - Simplified options handling logic
+
+### Technical Details
+- ✅ **Coordinator enhancement** - Added `async_set_update_interval()` method
+- ✅ **Local settings support** - Select platform now supports both device and local settings
+- ✅ **Config persistence** - Interval changes saved to config entry options
+
 ## [1.2.0] - 2025-12-10
 
 ### Added

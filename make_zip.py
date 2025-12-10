@@ -4,7 +4,7 @@ from pathlib import Path
 
 def create_zip():
     source = Path("custom_components/ecoflow_api")
-    output = Path("ecoflow-api-v1.1.4.zip")
+    output = Path("ecoflow-api-v1.2.1.zip")
     
     with zipfile.ZipFile(output, 'w', zipfile.ZIP_DEFLATED) as zipf:
         for root, dirs, files in os.walk(source):
