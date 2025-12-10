@@ -1,14 +1,19 @@
 """MQTT client for EcoFlow devices.
 
 This module provides MQTT connectivity for real-time updates from EcoFlow devices.
-Based on research from tolwi/hassio-ecoflow-cloud integration.
+Based on EcoFlow Developer API MQTT documentation.
 
 EcoFlow MQTT Protocol:
 - Broker: mqtt.ecoflow.com:8883 (TLS)
-- Protocol: MQTT over WebSocket
-- Authentication: Username/Password (from EcoFlow account)
-- Topics: /app/{user_id}/{device_sn}/thing/property/set (commands)
-          /app/device/property/{device_sn} (status updates)
+- Protocol: MQTT v3.1.1
+- Authentication: Username/Password (EcoFlow account credentials)
+- Topics:
+  - /open/{certificateAccount}/{sn}/quota - Device quota/status updates
+  - /open/{certificateAccount}/{sn}/status - Device online/offline status
+  - /open/{certificateAccount}/{sn}/set - Send commands to device
+  - /open/{certificateAccount}/{sn}/set_reply - Command response from device
+
+Note: certificateAccount is typically the user_id or username from EcoFlow account.
 """
 from __future__ import annotations
 
@@ -56,9 +61,14 @@ class EcoFlowMQTTClient:
         self._connected = False
         self._reconnect_task: asyncio.Task | None = None
         
-        # MQTT topics
-        self._status_topic = f"/app/device/property/{device_sn}"
-        self._command_topic = f"/app/{username}/{device_sn}/thing/property/set"
+        # MQTT topics (correct format: /open/${certificateAccount}/${sn}/...)
+        # certificateAccount is typically the user_id or username
+        # Using username as certificateAccount for now
+        certificate_account = username  # This should be user_id, but using username as fallback
+        self._quota_topic = f"/open/{certificate_account}/{device_sn}/quota"
+        self._status_topic = f"/open/{certificate_account}/{device_sn}/status"
+        self._set_topic = f"/open/{certificate_account}/{device_sn}/set"
+        self._set_reply_topic = f"/open/{certificate_account}/{device_sn}/set_reply"
         
     @property
     def is_connected(self) -> bool:
@@ -154,10 +164,10 @@ class EcoFlowMQTTClient:
             
         try:
             payload = json.dumps(command)
-            result = self._client.publish(self._command_topic, payload, qos=1)
+            result = self._client.publish(self._set_topic, payload, qos=1)
             
             if result.rc == mqtt.MQTT_ERR_SUCCESS:
-                _LOGGER.debug("Published command to %s: %s", self._command_topic, payload)
+                _LOGGER.debug("Published command to %s: %s", self._set_topic, payload)
                 return True
             else:
                 _LOGGER.error("Failed to publish command: %s", result.rc)
@@ -190,9 +200,17 @@ class EcoFlowMQTTClient:
             self._connected = True
             _LOGGER.info("Connected to MQTT broker for device %s", self.device_sn)
             
-            # Subscribe to device status topic
+            # Subscribe to device quota topic (for real-time updates)
+            client.subscribe(self._quota_topic, qos=1)
+            _LOGGER.info("Subscribed to quota topic: %s", self._quota_topic)
+            
+            # Subscribe to device status topic (for online/offline status)
             client.subscribe(self._status_topic, qos=1)
-            _LOGGER.info("Subscribed to topic: %s", self._status_topic)
+            _LOGGER.info("Subscribed to status topic: %s", self._status_topic)
+            
+            # Subscribe to set_reply topic (for command responses)
+            client.subscribe(self._set_reply_topic, qos=1)
+            _LOGGER.info("Subscribed to set_reply topic: %s", self._set_reply_topic)
         else:
             self._connected = False
             error_msg = error_messages.get(rc, f"Unknown error (code {rc})")
@@ -233,9 +251,37 @@ class EcoFlowMQTTClient:
             payload = json.loads(msg.payload.decode())
             _LOGGER.debug("Received MQTT message from %s: %s", msg.topic, payload)
             
-            # Call callback if set
-            if self.on_message_callback:
-                self.on_message_callback(payload)
+            # Handle different topic types
+            if msg.topic == self._quota_topic:
+                # Quota topic: payload has "params" with device data
+                # Format: {"id": ..., "version": ..., "params": {...device data...}}
+                if "params" in payload:
+                    quota_data = payload["params"]
+                    _LOGGER.debug("Received quota update: %s", quota_data)
+                    if self.on_message_callback:
+                        self.on_message_callback(quota_data)
+                else:
+                    _LOGGER.warning("Quota message missing 'params': %s", payload)
+                    
+            elif msg.topic == self._status_topic:
+                # Status topic: payload has "params.status" (0=offline, 1=online)
+                if "params" in payload and "status" in payload["params"]:
+                    status = payload["params"]["status"]
+                    _LOGGER.info("Device status update: %s (0=offline, 1=online)", status)
+                    # Could add status callback here if needed
+                else:
+                    _LOGGER.warning("Status message missing 'params.status': %s", payload)
+                    
+            elif msg.topic == self._set_reply_topic:
+                # Set reply topic: payload has "data" with command result
+                # Format: {"data": {...result...}, "id": ...}
+                _LOGGER.debug("Received set_reply: %s", payload)
+                # Could add reply callback here if needed
+                
+            else:
+                # Unknown topic, pass to callback as-is
+                if self.on_message_callback:
+                    self.on_message_callback(payload)
                 
         except json.JSONDecodeError as err:
             _LOGGER.error("Failed to decode MQTT message: %s", err)

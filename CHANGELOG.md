@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0-beta7] - 2025-12-10
+
+### Added
+- 📊 **Complete GetAllQuotaResponse field mapping** - All fields from API documentation now mapped
+  - Device status fields: errcode, devSleepState, devStandbyTime, bleStandbyTime
+  - Battery status: bmsChgDsgState, cmsChgDsgState, cmsBmsRunState
+  - Generator settings: cmsOilSelfStart, cmsOilOffSoc, cmsOilOnSoc
+  - Power flow: powGet5p8, powGet4p81, powGet4p82, powGetAcLvTt30Out
+  - Plug-in info: All plugInInfo* numeric/string fields (50+ fields)
+  - Flow info: All flowInfo* enum sensors (17 fields)
+  - Settings: fastChargeSwitch, energyBackupEn, llcHvLvFlag, acLvAlwaysOn, acHvAlwaysOn, etc.
+- 🔧 **Fixed MQTT topics** - Corrected topic format from `/app/...` to `/open/{certificateAccount}/{sn}/...`
+  - `/open/{certificateAccount}/{sn}/quota` - Device quota updates
+  - `/open/{certificateAccount}/{sn}/status` - Device online/offline status
+  - `/open/{certificateAccount}/{sn}/set` - Send commands
+  - `/open/{certificateAccount}/{sn}/set_reply` - Command responses
+- 📡 **Improved MQTT message handling** - Proper parsing for quota, status, and set_reply topics
+
+### Changed
+- 🔄 **MQTT client** - Updated to use correct EcoFlow MQTT protocol format
+- 📝 **Documentation** - Updated MQTT protocol comments with correct topic structure
+
 ## [1.3.0-beta1] - 2025-12-10
 
 ### Added

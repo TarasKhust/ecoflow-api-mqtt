@@ -157,15 +157,12 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         """Handle MQTT message from device.
         
         Args:
-            payload: MQTT message payload
+            payload: MQTT message payload (already extracted from quota topic params)
         """
         try:
-            # EcoFlow MQTT messages typically have this structure:
-            # {"params": {...actual device data...}}
-            if "params" in payload:
-                mqtt_data = payload["params"]
-            else:
-                mqtt_data = payload
+            # MQTT client already extracts params from quota topic
+            # So payload here is the actual device data
+            mqtt_data = payload
             
             # Merge MQTT data with existing data
             self._mqtt_data.update(mqtt_data)
