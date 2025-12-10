@@ -252,4 +252,32 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             _LOGGER.error("Failed to set LCD standby time: %s", err)
             raise
 
+    async def async_set_update_interval(self, interval_seconds: int) -> None:
+        """Set the update interval dynamically.
+        
+        Args:
+            interval_seconds: New update interval in seconds
+        """
+        _LOGGER.info(
+            "Changing update interval from %d to %d seconds for %s",
+            self.update_interval_seconds,
+            interval_seconds,
+            self.device_sn
+        )
+        self.update_interval_seconds = interval_seconds
+        self.update_interval = timedelta(seconds=interval_seconds)
+        
+        # Update config entry options to persist the change
+        if self.config_entry:
+            from .const import CONF_UPDATE_INTERVAL
+            new_options = dict(self.config_entry.options)
+            new_options[CONF_UPDATE_INTERVAL] = interval_seconds
+            self.hass.config_entries.async_update_entry(
+                self.config_entry,
+                options=new_options
+            )
+        
+        # Force immediate refresh with new interval
+        await self.async_request_refresh()
+
 

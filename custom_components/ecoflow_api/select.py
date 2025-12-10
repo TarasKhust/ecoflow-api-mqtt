@@ -19,6 +19,20 @@ _LOGGER = logging.getLogger(__name__)
 
 # Select definitions for Delta Pro 3 based on API documentation
 DELTA_PRO_3_SELECT_DEFINITIONS = {
+    "update_interval": {
+        "name": "Update Interval",
+        "state_key": None,  # Special: stored in coordinator, not device
+        "command_key": None,  # Special: local setting
+        "icon": "mdi:update",
+        "options": {
+            "5 seconds (Fast)": 5,
+            "10 seconds": 10,
+            "15 seconds (Recommended)": 15,
+            "30 seconds": 30,
+            "60 seconds (Slow)": 60,
+        },
+        "is_local": True,  # Mark as local setting
+    },
     "ac_standby_time": {
         "name": "AC Standby Time",
         "state_key": "acStandbyTime",
@@ -123,6 +137,14 @@ class EcoFlowSelect(EcoFlowBaseEntity, SelectEntity):
     @property
     def current_option(self) -> str | None:
         """Return the current selected option."""
+        # Handle local settings (like update_interval)
+        if self._select_def.get("is_local"):
+            if self._select_key == "update_interval":
+                value = self.coordinator.update_interval_seconds
+                return self._value_to_option.get(value)
+            return None
+        
+        # Handle device settings
         if not self.coordinator.data:
             return None
         
@@ -142,6 +164,17 @@ class EcoFlowSelect(EcoFlowBaseEntity, SelectEntity):
             return
         
         value = self._options_map[option]
+        
+        # Handle local settings (like update_interval)
+        if self._select_def.get("is_local"):
+            if self._select_key == "update_interval":
+                _LOGGER.info("Setting update interval to %s seconds", value)
+                await self.coordinator.async_set_update_interval(value)
+                # Trigger state update
+                self.async_write_ha_state()
+            return
+        
+        # Handle device settings
         command_key = self._select_def["command_key"]
         device_sn = self.coordinator.config_entry.data["device_sn"]
         
