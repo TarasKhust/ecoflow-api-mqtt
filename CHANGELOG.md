@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0-beta11] - 2025-12-10
+
+### Fixed
+- 🐛 **Thread Safety** - Fix async_write_ha_state called from wrong thread
+  - MQTT callback runs in different thread than Home Assistant event loop
+  - Use hass.async_add_job() to schedule updates in correct event loop
+  - Prevents Home Assistant crashes and data corruption
+  - Fixes "calls async_write_ha_state from a thread other than the event loop" warning
+
 ## [1.3.0-beta10] - 2025-12-10
 
 ### Fixed

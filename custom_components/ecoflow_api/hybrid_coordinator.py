@@ -170,8 +170,10 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             # Merge MQTT data with existing data
             self._mqtt_data.update(mqtt_data)
             
-            # Trigger update in Home Assistant
-            self.async_set_updated_data(self._merge_data())
+            # Schedule update in Home Assistant event loop
+            # MQTT callback runs in different thread, so we need to schedule it properly
+            merged_data = self._merge_data()
+            self.hass.async_add_job(self.async_set_updated_data, merged_data)
             
             _LOGGER.debug("Processed MQTT update for device %s", self.device_sn)
             
