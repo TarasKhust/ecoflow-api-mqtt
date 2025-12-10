@@ -8,16 +8,17 @@ Home Assistant integration for EcoFlow devices using the **official EcoFlow Deve
 
 ## 🌟 Features
 
-- ✅ **Direct API connection** - Uses official EcoFlow Developer API
-- ✅ **Reliable control** - No cloud polling sync issues
-- ✅ **Delta Pro 3 support** - Full support for Delta Pro 3
-- ✅ **Extra Battery support** - Automatic detection and monitoring of Smart Extra Battery
-- ✅ **AC Charging Power control** - Adjust charging power (200-3000W)
-- ✅ **Battery monitoring** - Level, temperature, cycles, health (main + extra batteries)
-- ✅ **AC/DC output control** - Toggle outputs on/off
-- ✅ **X-Boost control** - Enable/disable X-Boost
+- ✅ **Official API** - Uses EcoFlow Developer REST API (stable & documented)
+- ✅ **Complete Delta Pro 3 support** - 40+ sensors, 13 binary sensors, 10 controls
+- ✅ **Real device tested** - All features verified with actual Delta Pro 3
+- ✅ **Battery monitoring** - BMS & CMS data, SOC, SOH, temperature, capacity
+- ✅ **Power monitoring** - Input/output, AC, Solar (HV/LV), DC (12V/24V), USB-C, QC USB
+- ✅ **Full control** - AC charging power, charge levels, standby times, X-Boost, outputs
+- ✅ **Extra Battery support** - Automatic detection and monitoring
+- ✅ **Template sensors** - Estimated cycles, health status, runtime calculations
 - ✅ **Device discovery** - Automatic device detection from API
 - ✅ **Ukrainian localization** - Повна підтримка української мови
+- 📚 **Comprehensive docs** - Complete API mapping and examples
 
 ## 📦 Installation
 

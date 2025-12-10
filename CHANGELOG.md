@@ -5,6 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.2.0] - 2025-12-10
+
+### Added
+- 🎉 **Complete Delta Pro 3 support based on real API data**
+  - 📊 **40+ sensors** - All available metrics from actual Delta Pro 3 device
+  - 🔋 **Battery sensors** - BMS and CMS battery data (SOC, SOH, remaining time, capacity)
+  - ⚡ **Power sensors** - Total input/output, AC, Solar (HV/LV), DC outputs (12V/24V), USB-C, QC USB
+  - 🌡️ **Temperature sensors** - Min/Max cell and MOSFET temperatures
+  - ⚙️ **Settings sensors** - Standby times, LCD brightness, frequency
+  - 🔌 **13 binary sensors** - Charging status (AC, Solar, batteries), X-Boost, GFCI, etc.
+  - 🎛️ **3 switches** - X-Boost, Beep, AC Energy Saving
+  - 🔢 **7 number controls** - AC charging power, charge levels, standby times, LCD brightness
+- 📚 **Comprehensive documentation**
+  - 📖 **DELTA_PRO_3_API_MAPPING.md** - Complete API reference with real data examples
+  - 🔍 **MQTT vs REST API comparison** - Detailed analysis and recommendations
+  - 📝 **Cycles explanation** - Why cycles are not available in REST API and alternatives
+- 🧪 **Template sensors examples** - Ready-to-use Home Assistant templates for:
+  - 🔄 Estimated cycles calculation based on SOH
+  - 💚 Battery health status
+  - ⚡ Charging status with multiple sources
+  - 📊 Net power flow
+  - ⏱️ Runtime and charge time estimates
+  - 🚨 Low battery and high temperature alerts
+- 🧪 **API testing tools** - Standalone test script to verify API responses
+
+### Changed
+- 🔄 **Sensor definitions updated** - All sensors now use actual API keys from real Delta Pro 3
+- 📊 **Sensor naming** - More descriptive names (e.g., "Battery Level (BMS)" vs "Battery Level (CMS)")
+- 📝 **Documentation improvements** - Based on actual device testing (SN: MR51ZES5PG860274)
+
+### Technical Details
+- ✅ **Tested with real device** - DELTA Pro 3 (online, SOH 100%, 8192Wh capacity)
+- 📡 **API endpoint verified** - `/iot-open/sign/device/quota/all`
+- 🔐 **Authentication working** - EcoFlow Developer API (api-e.ecoflow.com)
+- 🌍 **Timezone support** - UTC timezone handling (Europe/Kiev tested)
+
+### Notes
+- ⚠️ **Cycles not available** - REST API does not provide cycle count (only available via MQTT)
+- 💡 **Alternative solution** - Template sensor for estimated cycles based on SOH included
+- 📖 **Why REST API?** - More stable and officially supported than MQTT (see documentation)
+
 ## [1.1.4] - 2024-12-10
 
 ### Fixed

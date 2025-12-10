@@ -62,7 +62,7 @@ def create_release_zip(version: str):
 
 if __name__ == "__main__":
     import sys
-    version = sys.argv[1] if len(sys.argv) > 1 else "1.1.4"
+    version = sys.argv[1] if len(sys.argv) > 1 else "1.2.0"
     success = create_release_zip(version)
     sys.exit(0 if success else 1)
 

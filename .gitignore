@@ -89,3 +89,7 @@ POSTMAN_SETUP.md
 *_test.py
 
 
+.cursorrules
+shared-rules/.cursor
+.cursor/
+.cursor/
