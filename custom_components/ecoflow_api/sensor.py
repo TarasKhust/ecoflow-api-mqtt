@@ -853,6 +853,9 @@ class EcoFlowSensor(EcoFlowBaseEntity, SensorEntity):
         # Handle special cases
         # Timestamp sensors - convert string to datetime
         if self._attr_device_class == SensorDeviceClass.TIMESTAMP:
+            # Skip if value is 0 or invalid (device not synced yet)
+            if value == 0 or value == "0":
+                return None
             if isinstance(value, str):
                 try:
                     # Parse timestamp string and make it timezone aware
@@ -864,7 +867,11 @@ class EcoFlowSensor(EcoFlowBaseEntity, SensorEntity):
                 except (ValueError, AttributeError) as e:
                     _LOGGER.warning("Failed to parse timestamp '%s': %s", value, e)
                     return None
-            return value
+            # If it's already a datetime, return it
+            if isinstance(value, datetime):
+                return value
+            # For any other type (int, etc.), return None
+            return None
         
         # Flow info status mapping
         if api_key.startswith("flowInfo"):
