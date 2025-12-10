@@ -28,6 +28,7 @@ from homeassistant.util import dt as dt_util
 from .const import DOMAIN
 from .coordinator import EcoFlowDataCoordinator
 from .entity import EcoFlowBaseEntity
+from .hybrid_coordinator import EcoFlowHybridCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -806,6 +807,24 @@ async def async_setup_entry(
             )
         )
     
+    # Add MQTT status sensors if using hybrid coordinator
+    if isinstance(coordinator, EcoFlowHybridCoordinator):
+        entities.append(
+            EcoFlowMQTTStatusSensor(
+                coordinator=coordinator,
+                entry=entry,
+                sensor_id="mqtt_connection_status",
+            )
+        )
+        entities.append(
+            EcoFlowMQTTModeSensor(
+                coordinator=coordinator,
+                entry=entry,
+                sensor_id="connection_mode",
+            )
+        )
+        _LOGGER.info("Added MQTT status sensors for hybrid coordinator")
+    
     async_add_entities(entities)
     _LOGGER.info("Added %d sensor entities for %s", len(entities), device_type)
 
@@ -888,3 +907,66 @@ class EcoFlowSensor(EcoFlowBaseEntity, SensorEntity):
             return "on" if value else "off"
         
         return value
+
+
+class EcoFlowMQTTStatusSensor(EcoFlowBaseEntity, SensorEntity):
+    """Sensor for MQTT connection status."""
+    
+    def __init__(
+        self,
+        coordinator: EcoFlowHybridCoordinator,
+        entry: ConfigEntry,
+        sensor_id: str,
+    ) -> None:
+        """Initialize MQTT status sensor."""
+        super().__init__(coordinator, sensor_id)
+        self._coordinator = coordinator
+        self._attr_name = "MQTT Connection Status"
+        self._attr_unique_id = f"{entry.entry_id}_mqtt_connection_status"
+        self._attr_icon = "mdi:cloud-check"
+        
+    @property
+    def native_value(self) -> str:
+        """Return MQTT connection status."""
+        if self._coordinator.mqtt_connected:
+            return "connected"
+        return "disconnected"
+    
+    @property
+    def icon(self) -> str:
+        """Return icon based on connection status."""
+        if self._coordinator.mqtt_connected:
+            return "mdi:cloud-check"
+        return "mdi:cloud-off"
+
+
+class EcoFlowMQTTModeSensor(EcoFlowBaseEntity, SensorEntity):
+    """Sensor for connection mode (hybrid/rest_only)."""
+    
+    def __init__(
+        self,
+        coordinator: EcoFlowHybridCoordinator,
+        entry: ConfigEntry,
+        sensor_id: str,
+    ) -> None:
+        """Initialize connection mode sensor."""
+        super().__init__(coordinator, sensor_id)
+        self._coordinator = coordinator
+        self._attr_name = "Connection Mode"
+        self._attr_unique_id = f"{entry.entry_id}_connection_mode"
+        self._attr_icon = "mdi:connection"
+        
+    @property
+    def native_value(self) -> str:
+        """Return connection mode."""
+        return self._coordinator.connection_mode
+    
+    @property
+    def icon(self) -> str:
+        """Return icon based on connection mode."""
+        mode = self._coordinator.connection_mode
+        if mode == "hybrid":
+            return "mdi:connection"
+        elif mode == "mqtt_standby":
+            return "mdi:cloud-sync"
+        return "mdi:cloud-off"
