@@ -287,15 +287,18 @@ class EcoFlowMQTTClient:
             
             # Handle different topic types
             if msg.topic == self._quota_topic:
-                # Quota topic: payload has "params" with device data
-                # Format: {"id": ..., "version": ..., "params": {...device data...}}
+                # Quota topic: payload can be direct data or wrapped in "params"
+                # Try "params" first, then use payload directly
                 if "params" in payload:
                     quota_data = payload["params"]
-                    _LOGGER.debug("Received quota update: %s", quota_data)
-                    if self.on_message_callback:
-                        self.on_message_callback(quota_data)
+                    _LOGGER.debug("Received quota update (wrapped): %s", quota_data)
                 else:
-                    _LOGGER.warning("Quota message missing 'params': %s", payload)
+                    # Payload is already the device data (no wrapper)
+                    quota_data = payload
+                    _LOGGER.debug("Received quota update (direct): %s", quota_data)
+                
+                if self.on_message_callback:
+                    self.on_message_callback(quota_data)
                     
             elif msg.topic == self._status_topic:
                 # Status topic: payload has "params.status" (0=offline, 1=online)
