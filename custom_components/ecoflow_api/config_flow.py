@@ -10,13 +10,9 @@ from homeassistant import config_entries
 from homeassistant.data_entry_flow import FlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
-    BooleanSelector,
     SelectSelector,
     SelectSelectorConfig,
     SelectSelectorMode,
-    TextSelector,
-    TextSelectorConfig,
-    TextSelectorType,
 )
 
 from .api import EcoFlowApiClient, EcoFlowApiError, EcoFlowAuthError
@@ -497,37 +493,34 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         mqtt_username = self.config_entry.options.get(CONF_MQTT_USERNAME, "")
         mqtt_password = self.config_entry.options.get(CONF_MQTT_PASSWORD, "")
 
-        schema_dict = {
-            vol.Required(
-                CONF_UPDATE_INTERVAL,
-                default=current_interval,
-            ): vol.In(
-                {
-                    5: "5 seconds (Fast)",
-                    10: "10 seconds",
-                    15: "15 seconds (Recommended)",
-                    30: "30 seconds",
-                    60: "60 seconds (Slow)",
-                }
-            ),
-            vol.Required(
-                CONF_MQTT_ENABLED,
-                default=mqtt_enabled,
-            ): BooleanSelector(),
-        }
-        
-        # Only show MQTT fields if MQTT is enabled or has values
-        if mqtt_enabled or mqtt_username or mqtt_password:
-            schema_dict[vol.Optional(
-                CONF_MQTT_USERNAME,
-                default=mqtt_username,
-            )] = TextSelector(TextSelectorConfig(type=TextSelectorType.EMAIL))
-            schema_dict[vol.Optional(
-                CONF_MQTT_PASSWORD,
-                default=mqtt_password,
-            )] = TextSelector(TextSelectorConfig(type=TextSelectorType.PASSWORD))
-
         return self.async_show_form(
             step_id="init",
-            data_schema=vol.Schema(schema_dict),
+            data_schema=vol.Schema(
+                {
+                    vol.Required(
+                        CONF_UPDATE_INTERVAL,
+                        default=current_interval,
+                    ): vol.In(
+                        {
+                            5: "5 seconds (Fast)",
+                            10: "10 seconds",
+                            15: "15 seconds (Recommended)",
+                            30: "30 seconds",
+                            60: "60 seconds (Slow)",
+                        }
+                    ),
+                    vol.Optional(
+                        CONF_MQTT_ENABLED,
+                        default=mqtt_enabled,
+                    ): bool,
+                    vol.Optional(
+                        CONF_MQTT_USERNAME,
+                        description={"suggested_value": mqtt_username},
+                    ): str,
+                    vol.Optional(
+                        CONF_MQTT_PASSWORD,
+                        description={"suggested_value": mqtt_password},
+                    ): str,
+                }
+            ),
         )
