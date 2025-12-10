@@ -43,6 +43,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         mqtt_username: str | None = None,
         mqtt_password: str | None = None,
         mqtt_enabled: bool = True,
+        use_api_credentials: bool = False,
     ) -> None:
         """Initialize hybrid coordinator.
         

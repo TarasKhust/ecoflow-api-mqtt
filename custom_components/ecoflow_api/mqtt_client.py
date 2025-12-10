@@ -79,6 +79,14 @@ class EcoFlowMQTTClient:
             )
             
             # Set credentials
+            # Log username (but not password) for debugging
+            _LOGGER.debug(
+                "Setting MQTT credentials - username: %s (length: %d), password: %s (length: %d)",
+                self.username,
+                len(self.username) if self.username else 0,
+                "***" if self.password else "None",
+                len(self.password) if self.password else 0
+            )
             self._client.username_pw_set(self.username, self.password)
             
             # Configure TLS
@@ -167,6 +175,17 @@ class EcoFlowMQTTClient:
         rc: int,
     ) -> None:
         """Handle MQTT connection."""
+        # MQTT return codes: 0=success, 1=protocol version, 2=client ID, 3=server unavailable, 
+        # 4=bad credentials, 5=not authorized
+        error_messages = {
+            0: "Connection successful",
+            1: "Incorrect protocol version",
+            2: "Invalid client identifier",
+            3: "Server unavailable",
+            4: "Bad username or password",
+            5: "Not authorized - check credentials",
+        }
+        
         if rc == 0:
             self._connected = True
             _LOGGER.info("Connected to MQTT broker for device %s", self.device_sn)
@@ -176,7 +195,14 @@ class EcoFlowMQTTClient:
             _LOGGER.info("Subscribed to topic: %s", self._status_topic)
         else:
             self._connected = False
-            _LOGGER.error("MQTT connection failed with code %d", rc)
+            error_msg = error_messages.get(rc, f"Unknown error (code {rc})")
+            _LOGGER.error(
+                "MQTT connection failed for device %s: %s (code %d). "
+                "Please verify your EcoFlow account email and password are correct.",
+                self.device_sn,
+                error_msg,
+                rc
+            )
 
     def _on_disconnect(
         self,
