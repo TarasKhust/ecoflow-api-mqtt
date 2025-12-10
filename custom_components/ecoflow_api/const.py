@@ -726,6 +726,7 @@ DELTA_PRO_3_SENSORS: Final = {
     # MQTT-only sensors (available only when MQTT is enabled)
     "bmsCycles": {
         "name": "Battery Cycles",
+        "key": "cycles",  # MQTT field name
         "unit": "cycles",
         "device_class": None,
         "icon": "mdi:sync",

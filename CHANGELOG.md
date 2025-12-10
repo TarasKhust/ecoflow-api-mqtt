@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0-beta12] - 2025-12-10
+
+### Fixed
+- 🔋 **Battery Cycles Sensor** - Added missing "key" field for cycles mapping
+  - MQTT sends `cycles` field (not `bmsCycles`)
+  - Now correctly maps `cycles` from MQTT to Battery Cycles sensor
+  - Cycles sensor now shows data from MQTT (e.g., 26, 30 cycles detected)
+
+### Note
+Delta Pro 3 has multiple batteries (extra batteries), each with its own cycles count:
+- Battery 1: `bmsSn: MR52Z1S5PG8R0374` - cycles: 26
+- Battery 2: `bmsSn: MR51PA08PG830151` - cycles: 30
+Currently shows the last received cycles value. Future enhancement: separate sensors per battery.
+
 ## [1.3.0-beta11] - 2025-12-10
 
 ### Fixed
