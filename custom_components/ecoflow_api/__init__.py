@@ -74,6 +74,24 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     mqtt_enabled = entry.options.get(CONF_MQTT_ENABLED, False)
     mqtt_username = entry.options.get(CONF_MQTT_USERNAME)
     mqtt_password = entry.options.get(CONF_MQTT_PASSWORD)
+    certificate_account = None
+    
+    # If MQTT enabled, get certificateAccount and certificatePassword from API
+    if mqtt_enabled:
+        try:
+            _LOGGER.info("MQTT enabled, fetching MQTT credentials from API...")
+            mqtt_creds = await client.get_mqtt_credentials()
+            certificate_account = mqtt_creds.get("certificateAccount")
+            certificate_password = mqtt_creds.get("certificatePassword")
+            
+            if certificate_account and certificate_password:
+                _LOGGER.info("Successfully obtained MQTT credentials from API")
+                mqtt_username = certificate_account
+                mqtt_password = certificate_password
+            else:
+                _LOGGER.warning("Failed to get MQTT credentials from API, using manual credentials if provided")
+        except Exception as err:
+            _LOGGER.error("Error fetching MQTT credentials: %s. Using manual credentials if provided.", err)
     
     # Create coordinator (hybrid if MQTT enabled, otherwise standard)
     if mqtt_enabled and mqtt_username and mqtt_password:
@@ -88,6 +106,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             mqtt_username=mqtt_username,
             mqtt_password=mqtt_password,
             mqtt_enabled=True,
+            certificate_account=certificate_account,  # Pass certificate account for topics
         )
         # Set up MQTT
         await coordinator.async_setup()

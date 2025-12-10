@@ -1,7 +1,7 @@
 """Sensor platform for EcoFlow API integration."""
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 from typing import Any
 
@@ -10,6 +10,7 @@ from homeassistant.components.sensor import (
     SensorEntity,
     SensorStateClass,
 )
+from homeassistant.components.integration.sensor import IntegrationSensor
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     PERCENTAGE,
@@ -20,9 +21,13 @@ from homeassistant.const import (
     UnitOfElectricCurrent,
     UnitOfEnergy,
     UnitOfFrequency,
+    STATE_UNAVAILABLE,
+    STATE_UNKNOWN,
 )
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, Event, EventStateChangedData, callback
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
@@ -781,6 +786,151 @@ DEVICE_SENSOR_MAP = {
 }
 
 
+# ============================================================================
+# Energy Integration Sensors
+# ============================================================================
+
+class EcoFlowIntegralEnergySensor(IntegrationSensor):
+    """Integration sensor that calculates energy (kWh) from power (W) sensors.
+    
+    Automatically integrates power sensors to provide energy consumption/generation
+    compatible with Home Assistant Energy Dashboard.
+    """
+    _attr_device_class = SensorDeviceClass.ENERGY
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
+    _attr_state_class = SensorStateClass.TOTAL_INCREASING
+    _attr_entity_registry_visible_default = False
+
+    def __init__(self, power_sensor: SensorEntity, enabled_default: bool = True):
+        """Initialize energy sensor from power sensor."""
+        super().__init__(
+            integration_method="left",
+            name=f"{power_sensor.name} Energy",
+            round_digits=4,
+            source_entity=power_sensor.entity_id,
+            unique_id=f"{power_sensor.unique_id}_energy",
+            unit_prefix="k",
+            unit_time="h",
+            max_sub_interval=timedelta(seconds=60),
+        )
+        # Copy device info from power sensor
+        self._attr_device_info = power_sensor.device_info
+        self._attr_entity_registry_enabled_default = enabled_default
+
+
+class EcoFlowPowerDifferenceSensor(SensorEntity, EcoFlowBaseEntity):
+    """Sensor that calculates power difference (input - output).
+    
+    Useful for Home Assistant Energy Dashboard to show net power flow.
+    Positive = charging, Negative = discharging.
+    """
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_device_class = SensorDeviceClass.POWER
+    _attr_native_unit_of_measurement = UnitOfPower.WATT
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_should_poll = False
+
+    def __init__(
+        self,
+        coordinator: EcoFlowDataCoordinator,
+        entry: ConfigEntry,
+        input_sensor: SensorEntity,
+        output_sensor: SensorEntity,
+    ):
+        """Initialize power difference sensor."""
+        super().__init__(coordinator, entry)
+        self._attr_unique_id = f"{entry.entry_id}_power_difference"
+        self._attr_name = "Power Difference"
+        self._attr_icon = "mdi:transmission-tower-export"
+        
+        self._input_sensor = input_sensor
+        self._output_sensor = output_sensor
+        self._difference: float | None = None
+        self._states: dict[str, float | str] = {}
+
+    async def async_added_to_hass(self) -> None:
+        """Handle added to Hass."""
+        await super().async_added_to_hass()
+        
+        source_entity_ids = [self._input_sensor.entity_id, self._output_sensor.entity_id]
+        self.async_on_remove(
+            async_track_state_change_event(
+                self.hass, source_entity_ids, self._async_difference_sensor_state_listener
+            )
+        )
+
+        # Replay current state of source entities
+        for entity_id in source_entity_ids:
+            state = self.hass.states.get(entity_id)
+            if state:
+                state_event: Event[EventStateChangedData] = Event(
+                    "", {"entity_id": entity_id, "new_state": state, "old_state": None}
+                )
+                self._async_difference_sensor_state_listener(state_event, update_state=False)
+
+        self._calc_difference()
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the state of the sensor."""
+        return self._difference
+
+    @callback
+    def _async_difference_sensor_state_listener(
+        self, event: Event[EventStateChangedData], update_state: bool = True
+    ) -> None:
+        """Handle the sensor state changes."""
+        new_state = event.data["new_state"]
+        entity = event.data["entity_id"]
+
+        if (
+            new_state is None
+            or new_state.state is None
+            or new_state.state in [STATE_UNKNOWN, STATE_UNAVAILABLE]
+        ):
+            self._states[entity] = STATE_UNKNOWN
+            if not update_state:
+                return
+
+            self._calc_difference()
+            self.async_write_ha_state()
+            return
+
+        try:
+            self._states[entity] = float(new_state.state)
+        except ValueError:
+            _LOGGER.warning("Unable to store state for %s. Only numerical states are supported", entity)
+            return
+
+        if not update_state:
+            return
+
+        self._calc_difference()
+        self.async_write_ha_state()
+
+    @callback
+    def _calc_difference(self) -> None:
+        """Calculate the power difference (input - output)."""
+        if (
+            self._states.get(self._input_sensor.entity_id) is STATE_UNKNOWN
+            or self._states.get(self._output_sensor.entity_id) is STATE_UNKNOWN
+        ):
+            self._difference = None
+            return
+
+        # Power difference: input - output
+        # Positive = charging/receiving power
+        # Negative = discharging/consuming power
+        input_power = float(self._states.get(self._input_sensor.entity_id, 0))
+        output_power = float(self._states.get(self._output_sensor.entity_id, 0))
+        self._difference = input_power - output_power
+
+
+# ============================================================================
+# Sensor Setup
+# ============================================================================
+
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -827,6 +977,57 @@ async def async_setup_entry(
     
     async_add_entities(entities)
     _LOGGER.info("Added %d sensor entities for %s", len(entities), device_type)
+    
+    # ============================================================================
+    # Add Energy Integration Sensors (for HA Energy Dashboard)
+    # ============================================================================
+    energy_sensors = []
+    
+    # Find total input and output power sensors
+    total_input_sensor = None
+    total_output_sensor = None
+    
+    for sensor in entities:
+        if isinstance(sensor, EcoFlowSensor):
+            # Total Input Power sensor (for energy dashboard)
+            if sensor._sensor_id == "pow_in_sum_w":
+                total_input_sensor = sensor
+                # Add energy sensor for total input
+                energy_sensors.append(
+                    EcoFlowIntegralEnergySensor(sensor, enabled_default=True)
+                )
+                _LOGGER.debug("Created energy sensor for total input power")
+            
+            # Total Output Power sensor (for energy dashboard)
+            elif sensor._sensor_id == "pow_out_sum_w":
+                total_output_sensor = sensor
+                # Add energy sensor for total output
+                energy_sensors.append(
+                    EcoFlowIntegralEnergySensor(sensor, enabled_default=True)
+                )
+                _LOGGER.debug("Created energy sensor for total output power")
+            
+            # AC Input Power (optional, disabled by default)
+            elif sensor._sensor_id == "pow_get_ac_in":
+                energy_sensors.append(
+                    EcoFlowIntegralEnergySensor(sensor, enabled_default=False)
+                )
+    
+    # Add Power Difference Sensor (for HA Energy "Now" tab)
+    if total_input_sensor and total_output_sensor:
+        energy_sensors.append(
+            EcoFlowPowerDifferenceSensor(
+                coordinator=coordinator,
+                entry=entry,
+                input_sensor=total_input_sensor,
+                output_sensor=total_output_sensor,
+            )
+        )
+        _LOGGER.info("Created power difference sensor for energy dashboard")
+    
+    if energy_sensors:
+        async_add_entities(energy_sensors)
+        _LOGGER.info("Added %d energy sensors for Home Assistant Energy Dashboard", len(energy_sensors))
 
 
 class EcoFlowSensor(EcoFlowBaseEntity, SensorEntity):

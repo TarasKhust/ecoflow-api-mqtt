@@ -43,14 +43,16 @@ class EcoFlowMQTTClient:
         password: str,
         device_sn: str,
         on_message_callback: Callable[[dict[str, Any]], None] | None = None,
+        certificate_account: str | None = None,
     ) -> None:
         """Initialize MQTT client.
         
         Args:
-            username: EcoFlow account username/email
-            password: EcoFlow account password
+            username: EcoFlow account username/email (for MQTT authentication)
+            password: EcoFlow account password (for MQTT authentication)
             device_sn: Device serial number
             on_message_callback: Callback function for received messages
+            certificate_account: Certificate account/user_id for topics (if None, uses username)
         """
         self.username = username
         self.password = password
@@ -62,13 +64,20 @@ class EcoFlowMQTTClient:
         self._reconnect_task: asyncio.Task | None = None
         
         # MQTT topics (correct format: /open/${certificateAccount}/${sn}/...)
-        # certificateAccount is typically the user_id or username
-        # Using username as certificateAccount for now
-        certificate_account = username  # This should be user_id, but using username as fallback
-        self._quota_topic = f"/open/{certificate_account}/{device_sn}/quota"
-        self._status_topic = f"/open/{certificate_account}/{device_sn}/status"
-        self._set_topic = f"/open/{certificate_account}/{device_sn}/set"
-        self._set_reply_topic = f"/open/{certificate_account}/{device_sn}/set_reply"
+        # certificateAccount is typically the user_id (not email)
+        # If not provided, try using username (but this might not work)
+        self._certificate_account = certificate_account or username
+        self._quota_topic = f"/open/{self._certificate_account}/{device_sn}/quota"
+        self._status_topic = f"/open/{self._certificate_account}/{device_sn}/status"
+        self._set_topic = f"/open/{self._certificate_account}/{device_sn}/set"
+        self._set_reply_topic = f"/open/{self._certificate_account}/{device_sn}/set_reply"
+        
+        _LOGGER.info(
+            "MQTT client initialized - username: %s, certificateAccount: %s, device_sn: %s",
+            username,
+            self._certificate_account,
+            device_sn
+        )
         
     @property
     def is_connected(self) -> bool:
@@ -90,12 +99,23 @@ class EcoFlowMQTTClient:
             
             # Set credentials
             # Log username (but not password) for debugging
-            _LOGGER.debug(
+            _LOGGER.info(
                 "Setting MQTT credentials - username: %s (length: %d), password: %s (length: %d)",
                 self.username,
                 len(self.username) if self.username else 0,
                 "***" if self.password else "None",
                 len(self.password) if self.password else 0
+            )
+            _LOGGER.info(
+                "MQTT topics will use certificateAccount: %s",
+                self._certificate_account
+            )
+            _LOGGER.info(
+                "MQTT topics: quota=%s, status=%s, set=%s, set_reply=%s",
+                self._quota_topic,
+                self._status_topic,
+                self._set_topic,
+                self._set_reply_topic
             )
             self._client.username_pw_set(self.username, self.password)
             
@@ -198,7 +218,7 @@ class EcoFlowMQTTClient:
         
         if rc == 0:
             self._connected = True
-            _LOGGER.info("Connected to MQTT broker for device %s", self.device_sn)
+            _LOGGER.info("✅ Connected to MQTT broker for device %s", self.device_sn)
             
             # Subscribe to device quota topic (for real-time updates)
             client.subscribe(self._quota_topic, qos=1)
@@ -215,11 +235,25 @@ class EcoFlowMQTTClient:
             self._connected = False
             error_msg = error_messages.get(rc, f"Unknown error (code {rc})")
             _LOGGER.error(
-                "MQTT connection failed for device %s: %s (code %d). "
-                "Please verify your EcoFlow account email and password are correct.",
+                "❌ MQTT connection failed for device %s: %s (code %d)",
                 self.device_sn,
                 error_msg,
                 rc
+            )
+            _LOGGER.error(
+                "MQTT Authentication Troubleshooting:\n"
+                "1. Username should be EcoFlow account EMAIL (not access_key)\n"
+                "2. Password should be EcoFlow account PASSWORD\n"
+                "3. Verify credentials in Options (gear icon next to integration)\n"
+                "4. certificateAccount in topics might need to be user_id (not email)\n"
+                "   Current certificateAccount: %s (from %s)\n"
+                "   Topics: quota=%s, status=%s, set_reply=%s\n"
+                "5. If certificateAccount is wrong, you may need to get user_id from API",
+                self._certificate_account,
+                "username" if not hasattr(self, '_certificate_account') or self._certificate_account == self.username else "custom",
+                self._quota_topic,
+                self._status_topic,
+                self._set_reply_topic
             )
 
     def _on_disconnect(

@@ -43,7 +43,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         mqtt_username: str | None = None,
         mqtt_password: str | None = None,
         mqtt_enabled: bool = True,
-        use_api_credentials: bool = False,
+        certificate_account: str | None = None,
     ) -> None:
         """Initialize hybrid coordinator.
         
@@ -54,9 +54,10 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             device_type: Device type identifier
             update_interval: Update interval in seconds (for REST fallback)
             config_entry: Config entry reference
-            mqtt_username: MQTT username (EcoFlow account email)
-            mqtt_password: MQTT password (EcoFlow account password)
+            mqtt_username: MQTT username (certificateAccount from API)
+            mqtt_password: MQTT password (certificatePassword from API)
             mqtt_enabled: Whether to enable MQTT
+            certificate_account: Certificate account for MQTT topics (same as username)
         """
         super().__init__(
             hass=hass,
@@ -70,6 +71,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         self.mqtt_enabled = mqtt_enabled
         self.mqtt_username = mqtt_username
         self.mqtt_password = mqtt_password
+        self.certificate_account = certificate_account or mqtt_username
         
         self._mqtt_client: EcoFlowMQTTClient | None = None
         self._mqtt_data: dict[str, Any] = {}
@@ -118,6 +120,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                 password=self.mqtt_password,
                 device_sn=self.device_sn,
                 on_message_callback=self._handle_mqtt_message,
+                certificate_account=self.certificate_account,
             )
             
             # Try to connect

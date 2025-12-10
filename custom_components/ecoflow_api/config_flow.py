@@ -522,11 +522,17 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                     ): bool,
                     vol.Optional(
                         CONF_MQTT_USERNAME,
-                        description={"suggested_value": mqtt_username},
+                        description={
+                            "suggested_value": mqtt_username,
+                            "description": "EcoFlow account email OR access_key (leave empty to use access_key from main config)"
+                        },
                     ): str,
                     vol.Optional(
                         CONF_MQTT_PASSWORD,
-                        description={"suggested_value": mqtt_password},
+                        description={
+                            "suggested_value": mqtt_password,
+                            "description": "EcoFlow account password OR secret_key (leave empty to use secret_key from main config)"
+                        },
                     ): str,
                 }
             ),

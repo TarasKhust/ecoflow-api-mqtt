@@ -5,6 +5,45 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0-beta9] - 2025-12-10
+
+### Added
+- ⚡ **Automatic Energy Sensors** - Full integration with Home Assistant Energy Dashboard
+  - Automatically creates kWh sensors from power (W) sensors
+  - Total Input Energy sensor (enabled by default)
+  - Total Output Energy sensor (enabled by default)
+  - AC Input Energy sensor (disabled by default)
+  - Compatible with HA Energy Dashboard for tracking consumption and generation
+- 📊 **Power Difference Sensor** - Shows net power flow (Input - Output)
+  - Positive value = charging/receiving power
+  - Negative value = discharging/consuming power
+  - Useful for Energy Dashboard "Now" tab
+- 🗄️ **Recorder Exclusions** - Database optimization
+  - Technical attributes excluded from database history
+  - Reduces database size and improves performance
+  - Excludes: mqtt_connected, last_update_time, device_info, etc.
+
+### Changed
+- 📦 **Energy Dashboard Integration** - Power sensors now automatically integrate to energy
+- 🔧 **Sensor Architecture** - Added base classes for energy and power difference sensors
+
+## [1.3.0-beta8] - 2025-12-10
+
+### Fixed
+- 🔐 **MQTT Authentication** - Now automatically fetches `certificateAccount` and `certificatePassword` from EcoFlow API
+  - Added `get_mqtt_credentials()` method to retrieve proper MQTT credentials
+  - MQTT topics now use correct `certificateAccount` instead of email
+  - Fixes "Connection Refused - not authorized (code 5)" error
+- 📡 **MQTT Topics** - Proper certificateAccount used in all MQTT topics
+  - `/open/{certificateAccount}/{sn}/quota` - Uses API-provided certificateAccount
+  - `/open/{certificateAccount}/{sn}/status` - Device online/offline status
+  - `/open/{certificateAccount}/{sn}/set` - Send commands
+  - `/open/{certificateAccount}/{sn}/set_reply` - Command responses
+
+### Changed
+- 🔧 **MQTT Setup** - Integration now fetches MQTT credentials automatically on startup
+- 📝 **Options Flow** - MQTT username/password fields now optional (auto-fetched from API)
+
 ## [1.3.0-beta7] - 2025-12-10
 
 ### Added

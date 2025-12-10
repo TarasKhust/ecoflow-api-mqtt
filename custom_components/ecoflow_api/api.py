@@ -277,6 +277,21 @@ class EcoFlowApiClient:
         
         return result.get("data", result)
 
+    async def get_mqtt_credentials(self) -> dict[str, Any]:
+        """Get MQTT credentials (certificateAccount and certificatePassword).
+        
+        Returns:
+            Dictionary with MQTT credentials: {
+                "url": "mqtt.ecoflow.com",
+                "port": 8883,
+                "certificateAccount": "...",
+                "certificatePassword": "..."
+            }
+        """
+        result = await self._request("GET", "/iot-open/sign/certification")
+        _LOGGER.info("Received MQTT credentials: certificateAccount=%s", result.get("certificateAccount", "N/A"))
+        return result
+    
     async def get_device_list(self) -> list[dict[str, Any]]:
         """Get list of all devices associated with the account.
         
