@@ -5,6 +5,44 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0-beta13] - 2025-12-11
+
+### Added
+- 🔄 **Device Wake-Up Mechanism** - Fixes data update issues
+  - Automatically sends wake-up request before fetching data
+  - Smart wake-up: skips if MQTT is active (device already awake)
+  - Fixes issue where data doesn't update until official app is opened
+  - Uses REST API wake-up with 0.5s delay for device activation
+  - Hybrid mode: leverages MQTT connection to keep device active
+
+### Fixed
+- 📊 **Timestamp Sensors** - Improved handling of timestamp data
+  - Added support for numeric Unix timestamps (milliseconds and seconds)
+  - Automatically converts numeric timestamps to datetime objects
+  - Fixes `quota_cloud_ts` and `quota_device_ts` sensors
+
+### Changed
+- 📝 **Repository Cleanup** - Non-commercial license and better organization
+  - Changed license to Non-Commercial License
+  - Renamed repository to `ecoflow-api-mqtt`
+  - Added direct HACS installation link
+  - Added Hybrid Mode documentation
+  - Removed development helper scripts from repository
+  - Cleaned up `.gitignore` rules
+
+### Home Assistant Automations (in `automations/` folder)
+- ⚡ **Smart Charging** - Adaptive charging based on power outage schedule
+  - Adjusts charging power based on Yasno power outage predictions
+  - Calculates optimal power to reach 100% before outage
+  - Adaptive polling intervals (5/10/15 min based on urgency)
+  - Shows outage type and duration in notifications
+- 🔌 **Power Switch** - Combined grid/battery switch notifications
+  - Single automation for both grid and battery mode
+  - Shows charge/discharge time and power consumption
+- 🔋 **Battery Alerts** - Combined battery status notifications
+  - Low battery (<20%), Critical (<10%), High temp (>40°C), Full charge
+  - Smart notifications with relevant information per alert type
+
 ## [1.3.0-beta12] - 2025-12-10
 
 ### Fixed
