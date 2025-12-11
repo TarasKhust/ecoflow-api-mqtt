@@ -1090,7 +1090,17 @@ class EcoFlowSensor(EcoFlowBaseEntity, SensorEntity):
             # If it's already a datetime, return it
             if isinstance(value, datetime):
                 return value
-            # For any other type (int, etc.), return None
+            # Handle numeric timestamps (Unix timestamp in milliseconds or seconds)
+            if isinstance(value, (int, float)):
+                try:
+                    # If timestamp is in milliseconds (> year 2000 in seconds), convert to seconds
+                    if value > 946684800000:  # Year 2000 in milliseconds
+                        value = value / 1000
+                    return dt_util.utc_from_timestamp(value)
+                except (ValueError, OSError) as e:
+                    _LOGGER.warning("Failed to convert numeric timestamp '%s': %s", value, e)
+                    return None
+            # For any other type, return None
             return None
         
         # Flow info status mapping

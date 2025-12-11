@@ -1,6 +1,7 @@
 """DataUpdateCoordinator for EcoFlow API."""
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import timedelta
 from typing import Any
@@ -61,6 +62,24 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         if config_entry:
             self.config_entry = config_entry
 
+    async def _async_wake_device(self) -> None:
+        """Wake up device before requesting data.
+        
+        Some EcoFlow devices go to sleep and don't respond to API requests
+        until "woken up" by sending a command or request.
+        This method sends a wake-up request to ensure device is responsive.
+        """
+        try:
+            # Send a wake-up request (first quota request to wake device)
+            # This is a lightweight operation that helps wake sleeping devices
+            await self.client.get_device_quota(self.device_sn)
+            _LOGGER.debug("Wake-up request sent for %s", self.device_sn)
+            # Small delay to allow device to wake up
+            await asyncio.sleep(0.5)
+        except Exception as err:
+            # Don't fail on wake-up errors, just log them
+            _LOGGER.debug("Wake-up request failed (non-critical): %s", err)
+
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from API.
         
@@ -71,6 +90,12 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             UpdateFailed: If data fetch fails
         """
         try:
+            # Wake up device before requesting data
+            # This helps with devices that go to sleep and don't respond
+            # until woken up by a request or command
+            await self._async_wake_device()
+            
+            # Now fetch actual data
             data = await self.client.get_device_quota(self.device_sn)
             _LOGGER.debug("Received data for %s: %s", self.device_sn, data)
             
