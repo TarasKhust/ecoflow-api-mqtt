@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0-beta22] - 2025-12-11
+
+### Added
+- 🎨 **HACS Icon** - Added custom SVG icon for HACS display
+  - Dark theme with teal/green battery design
+  - Lightning bolt charging indicator
+  - EcoFlow text branding
+  - Icon visible in HACS integration list
+
 ## [1.3.0-beta21] - 2025-12-11
 
 ### Added
