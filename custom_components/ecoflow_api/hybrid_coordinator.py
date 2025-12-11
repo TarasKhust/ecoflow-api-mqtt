@@ -176,10 +176,15 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             merged_data = self._merge_data()
             
             # Schedule async update in HA event loop from MQTT thread
-            # Use hass.async_add_job which is thread-safe and handles async functions correctly
-            # Pass callable (method) and arguments separately - this is the correct way
-            # async_add_job will create the coroutine in the correct event loop context
-            self.hass.async_add_job(self.async_set_updated_data, merged_data)
+            # Use hass.async_run_callback_threadsafe for thread-safe async function calls
+            # This is the recommended replacement for deprecated async_add_job (HA 2025.4+)
+            # async_run_callback_threadsafe accepts a sync function that returns a coroutine
+            def schedule_update():
+                """Schedule async update in HA event loop."""
+                # Return coroutine - async_run_callback_threadsafe will execute it
+                return self.async_set_updated_data(merged_data)
+            
+            self.hass.async_run_callback_threadsafe(schedule_update)
             
             _LOGGER.debug(
                 "Processed MQTT update for device %s, scheduling coordinator update (data keys: %s)",
