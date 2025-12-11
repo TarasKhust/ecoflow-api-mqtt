@@ -267,12 +267,18 @@ This project is licensed under a **Non-Commercial License** - see the [LICENSE](
 
 ## ☕ Support
 
-If you find this integration useful, consider:
+If you find this integration useful and would like to support its development, you can make a donation via Monobank:
 
-- ⭐ Starring the repository
-- 🐛 Reporting bugs
-- 💡 Suggesting features
-- 🇺🇦 Supporting Ukraine
+[![Donate via Monobank](https://img.shields.io/badge/Donate-Monobank-blue)](https://send.monobank.ua/jar/48g36u8aTW)
+
+Your support helps maintain and improve this integration. Thank you! 💙💛
+
+You can also:
+
+- ⭐ Star the repository
+- 🐛 Report bugs
+- 💡 Suggest features
+- 🇺🇦 Support Ukraine
 
 ---
 
