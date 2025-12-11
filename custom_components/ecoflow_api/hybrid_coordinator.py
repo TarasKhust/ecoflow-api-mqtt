@@ -176,14 +176,9 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             merged_data = self._merge_data()
             
             # Schedule async update in HA event loop from MQTT thread
-            # This ensures entities are properly notified of the update
-            def schedule_update():
-                """Schedule async update in HA event loop."""
-                self.hass.async_create_task(
-                    self.async_set_updated_data(merged_data)
-                )
-            
-            self.hass.loop.call_soon_threadsafe(schedule_update)
+            # Use hass.async_add_job which is thread-safe and handles async functions correctly
+            # This ensures the async function runs in the correct event loop
+            self.hass.async_add_job(self.async_set_updated_data, merged_data)
             
             _LOGGER.debug(
                 "Processed MQTT update for device %s, scheduling coordinator update",
