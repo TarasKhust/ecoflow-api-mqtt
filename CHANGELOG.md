@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0-beta20] - 2025-12-11
+
+### Fixed
+- 🔒 **SSL Blocking Warning** - Fixed blocking call to ssl.create_default_context()
+  - `ssl.create_default_context()` loads certificates from disk (blocking I/O)
+  - Moved to `run_in_executor` to avoid blocking the event loop
+  - Fixes warning: `Detected blocking call to load_default_certs`
+  - Fixes warning: `Detected blocking call to set_default_verify_paths`
+  - MQTT connection now initializes without blocking Home Assistant
+
 ## [1.3.0-beta19] - 2025-12-11
 
 ### Fixed
