@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0-beta14] - 2025-12-11
+
+### Fixed
+- 🔄 **MQTT Data Updates** - Fixed dashboard not updating in real-time
+  - Fixed MQTT callback thread safety issue
+  - Properly schedules coordinator updates from MQTT thread to HA event loop
+  - Entities now receive updates immediately when MQTT data arrives
+  - Fixes issue where dashboard only updated when official app was opened
+  - Uses `call_soon_threadsafe` for proper async function scheduling
+
+### Changed
+- 📊 **Automation Time Formatting** - Improved time display in notifications
+  - Changed time format from decimal hours (e.g., `2.4h`) to readable format (e.g., `2h 40m`)
+  - Battery level percentages now rounded to whole numbers (e.g., `75%` instead of `75.48937%`)
+  - Applied to all three automations: Smart Charging, Power Switch, Battery Alerts
+
 ## [1.3.0-beta13] - 2025-12-11
 
 ### Added

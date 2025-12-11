@@ -174,9 +174,21 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             # Schedule update in Home Assistant event loop
             # MQTT callback runs in different thread, so we need to schedule it properly
             merged_data = self._merge_data()
-            self.hass.async_add_job(self.async_set_updated_data, merged_data)
             
-            _LOGGER.debug("Processed MQTT update for device %s", self.device_sn)
+            # Schedule async update in HA event loop from MQTT thread
+            # This ensures entities are properly notified of the update
+            def schedule_update():
+                """Schedule async update in HA event loop."""
+                self.hass.async_create_task(
+                    self.async_set_updated_data(merged_data)
+                )
+            
+            self.hass.loop.call_soon_threadsafe(schedule_update)
+            
+            _LOGGER.debug(
+                "Processed MQTT update for device %s, scheduling coordinator update",
+                self.device_sn
+            )
             
         except Exception as err:
             _LOGGER.error("Error handling MQTT message: %s", err)
