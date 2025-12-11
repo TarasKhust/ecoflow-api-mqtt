@@ -10,6 +10,10 @@ Home Assistant integration for EcoFlow devices using the **official EcoFlow Deve
 
 ## 🌟 Features
 
+- ✅ **Hybrid Mode** - Combines REST API + MQTT for best performance
+  - Real-time updates via MQTT (instant sensor updates)
+  - Device control via REST API (reliable commands)
+  - Automatic fallback to REST polling if MQTT unavailable
 - ✅ **Official API** - Uses EcoFlow Developer REST API (stable & documented)
 - ✅ **Complete Delta Pro 3 support** - 40+ sensors, 13 binary sensors, 10 controls
 - ✅ **Real device tested** - All features verified with actual Delta Pro 3
@@ -20,16 +24,19 @@ Home Assistant integration for EcoFlow devices using the **official EcoFlow Deve
 - ✅ **Template sensors** - Estimated cycles, health status, runtime calculations
 - ✅ **Device discovery** - Automatic device detection from API
 - ✅ **Ukrainian localization** - Повна підтримка української мови
-- 📚 **Comprehensive docs** - Complete API mapping and examples
 
 ## 📦 Installation
 
 ### HACS (Recommended)
 
+**Quick Install:**
+[![Open your Home Assistant instance and show the repository.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=TarasKhust&repository=ecoflow-api-mqtt&category=integration)
+
+**Manual Setup:**
 1. Open HACS in Home Assistant
 2. Click on "Integrations"
 3. Click the three dots menu → "Custom repositories"
-4. Add this repository URL and select "Integration" category
+4. Add this repository URL: `https://github.com/TarasKhust/ecoflow-api-mqtt` and select "Integration" category
 5. Search for "EcoFlow API" and install
 6. Restart Home Assistant
 
@@ -69,10 +76,17 @@ After setup, you can configure additional options:
 2. Find "EcoFlow API" integration
 3. Click **Configure**
 4. Adjust settings:
-   - **Update Interval**: How often to poll the device (5-60 seconds, default: 15s)
+   - **Update Interval**: How often to poll the device via REST API (5-60 seconds, default: 15s)
      - 5s: Fast updates (more API calls)
      - 15s: Recommended balance
      - 60s: Slower updates (fewer API calls)
+     - **Note**: In hybrid mode, REST polling is automatically reduced since MQTT provides real-time updates
+   - **MQTT Enabled**: Enable hybrid mode (REST API + MQTT)
+     - When enabled, integration automatically fetches MQTT credentials from API
+     - Provides real-time sensor updates via MQTT
+     - Device control still uses REST API for reliability
+     - Automatically falls back to REST-only if MQTT connection fails
+   - **MQTT Username/Password**: Optional manual MQTT credentials (usually auto-fetched from API)
 
 ## 📊 Entities
 
@@ -187,57 +201,49 @@ mode: single
 | River 2 | 🔄 Planned | Coming soon |
 | River 2 Max | 🔄 Planned | Coming soon |
 
-## 🧪 Testing
+## 🔄 Hybrid Mode (REST API + MQTT)
 
-The integration includes comprehensive tests to ensure reliability:
+The integration supports a **hybrid mode** that combines the best of both worlds:
 
-```bash
-# Quick structure check (no dependencies required)
-python check_structure.py
+### How It Works
 
-# Full test suite (requires pytest)
-pip install -r requirements-test.txt
-pytest tests/ -v
-```
+- **REST API**: Used for device control (commands, settings) - reliable and documented
+- **MQTT**: Used for real-time sensor updates - instant notifications when device state changes
+- **Automatic Fallback**: If MQTT connection fails, automatically falls back to REST-only mode
 
-See [tests/README.md](tests/README.md) for detailed testing documentation.
+### Benefits
+
+- ⚡ **Real-time updates** - Sensor values update instantly via MQTT (no polling delay)
+- 🔧 **Reliable control** - Device commands use REST API (more stable)
+- 📉 **Reduced API calls** - REST polling interval automatically increases when MQTT is active
+- 🛡️ **Automatic recovery** - Seamlessly switches between modes based on availability
+
+### Enabling Hybrid Mode
+
+1. Go to **Settings** → **Devices & Services**
+2. Find "EcoFlow API" integration
+3. Click **Configure**
+4. Enable **MQTT Enabled** checkbox
+5. MQTT credentials are automatically fetched from API (no manual entry needed)
+6. Save and restart the integration
+
+The integration will automatically:
+- Fetch MQTT credentials (`certificateAccount` and `certificatePassword`) from EcoFlow API
+- Connect to EcoFlow MQTT broker
+- Start receiving real-time updates
+- Reduce REST API polling frequency (since MQTT provides updates)
+
+### Connection Status
+
+You can monitor the connection mode via the `sensor.ecoflow_delta_pro_3_connection_mode` sensor:
+- `hybrid` - Both REST API and MQTT active (optimal)
+- `mqtt_standby` - MQTT connected but not actively used
+- `rest_only` - REST API only (MQTT unavailable or disabled)
 
 ## 📚 Documentation
 
 - [EcoFlow Developer API](https://developer-eu.ecoflow.com/us/document/introduction)
 - [Delta Pro 3 API Reference](https://developer-eu.ecoflow.com/us/document/deltaPro3)
-- [Testing Guide](tests/README.md)
-
-## 🐛 Troubleshooting
-
-### Common Issues
-
-**1. "Failed to connect to EcoFlow API"**
-- Check your internet connection
-- Verify your Access Key and Secret Key
-- Ensure your developer account is active
-
-**2. "Device not found"**
-- Verify the serial number is correct
-- Check that the device is online in the EcoFlow app
-- Ensure the device is linked to your developer account
-
-**3. Values not updating**
-- The integration polls every 15 seconds by default (configurable: 5-60 seconds)
-- You can adjust the update interval in integration options
-- Check Home Assistant logs for errors
-- Try reloading the integration
-
-### Debug Logging
-
-Add to `configuration.yaml`:
-
-```yaml
-logger:
-  default: info
-  logs:
-    custom_components.ecoflow_api: debug
-```
 
 ## 🤝 Contributing
 

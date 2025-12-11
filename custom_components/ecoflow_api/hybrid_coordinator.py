@@ -6,6 +6,7 @@ This coordinator combines:
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 from datetime import timedelta
 from typing import Any
@@ -196,6 +197,35 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         
         return merged
 
+    async def _async_wake_device(self) -> None:
+        """Wake up device before requesting data.
+        
+        Some EcoFlow devices go to sleep and don't respond to API requests
+        until "woken up" by sending a request. This method sends a wake-up
+        request to ensure device is responsive before fetching actual data.
+        
+        If MQTT is active and receiving data, wake-up may not be needed.
+        Otherwise uses REST API wake-up (most reliable method).
+        """
+        # If MQTT is active and we have recent data, device is likely awake
+        # Skip wake-up to avoid unnecessary requests
+        if self._mqtt_connected and self._mqtt_data:
+            _LOGGER.debug("MQTT active with data for %s, skipping wake-up", self.device_sn)
+            return
+        
+        # Device might be sleeping - send wake-up request via REST API
+        try:
+            # Send a wake-up request (first quota request to wake device)
+            # This is a lightweight operation that helps wake sleeping devices
+            await self.client.get_device_quota(self.device_sn)
+            _LOGGER.debug("Wake-up request sent via REST for %s", self.device_sn)
+            # Small delay to allow device to wake up and process the request
+            await asyncio.sleep(0.5)
+        except Exception as err:
+            # Don't fail on wake-up errors, just log them
+            # Device might already be awake or wake-up might not be needed
+            _LOGGER.debug("Wake-up request failed (non-critical): %s", err)
+
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from API (and merge with MQTT if available).
         
@@ -206,6 +236,11 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             UpdateFailed: If data fetch fails
         """
         try:
+            # Wake up device before requesting data
+            # This helps with devices that go to sleep and don't respond
+            # until woken up by a request or command
+            await self._async_wake_device()
+            
             # Always fetch from REST API (but less frequently if MQTT is active)
             rest_data = await self.client.get_device_quota(self.device_sn)
             _LOGGER.debug("Received REST data for %s: %s", self.device_sn, rest_data)
