@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256">
+  <!-- Background circle -->
+  <circle cx="128" cy="128" r="120" fill="#1a1a2e"/>
+  
+  <!-- Battery body -->
+  <rect x="60" y="80" width="120" height="96" rx="12" ry="12" fill="none" stroke="#00d4aa" stroke-width="8"/>
+  
+  <!-- Battery terminal -->
+  <rect x="180" y="110" width="16" height="36" rx="4" ry="4" fill="#00d4aa"/>
+  
+  <!-- Charge level bars -->
+  <rect x="76" y="96" width="24" height="64" rx="4" ry="4" fill="#00d4aa"/>
+  <rect x="108" y="96" width="24" height="64" rx="4" ry="4" fill="#00d4aa"/>
+  <rect x="140" y="96" width="24" height="64" rx="4" ry="4" fill="#00d4aa" opacity="0.5"/>
+  
+  <!-- Lightning bolt (charging indicator) -->
+  <polygon points="128,60 112,100 124,100 116,140 144,92 128,92 136,60" fill="#ffd93d"/>
+  
+  <!-- EcoFlow text arc (optional subtle branding) -->
+  <text x="128" y="220" text-anchor="middle" font-family="Arial, sans-serif" font-size="20" font-weight="bold" fill="#00d4aa">EcoFlow</text>
+</svg>
+
