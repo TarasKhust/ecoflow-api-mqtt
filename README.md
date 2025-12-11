@@ -15,7 +15,7 @@ Home Assistant integration for EcoFlow devices using the **official EcoFlow Deve
   - Device control via REST API (reliable commands)
   - Automatic fallback to REST polling if MQTT unavailable
 - ✅ **Official API** - Uses EcoFlow Developer REST API (stable & documented)
-- ✅ **Complete Delta Pro 3 support** - 40+ sensors, 13 binary sensors, 10 controls
+- ✅ **Complete Delta Pro 3 support** - 84 sensors, 13 binary sensors, 9 switches, 13 number controls (+ 3-4 energy sensors, + 2 MQTT sensors in hybrid mode)
 - ✅ **Real device tested** - All features verified with actual Delta Pro 3
 - ✅ **Battery monitoring** - BMS & CMS data, SOC, SOH, temperature, capacity
 - ✅ **Power monitoring** - Input/output, AC, Solar (HV/LV), DC (12V/24V), USB-C, QC USB
@@ -145,6 +145,47 @@ After setup, you can configure additional options:
 | AC Charging Power | Set charging power | 200-3000 W |
 | Max Charge Level | Maximum charge level | 50-100% |
 | Min Discharge Level | Minimum discharge level | 0-30% |
+
+## 📐 Template Sensors
+
+### Formatted Remaining Time Sensor
+
+If you want to display remaining time in a formatted way (e.g., "2h 37m" instead of "157 min"), you can create a template sensor:
+
+```yaml
+# Add to configuration.yaml or as a separate file in configuration/sensors/
+template:
+  - sensor:
+    - name: "Delta Pro 3 Remaining Time"
+      unique_id: delta_pro_3_remaining_time
+      state: >
+        {% set in_power = states('sensor.ecoflow_delta_pro_3_total_input_power') | float(0) %}
+        {% set out_power = states('sensor.ecoflow_delta_pro_3_total_output_power') | float(0) %}
+        {% if in_power > 0 and in_power >= out_power %}
+          {% set time_val = states('sensor.ecoflow_delta_pro_3_system_charge_remaining_time') | float(0) %}
+        {% elif out_power > 0 %}
+          {% set time_val = states('sensor.ecoflow_delta_pro_3_system_discharge_remaining_time') | float(0) %}
+        {% else %}
+          {% set time_val = 0 %}
+        {% endif %}
+        {% if time_val > 0 %}
+          {% set hours = (time_val / 60) | int %}
+          {% set mins = (time_val % 60) | int %}
+          {{ hours }}h {{ mins }}m
+        {% else %}
+          -
+        {% endif %}
+      icon: >
+        {% set in_power = states('sensor.ecoflow_delta_pro_3_total_input_power') | float(0) %}
+        {% set out_power = states('sensor.ecoflow_delta_pro_3_total_output_power') | float(0) %}
+        {% if in_power > 0 and in_power >= out_power %}
+          mdi:battery-charging
+        {% else %}
+          mdi:battery-arrow-down
+        {% endif %}
+```
+
+**Important:** The remaining time sensors return values in **minutes** (not hours), so you need to divide by 60 to get hours and use modulo to get remaining minutes.
 
 ## 🔧 Automations
 
