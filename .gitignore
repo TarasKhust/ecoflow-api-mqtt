@@ -66,6 +66,10 @@ venv.bak/
 *.swp
 *.swo
 *~
+*.code-workspace
+
+# Temporary API response files
+api_response_*.json
 
 # OS
 .DS_Store
@@ -78,6 +82,9 @@ home-assistant.log*
 home-assistant_v2.db
 home-assistant_v2.db-shm
 home-assistant_v2.db-wal
+
+# Release archives
+*.zip
 
 # Test files with API credentials (DO NOT COMMIT)
 test_*.py

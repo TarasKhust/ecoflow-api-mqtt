@@ -1,0 +1,243 @@
+alias: EcoFlow - Розумне заряджання
+description: Автоматично регулює потужність заряджання на основі графіку відключень та часу заряджання до 100%
+triggers:
+  # Адаптивний інтервал перевірки (5 хвилин - для критичних ситуацій)
+  - platform: time_pattern
+    minutes: /5
+    id: check_5min
+  # Адаптивний інтервал перевірки (10 хвилин - для середнього часу до відключення)
+  - platform: time_pattern
+    minutes: /10
+    id: check_10min
+  # Адаптивний інтервал перевірки (15 хвилин - стандартний)
+  - platform: time_pattern
+    minutes: /15
+    id: check_15min
+  # Зміна статусу відключень
+  - platform: state
+    entity_id: sensor.yasno_kiiv_dtek_3_2_status_today
+  # Зміна наступного запланованого відключення
+  - platform: state
+    entity_id: sensor.yasno_kiiv_dtek_3_2_next_planned_outage
+  # Зміна наступного імовірного відключення
+  - platform: state
+    entity_id: sensor.yasno_kiiv_dtek_3_2_next_probable_outage
+  # Зміна часу заряджання до 100%
+  - platform: state
+    entity_id: sensor.ecoflow_delta_pro_3_system_charge_remaining_time
+  # Зміна потужності зарядки (для перевірки після зміни налаштувань)
+  - platform: numeric_state
+    entity_id: sensor.ecoflow_delta_pro_3_ac_input_power
+    above: 0
+    for:
+      seconds: 60
+conditions:
+  # Перевірка що зарядка активна
+  - condition: numeric_state
+    entity_id: sensor.ecoflow_delta_pro_3_ac_input_power
+    above: 0
+  # Перевірка що батарея не повна (для безпеки)
+  - condition: numeric_state
+    entity_id: sensor.ecoflow_delta_pro_3_system_battery_level
+    below: 100
+  # Адаптивна перевірка інтервалу для time_pattern тригерів
+  - condition: or
+    conditions:
+      # Якщо не time_pattern тригер - завжди виконувати
+      - condition: template
+        value_template: "{{ trigger.id not in ['check_5min', 'check_10min', 'check_15min'] }}"
+      # Для check_5min - виконувати якщо час до відключення < 60 хв
+      - condition: and
+        conditions:
+          - condition: template
+            value_template: "{{ trigger.id == 'check_5min' }}"
+          - condition: template
+            value_template: |
+              {% set planned = states('sensor.yasno_kiiv_dtek_3_2_next_planned_outage') %}
+              {% set probable = states('sensor.yasno_kiiv_dtek_3_2_next_probable_outage') %}
+              {% set next_outage = planned if planned not in ['unavailable', 'unknown', 'none', ''] else (probable if probable not in ['unavailable', 'unknown', 'none', ''] else 'none') %}
+              {% if next_outage != 'none' %}
+                {% set outage_min = ((as_timestamp(next_outage) - as_timestamp(now())) / 60) | int %}
+                {{ outage_min < 60 }}
+              {% else %}
+                False
+              {% endif %}
+      # Для check_10min - виконувати якщо час до відключення < 180 хв але >= 60 хв
+      - condition: and
+        conditions:
+          - condition: template
+            value_template: "{{ trigger.id == 'check_10min' }}"
+          - condition: template
+            value_template: |
+              {% set planned = states('sensor.yasno_kiiv_dtek_3_2_next_planned_outage') %}
+              {% set probable = states('sensor.yasno_kiiv_dtek_3_2_next_probable_outage') %}
+              {% set next_outage = planned if planned not in ['unavailable', 'unknown', 'none', ''] else (probable if probable not in ['unavailable', 'unknown', 'none', ''] else 'none') %}
+              {% if next_outage != 'none' %}
+                {% set outage_min = ((as_timestamp(next_outage) - as_timestamp(now())) / 60) | int %}
+                {{ outage_min >= 60 and outage_min < 180 }}
+              {% else %}
+                False
+              {% endif %}
+      # Для check_15min - виконувати якщо час до відключення >= 180 хв або немає відключень
+      - condition: and
+        conditions:
+          - condition: template
+            value_template: "{{ trigger.id == 'check_15min' }}"
+          - condition: template
+            value_template: |
+              {% set planned = states('sensor.yasno_kiiv_dtek_3_2_next_planned_outage') %}
+              {% set probable = states('sensor.yasno_kiiv_dtek_3_2_next_probable_outage') %}
+              {% set next_outage = planned if planned not in ['unavailable', 'unknown', 'none', ''] else (probable if probable not in ['unavailable', 'unknown', 'none', ''] else 'none') %}
+              {% if next_outage != 'none' %}
+                {% set outage_min = ((as_timestamp(next_outage) - as_timestamp(now())) / 60) | int %}
+                {{ outage_min >= 180 }}
+              {% else %}
+                True
+              {% endif %}
+actions:
+  - variables:
+      # Статус відключень сьогодні
+      status: "{{ states('sensor.yasno_kiiv_dtek_3_2_status_today') }}"
+      
+      # Рівень батареї
+      battery_level: >-
+        {{ states('sensor.ecoflow_delta_pro_3_system_battery_level') | float(0) }}
+      
+      # Поточна потужність заряджання
+      current_charge_power: "{{ states('number.ecoflow_delta_pro_3_ac_charging_power') | int(1000) }}"
+      
+      # Час заряджання до 100% (в хвилинах)
+      charge_time_min: "{{ states('sensor.ecoflow_delta_pro_3_system_charge_remaining_time') | int(0) }}"
+      
+      # Визначення наступного відключення (спочатку заплановане, потім імовірне)
+      planned_outage: "{{ states('sensor.yasno_kiiv_dtek_3_2_next_planned_outage') }}"
+      probable_outage: "{{ states('sensor.yasno_kiiv_dtek_3_2_next_probable_outage') }}"
+      next_outage: |
+        {% if planned_outage not in ['unavailable', 'unknown', 'none', ''] %}
+          {{ planned_outage }}
+        {% elif probable_outage not in ['unavailable', 'unknown', 'none', ''] %}
+          {{ probable_outage }}
+        {% else %}
+          none
+        {% endif %}
+      
+      # Отримання деталей відключення з календаря та сенсора
+      electricity_event_type: "{{ state_attr('sensor.yasno_kiiv_dtek_3_2_electricity', 'event_type') }}"
+      electricity_event_start: "{{ state_attr('sensor.yasno_kiiv_dtek_3_2_electricity', 'event_start') }}"
+      electricity_event_end: "{{ state_attr('sensor.yasno_kiiv_dtek_3_2_electricity', 'event_end') }}"
+      
+      # Розрахунок тривалості відключення
+      outage_duration_min: |
+        {% if electricity_event_start and electricity_event_end %}
+          {% set start = as_timestamp(electricity_event_start) %}
+          {% set end = as_timestamp(electricity_event_end) %}
+          {{ ((end - start) / 60) | int }}
+        {% else %}
+          0
+        {% endif %}
+      
+      # Визначення типу відключення з деталями
+      outage_type: |
+        {% if status == 'emergency_shutdowns' %}
+          🚨 Екстрене
+        {% elif electricity_event_type == 'NotPlanned' %}
+          ⚠️ Незаплановане
+        {% elif planned_outage not in ['unavailable', 'unknown', 'none', ''] %}
+          📅 Заплановане
+        {% elif probable_outage not in ['unavailable', 'unknown', 'none', ''] %}
+          ❓ Імовірне
+        {% else %}
+          ❓ Невідоме
+        {% endif %}
+      
+      # Розрахунок часу до відключення в хвилинах
+      outage_time_min: |
+        {% if next_outage not in ['unavailable', 'unknown', 'none', ''] %}
+          {{ ((as_timestamp(next_outage) - as_timestamp(now())) / 60) | int }}
+        {% else %}
+          9999
+        {% endif %}
+      
+      # Параметри батареї для безпеки
+      battery_health: "{{ states('sensor.ecoflow_delta_pro_3_battery_health') | float(100) }}"
+      battery_temp: >-
+        {{ states('sensor.ecoflow_delta_pro_3_max_cell_temperature') | float(25) }}
+      
+      # Розрахунок оптимальної потужності
+      optimal_power: >
+        {# 🚨 АВАРІЙНИЙ РЕЖИМ - максимальна потужність #}
+        {% if status == 'emergency_shutdowns' %}
+          2900
+
+        {# 🌡️ ПЕРЕГРІВ - зменшуємо потужність #}
+        {% elif battery_temp > 40 %}
+          800
+
+        {# 📊 ЗДОРОВ'Я БАТАРЕЇ НИЗЬКЕ (<80%) - обережний режим #}
+        {% elif battery_health < 80 %}
+          1200
+
+        {# ⏰ КРИТИЧНО МАЛО ЧАСУ (<30 хв до відключення) - максимум #}
+        {% elif outage_time_min < 30 and outage_time_min < 9999 %}
+          2900
+
+        {# ⚡ ПОТРІБНО ЗАРЯДИТИ ШВИДШЕ (час заряду > час до відключення) #}
+        {% elif charge_time_min > outage_time_min and outage_time_min < 9999 %}
+          {# Розраховуємо потрібну потужність з запасом 20% #}
+          {% set needed_power = ((charge_time_min / outage_time_min) * current_charge_power * 1.2) | int %}
+          {# Обмежуємо: мін 800W, макс 2900W #}
+          {{ [needed_power, 2900] | min if needed_power > 800 else 800 }}
+
+        {# 🔌 ДОСТАТНЬО ЧАСУ (заряд займе <50% доступного часу) - економний режим #}
+        {% elif charge_time_min < (outage_time_min * 0.5) and outage_time_min < 9999 %}
+          1000
+
+        {# 📶 НЕВІДОМИЙ СТАТУС АБО НЕМАЄ ВІДКЛЮЧЕНЬ - середня потужність #}
+        {% elif status in ['waiting_for_schedule', 'unknown'] or outage_time_min >= 9999 %}
+          1200
+
+        {# ✅ НОРМАЛЬНИЙ РЕЖИМ - поточна потужність #}
+        {% else %}
+          {{ current_charge_power }}
+        {% endif %}
+      
+      # Визначення режиму заряджання для повідомлення
+      charge_mode: |
+        {% if optimal_power | int >= 2500 %}
+          🚨 Максимальний
+        {% elif optimal_power | int >= 2000 %}
+          ⚡ Швидкий
+        {% elif optimal_power | int >= 1500 %}
+          🔋 Середній
+        {% elif optimal_power | int >= 1000 %}
+          🔌 Звичайний
+        {% else %}
+          🐌 Повільний
+        {% endif %}
+  
+  # Змінюємо потужність тільки якщо різниця > 200W
+  - condition: template
+    value_template: "{{ (optimal_power | int - current_charge_power) | abs > 200 }}"
+  
+  # Встановлення нової потужності заряджання
+  - action: number.set_value
+    target:
+      entity_id: number.ecoflow_delta_pro_3_ac_charging_power
+    data:
+      value: "{{ optimal_power | int }}"
+  
+  # Сповіщення про зміну
+  - action: notify.notify
+    data:
+      title: "{{ charge_mode }} заряд"
+      message: >
+        ⚡ {{ optimal_power }}W
+        {% if outage_time_min < 9999 %}
+        ⏰ {{ outage_time_min }}хв ({{ outage_type }}{% if outage_duration_min > 0 %}, {{ outage_duration_min }}хв{% endif %})
+        {% endif %}
+        ⏱️ {{ charge_time_min }}хв
+        🔋 {{ battery_level | round(0) }}%
+    enabled: true
+
+mode: single
+
