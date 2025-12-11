@@ -1,8 +1,10 @@
 # EcoFlow API Integration for Home Assistant
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
-[![GitHub Release](https://img.shields.io/github/release/TarasKhust/hassio-ecoflow-api.svg?style=flat-square)](https://github.com/TarasKhust/hassio-ecoflow-api/releases)
-[![License](https://img.shields.io/github/license/TarasKhust/hassio-ecoflow-api.svg?style=flat-square)](LICENSE)
+[![GitHub Release](https://img.shields.io/github/release/TarasKhust/ecoflow-api-mqtt.svg?style=flat-square)](https://github.com/TarasKhust/ecoflow-api-mqtt/releases)
+[![License](https://img.shields.io/github/license/TarasKhust/ecoflow-api-mqtt.svg?style=flat-square)](LICENSE)
+
+> ⚠️ **License Notice**: This software is free for personal and non-commercial use only. Commercial use is prohibited without explicit permission. See [LICENSE](LICENSE) for details.
 
 Home Assistant integration for EcoFlow devices using the **official EcoFlow Developer API**.
 
@@ -247,7 +249,9 @@ Contributions are welcome! Please:
 
 ## 📄 License
 
-This project is licensed under the Apache License 2.0 - see the [LICENSE](LICENSE) file for details.
+This project is licensed under a **Non-Commercial License** - see the [LICENSE](LICENSE) file for details.
+
+**Important:** This software is free to use for personal and non-commercial purposes only. Commercial use is prohibited without explicit permission from the copyright holder. For commercial licensing inquiries, please contact the maintainer.
 
 ## 🙏 Acknowledgments
 

@@ -2,7 +2,8 @@
   "name": "EcoFlow API Integration",
   "homeassistant": "2024.1.0",
   "render_readme": true,
-  "country": ["UA"]
+  "country": ["UA"],
+  "icon": "https://brands.home-assistant.io/_/ecoflow/icon.png"
 }
 
 
