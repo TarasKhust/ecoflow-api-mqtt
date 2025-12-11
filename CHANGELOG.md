@@ -5,14 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0-beta19] - 2025-12-11
+
+### Fixed
+- 🔄 **MQTT Callback Fix** - Fixed TypeError with async_set_updated_data
+  - `async_set_updated_data` is actually a sync method (despite the `async_` prefix)
+  - It just sets data and notifies listeners, no async operations needed
+  - Removed `async_create_task` wrapper - just call the method directly
+  - Fixes `TypeError: a coroutine was expected, got None`
+  - MQTT updates now properly synchronize with Home Assistant entities
+
 ## [1.3.0-beta18] - 2025-12-11
 
 ### Fixed
 - 🔄 **Thread Safety Fix** - Fixed AttributeError with async_run_callback_threadsafe
   - Replaced non-existent `async_run_callback_threadsafe` with `call_soon_threadsafe`
   - Use `hass.loop.call_soon_threadsafe` with `async_create_task` for thread-safe async calls
-  - This is the correct way to call async functions from other threads in HA
-  - Fixes `AttributeError: 'HomeAssistant' object has no attribute 'async_run_callback_threadsafe'`
+  - This was incorrect - async_set_updated_data is sync, fixed in beta19
 
 ## [1.3.0-beta17] - 2025-12-11
 
