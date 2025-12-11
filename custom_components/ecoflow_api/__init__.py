@@ -123,6 +123,16 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Fetch initial data
     await coordinator.async_config_entry_first_refresh()
+    
+    # Log connection status
+    device_sn = entry.data[CONF_DEVICE_SN]
+    _LOGGER.info("✅ REST API connected for device %s", device_sn)
+    
+    if isinstance(coordinator, EcoFlowHybridCoordinator):
+        if coordinator.mqtt_connected:
+            _LOGGER.info("✅ MQTT connected for device %s (hybrid mode)", device_sn)
+        else:
+            _LOGGER.warning("⚠️ MQTT not connected for device %s (REST-only mode)", device_sn)
 
     # Store coordinator
     hass.data[DOMAIN][entry.entry_id] = coordinator
@@ -131,8 +141,8 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
     _LOGGER.info(
-        "EcoFlow API integration set up for device %s",
-        entry.data[CONF_DEVICE_SN]
+        "🔋 EcoFlow API integration ready for device %s",
+        device_sn
     )
 
     return True
