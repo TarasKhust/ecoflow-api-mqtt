@@ -59,8 +59,14 @@ actions:
       battery_level: "{{ states('sensor.ecoflow_delta_pro_3_system_battery_level') | round(0) }}"
       battery_health: "{{ states('sensor.ecoflow_delta_pro_3_battery_health') | round(0) }}"
       battery_temp: "{{ states('sensor.ecoflow_delta_pro_3_max_cell_temperature') | round(1) }}"
-      discharge_remaining_time: "{{ states('sensor.ecoflow_delta_pro_3_system_discharge_remaining_time') }}"
-      charge_remaining_time: "{{ states('sensor.ecoflow_delta_pro_3_system_charge_remaining_time') }}"
+      discharge_remaining_time: |-
+        {% set time_hours = states('sensor.ecoflow_delta_pro_3_system_discharge_remaining_time') | float(0) %}
+        {% set total_min = (time_hours * 60) | int %}
+        {{ (total_min / 60) | int }}h {{ (total_min % 60) | int }}m
+      charge_remaining_time: |-
+        {% set time_hours = states('sensor.ecoflow_delta_pro_3_system_charge_remaining_time') | float(0) %}
+        {% set total_min = (time_hours * 60) | int %}
+        {{ (total_min / 60) | int }}h {{ (total_min % 60) | int }}m
       output_power: "{{ states('sensor.ecoflow_delta_pro_3_total_output_power') | round(0) }}"
       cycles: "{{ states('sensor.ecoflow_delta_pro_3_cycles') }}"
       is_charging: "{{ is_state('binary_sensor.ecoflow_delta_pro_3_charging', 'on') }}"

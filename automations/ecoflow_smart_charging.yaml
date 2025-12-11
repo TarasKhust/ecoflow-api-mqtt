@@ -100,14 +100,13 @@ actions:
       status: "{{ states('sensor.yasno_kiiv_dtek_3_2_status_today') }}"
       
       # Рівень батареї
-      battery_level: >-
-        {{ states('sensor.ecoflow_delta_pro_3_system_battery_level') | float(0) }}
+      battery_level: "{{ states('sensor.ecoflow_delta_pro_3_system_battery_level') | float(0) | round(0) }}"
       
       # Поточна потужність заряджання
       current_charge_power: "{{ states('number.ecoflow_delta_pro_3_ac_charging_power') | int(1000) }}"
       
-      # Час заряджання до 100% (в хвилинах)
-      charge_time_min: "{{ states('sensor.ecoflow_delta_pro_3_system_charge_remaining_time') | int(0) }}"
+      # Час заряджання до 100% (в хвилинах) - сенсор повертає години, конвертуємо в хвилини
+      charge_time_min: "{{ (states('sensor.ecoflow_delta_pro_3_system_charge_remaining_time') | float(0) * 60) | int }}"
       
       # Визначення наступного відключення (спочатку заплановане, потім імовірне)
       planned_outage: "{{ states('sensor.yasno_kiiv_dtek_3_2_next_planned_outage') }}"
@@ -235,7 +234,7 @@ actions:
         {% if outage_time_min < 9999 %}
         ⏰ {{ outage_time_min }}хв ({{ outage_type }}{% if outage_duration_min > 0 %}, {{ outage_duration_min }}хв{% endif %})
         {% endif %}
-        ⏱️ {{ charge_time_min }}хв
+        ⏱️ {{ (charge_time_min / 60) | int }}h {{ (charge_time_min % 60) | int }}m
         🔋 {{ battery_level | round(0) }}%
     enabled: true
 

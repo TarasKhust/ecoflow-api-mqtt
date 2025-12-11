@@ -39,11 +39,17 @@ actions:
       
       # Для режиму мережі
       charge_power: "{{ states('sensor.ecoflow_delta_pro_3_ac_input_power') | round(0) }}"
-      charge_remaining_time: "{{ states('sensor.ecoflow_delta_pro_3_system_charge_remaining_time') }}"
+      charge_remaining_time: |-
+        {% set time_hours = states('sensor.ecoflow_delta_pro_3_system_charge_remaining_time') | float(0) %}
+        {% set total_min = (time_hours * 60) | int %}
+        {{ (total_min / 60) | int }}h {{ (total_min % 60) | int }}m
       
       # Для режиму батареї
       output_power: "{{ states('sensor.ecoflow_delta_pro_3_total_output_power') | round(0) }}"
-      discharge_remaining_time: "{{ states('sensor.ecoflow_delta_pro_3_system_discharge_remaining_time') }}"
+      discharge_remaining_time: |-
+        {% set time_hours = states('sensor.ecoflow_delta_pro_3_system_discharge_remaining_time') | float(0) %}
+        {% set total_min = (time_hours * 60) | int %}
+        {{ (total_min / 60) | int }}h {{ (total_min % 60) | int }}m
       
       # Заголовок та повідомлення
       notification_title: |
