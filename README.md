@@ -269,7 +269,9 @@ This project is licensed under a **Non-Commercial License** - see the [LICENSE](
 
 If you find this integration useful and would like to support its development, you can make a donation via Monobank:
 
-[![Donate via Monobank](https://img.shields.io/badge/Donate-Monobank-blue)](https://send.monobank.ua/jar/48g36u8aTW)
+[![Donate via Monobank](https://img.shields.io/badge/Donate-Monobank-blue)](https://bank.gov.ua/qr/QkNECjAwMgoxClVDVAoK0KDRg9GI0LDQuiDQotCw0YDQsNGBINCS0LDRgdC40LvRjNC-0LLQuNGHClVBNDQzMjIwMDEwMDAwMDI2MjAyMzA1ODkxNjMyCgozMjgwNTEwNzEwCgoK0J_QvtC_0L7QstC90LXQvdC90Y8g0YDQsNGF0YPQvdC60YMKCg==)
+
+**Тарас Р.** - Поповнення рахунку
 
 Your support helps maintain and improve this integration. Thank you! 💙💛
 
