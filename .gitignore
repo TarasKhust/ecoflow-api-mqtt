@@ -99,6 +99,7 @@ POSTMAN_SETUP.md
 check_structure.py
 run_tests.py
 create_release_zip.py
+make_zip.py
 
 
 .cursorrules
