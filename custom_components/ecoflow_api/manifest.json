@@ -4,10 +4,10 @@
   "codeowners": ["@TarasKhust"],
   "config_flow": true,
   "dependencies": [],
-  "documentation": "https://github.com/TarasKhust/hassio-ecoflow-api",
+  "documentation": "https://github.com/TarasKhust/ecoflow-api-mqtt",
   "integration_type": "hub",
   "iot_class": "cloud_polling",
-  "issue_tracker": "https://github.com/TarasKhust/hassio-ecoflow-api/issues",
+  "issue_tracker": "https://github.com/TarasKhust/ecoflow-api-mqtt/issues",
   "requirements": ["aiohttp>=3.8.0", "paho-mqtt>=1.6.1"],
   "version": "1.3.0-beta12"
 }
