@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0-beta21] - 2025-12-11
+
+### Added
+- 🔄 **Battery Cycles Sensor** - Added missing cycles entity
+  - Added `bms_cycles` sensor to track battery charge/discharge cycles
+  - Uses `cycles` field from MQTT BMS data
+  - StateClass.TOTAL_INCREASING for proper statistics tracking
+  - Now visible in Home Assistant: `sensor.ecoflow_delta_pro_3_battery_cycles`
+
 ## [1.3.0-beta20] - 2025-12-11
 
 ### Fixed
