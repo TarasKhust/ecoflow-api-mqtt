@@ -100,6 +100,14 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": None,
         "icon": "mdi:alert-circle",
     },
+    "bms_cycles": {
+        "name": "Battery Cycles",
+        "key": "cycles",  # MQTT field name
+        "unit": "cycles",
+        "device_class": None,
+        "state_class": SensorStateClass.TOTAL_INCREASING,
+        "icon": "mdi:sync",
+    },
     
     # ============================================================================
     # BATTERY - CMS (Combined Management System)
