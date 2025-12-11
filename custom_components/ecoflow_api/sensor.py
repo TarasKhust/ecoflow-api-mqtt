@@ -802,9 +802,10 @@ class EcoFlowIntegralEnergySensor(IntegrationSensor):
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
     _attr_entity_registry_visible_default = False
 
-    def __init__(self, power_sensor: SensorEntity, enabled_default: bool = True):
+    def __init__(self, hass: HomeAssistant, power_sensor: SensorEntity, enabled_default: bool = True):
         """Initialize energy sensor from power sensor."""
         super().__init__(
+            hass=hass,
             integration_method="left",
             name=f"{power_sensor.name} Energy",
             round_digits=4,
@@ -994,7 +995,7 @@ async def async_setup_entry(
                 total_input_sensor = sensor
                 # Add energy sensor for total input
                 energy_sensors.append(
-                    EcoFlowIntegralEnergySensor(sensor, enabled_default=True)
+                    EcoFlowIntegralEnergySensor(hass, sensor, enabled_default=True)
                 )
                 _LOGGER.debug("Created energy sensor for total input power")
             
@@ -1003,14 +1004,14 @@ async def async_setup_entry(
                 total_output_sensor = sensor
                 # Add energy sensor for total output
                 energy_sensors.append(
-                    EcoFlowIntegralEnergySensor(sensor, enabled_default=True)
+                    EcoFlowIntegralEnergySensor(hass, sensor, enabled_default=True)
                 )
                 _LOGGER.debug("Created energy sensor for total output power")
             
             # AC Input Power (optional, disabled by default)
             elif sensor._sensor_id == "pow_get_ac_in":
                 energy_sensors.append(
-                    EcoFlowIntegralEnergySensor(sensor, enabled_default=False)
+                    EcoFlowIntegralEnergySensor(hass, sensor, enabled_default=False)
                 )
     
     # Add Power Difference Sensor (for HA Energy "Now" tab)
