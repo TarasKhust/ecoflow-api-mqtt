@@ -5,15 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0-beta18] - 2025-12-11
+
+### Fixed
+- 🔄 **Thread Safety Fix** - Fixed AttributeError with async_run_callback_threadsafe
+  - Replaced non-existent `async_run_callback_threadsafe` with `call_soon_threadsafe`
+  - Use `hass.loop.call_soon_threadsafe` with `async_create_task` for thread-safe async calls
+  - This is the correct way to call async functions from other threads in HA
+  - Fixes `AttributeError: 'HomeAssistant' object has no attribute 'async_run_callback_threadsafe'`
+
 ## [1.3.0-beta17] - 2025-12-11
 
 ### Fixed
 - 🔄 **Deprecation Warning** - Replaced deprecated async_add_job
-  - Replaced `async_add_job` with `async_run_callback_threadsafe`
-  - This is the recommended replacement for HA 2025.4+ compatibility
-  - `async_run_callback_threadsafe` accepts sync function that returns coroutine
-  - Fixes deprecation warning: async_add_job will stop working in HA 2025.4
-  - Ensures compatibility with future Home Assistant versions
+  - Replaced `async_add_job` with `async_run_callback_threadsafe` (incorrect - doesn't exist)
+  - This was the attempted replacement for HA 2025.4+ compatibility
+  - Fixed in beta18 with correct implementation
 
 ## [1.3.0-beta16] - 2025-12-11
 
