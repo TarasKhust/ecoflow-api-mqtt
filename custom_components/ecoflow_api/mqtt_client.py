@@ -72,10 +72,8 @@ class EcoFlowMQTTClient:
         self._set_topic = f"/open/{self._certificate_account}/{device_sn}/set"
         self._set_reply_topic = f"/open/{self._certificate_account}/{device_sn}/set_reply"
         
-        _LOGGER.info(
-            "MQTT client initialized - username: %s, certificateAccount: %s, device_sn: %s",
-            username,
-            self._certificate_account,
+        _LOGGER.debug(
+            "MQTT client initialized for device %s",
             device_sn
         )
         
@@ -98,25 +96,6 @@ class EcoFlowMQTTClient:
             )
             
             # Set credentials
-            # Log username (but not password) for debugging
-            _LOGGER.info(
-                "Setting MQTT credentials - username: %s (length: %d), password: %s (length: %d)",
-                self.username,
-                len(self.username) if self.username else 0,
-                "***" if self.password else "None",
-                len(self.password) if self.password else 0
-            )
-            _LOGGER.info(
-                "MQTT topics will use certificateAccount: %s",
-                self._certificate_account
-            )
-            _LOGGER.info(
-                "MQTT topics: quota=%s, status=%s, set=%s, set_reply=%s",
-                self._quota_topic,
-                self._status_topic,
-                self._set_topic,
-                self._set_reply_topic
-            )
             self._client.username_pw_set(self.username, self.password)
             
             # Configure TLS - run in executor to avoid blocking the event loop
@@ -138,12 +117,6 @@ class EcoFlowMQTTClient:
             self._client.on_message = self._on_message
             
             # Connect to broker
-            _LOGGER.info(
-                "Connecting to MQTT broker %s:%d for device %s",
-                MQTT_BROKER,
-                MQTT_PORT,
-                self.device_sn
-            )
             
             # Use loop_start() for async operation
             self._client.connect_async(MQTT_BROKER, MQTT_PORT, MQTT_KEEPALIVE)
@@ -225,19 +198,12 @@ class EcoFlowMQTTClient:
         
         if rc == 0:
             self._connected = True
-            _LOGGER.info("✅ Connected to MQTT broker for device %s", self.device_sn)
+            _LOGGER.info("MQTT connected for device %s", self.device_sn)
             
-            # Subscribe to device quota topic (for real-time updates)
+            # Subscribe to topics
             client.subscribe(self._quota_topic, qos=1)
-            _LOGGER.info("Subscribed to quota topic: %s", self._quota_topic)
-            
-            # Subscribe to device status topic (for online/offline status)
             client.subscribe(self._status_topic, qos=1)
-            _LOGGER.info("Subscribed to status topic: %s", self._status_topic)
-            
-            # Subscribe to set_reply topic (for command responses)
             client.subscribe(self._set_reply_topic, qos=1)
-            _LOGGER.info("Subscribed to set_reply topic: %s", self._set_reply_topic)
         else:
             self._connected = False
             error_msg = error_messages.get(rc, f"Unknown error (code {rc})")
@@ -290,19 +256,14 @@ class EcoFlowMQTTClient:
         """Handle received MQTT message."""
         try:
             payload = json.loads(msg.payload.decode())
-            _LOGGER.debug("Received MQTT message from %s: %s", msg.topic, payload)
             
             # Handle different topic types
             if msg.topic == self._quota_topic:
                 # Quota topic: payload can be direct data or wrapped in "params"
-                # Try "params" first, then use payload directly
                 if "params" in payload:
                     quota_data = payload["params"]
-                    _LOGGER.debug("Received quota update (wrapped): %s", quota_data)
                 else:
-                    # Payload is already the device data (no wrapper)
                     quota_data = payload
-                    _LOGGER.debug("Received quota update (direct): %s", quota_data)
                 
                 if self.on_message_callback:
                     self.on_message_callback(quota_data)
@@ -311,19 +272,15 @@ class EcoFlowMQTTClient:
                 # Status topic: payload has "params.status" (0=offline, 1=online)
                 if "params" in payload and "status" in payload["params"]:
                     status = payload["params"]["status"]
-                    _LOGGER.info("Device status update: %s (0=offline, 1=online)", status)
-                    # Could add status callback here if needed
-                else:
-                    _LOGGER.warning("Status message missing 'params.status': %s", payload)
+                    _LOGGER.info("Device %s status: %s", self.device_sn, "online" if status == 1 else "offline")
                     
             elif msg.topic == self._set_reply_topic:
-                # Set reply topic: payload has "data" with command result
-                # Format: {"data": {...result...}, "id": ...}
-                _LOGGER.debug("Received set_reply: %s", payload)
-                # Could add reply callback here if needed
+                # Set reply topic: command response - only log if there's an error
+                if "code" in payload and payload.get("code") != 0:
+                    _LOGGER.warning("Command response error: %s", payload)
                 
             else:
-                # Unknown topic, pass to callback as-is
+                # Unknown topic
                 if self.on_message_callback:
                     self.on_message_callback(payload)
                 

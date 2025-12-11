@@ -118,6 +118,9 @@
       "bms_err_code": {
         "name": "BMS Error Code"
       },
+      "bms_cycles": {
+        "name": "Battery Cycles"
+      },
       "cms_batt_soc": {
         "name": "System Battery Level"
       },

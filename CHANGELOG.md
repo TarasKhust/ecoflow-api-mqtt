@@ -5,131 +5,47 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.3.0-beta22] - 2025-12-11
+## [1.3.0] - 2025-12-11
 
-### Added
-- 🎨 **HACS Icon** - Added custom SVG icon for HACS display
-  - Dark theme with teal/green battery design
-  - Lightning bolt charging indicator
-  - EcoFlow text branding
-  - Icon visible in HACS integration list
+### 🚀 Major Features
 
-## [1.3.0-beta21] - 2025-12-11
+- **Hybrid REST API + MQTT Support** - Real-time updates via MQTT with REST API for device control
+  - ⚡ Real-time sensor updates (no polling delay)
+  - 🔧 Reliable device control via REST API
+  - 🔄 Automatic fallback to REST-only if MQTT unavailable
+  - 📉 Reduced API calls when MQTT is active
 
-### Added
-- 🔄 **Battery Cycles Sensor** - Added missing cycles entity
-  - Added `bms_cycles` sensor to track battery charge/discharge cycles
-  - Uses `cycles` field from MQTT BMS data
-  - StateClass.TOTAL_INCREASING for proper statistics tracking
-  - Now visible in Home Assistant: `sensor.ecoflow_delta_pro_3_battery_cycles`
+- **Battery Cycles Sensor** - Track battery charge/discharge cycles via MQTT
+  - Uses `cycles` field from BMS data
+  - StateClass.TOTAL_INCREASING for proper statistics
 
-## [1.3.0-beta20] - 2025-12-11
+- **Energy Dashboard Integration** - Automatic kWh sensors from power sensors
+  - Total Input/Output Energy sensors (enabled by default)
+  - AC Input Energy sensor (disabled by default)
+  - Compatible with HA Energy Dashboard
 
-### Fixed
-- 🔒 **SSL Blocking Warning** - Fixed blocking call to ssl.create_default_context()
-  - `ssl.create_default_context()` loads certificates from disk (blocking I/O)
-  - Moved to `run_in_executor` to avoid blocking the event loop
-  - Fixes warning: `Detected blocking call to load_default_certs`
-  - Fixes warning: `Detected blocking call to set_default_verify_paths`
-  - MQTT connection now initializes without blocking Home Assistant
+### 🔧 Improvements
 
-## [1.3.0-beta19] - 2025-12-11
+- **HACS Icon** - Custom SVG icon for HACS integration display
+- **Cleaned up logging** - Removed verbose debug logs, only important messages remain
+- **Thread-safe MQTT** - Fixed callback thread safety for proper HA event loop integration
+- **SSL async initialization** - Moved blocking SSL context creation to executor
+- **IntegrationSensor fix** - Fixed missing `hass` argument for energy sensors
+- **HA 2025.4 compatibility** - Removed deprecated `async_add_job`
 
-### Fixed
-- 🔄 **MQTT Callback Fix** - Fixed TypeError with async_set_updated_data
-  - `async_set_updated_data` is actually a sync method (despite the `async_` prefix)
-  - It just sets data and notifies listeners, no async operations needed
-  - Removed `async_create_task` wrapper - just call the method directly
-  - Fixes `TypeError: a coroutine was expected, got None`
-  - MQTT updates now properly synchronize with Home Assistant entities
+### 📁 Home Assistant Automations (in `automations/` folder)
 
-## [1.3.0-beta18] - 2025-12-11
+- **Smart Charging** - Adaptive charging based on Yasno power outage schedule
+- **Power Switch** - Grid/battery switch notifications
+- **Battery Alerts** - Low/critical battery, high temp, full charge notifications
 
-### Fixed
-- 🔄 **Thread Safety Fix** - Fixed AttributeError with async_run_callback_threadsafe
-  - Replaced non-existent `async_run_callback_threadsafe` with `call_soon_threadsafe`
-  - Use `hass.loop.call_soon_threadsafe` with `async_create_task` for thread-safe async calls
-  - This was incorrect - async_set_updated_data is sync, fixed in beta19
+### 📝 Other Changes
 
-## [1.3.0-beta17] - 2025-12-11
-
-### Fixed
-- 🔄 **Deprecation Warning** - Replaced deprecated async_add_job
-  - Replaced `async_add_job` with `async_run_callback_threadsafe` (incorrect - doesn't exist)
-  - This was the attempted replacement for HA 2025.4+ compatibility
-  - Fixed in beta18 with correct implementation
-
-## [1.3.0-beta16] - 2025-12-11
-
-### Fixed
-- 🔧 **IntegrationSensor Initialization** - Fixed missing hass argument
-  - Added `hass` parameter to `EcoFlowIntegralEnergySensor.__init__()`
-  - Updated all `EcoFlowIntegralEnergySensor` instantiations to pass `hass`
-  - Fixes `TypeError: IntegrationSensor.__init__() missing 1 required positional argument: 'hass'`
-  - Energy sensors now initialize correctly for Home Assistant Energy Dashboard
-
-## [1.3.0-beta15] - 2025-12-11
-
-### Fixed
-- 🔄 **MQTT Thread Safety** - Fixed TypeError in MQTT callback
-  - Replaced `async_create_task` with `async_add_job` for proper thread-safe async calls
-  - `async_add_job` is the standard Home Assistant way to call async functions from other threads
-  - Fixes `TypeError: a coroutine was expected, got None` error
-  - Ensures MQTT updates properly synchronize with Home Assistant entities
-
-## [1.3.0-beta14] - 2025-12-11
-
-### Fixed
-- 🔄 **MQTT Data Updates** - Fixed dashboard not updating in real-time
-  - Fixed MQTT callback thread safety issue
-  - Properly schedules coordinator updates from MQTT thread to HA event loop
-  - Entities now receive updates immediately when MQTT data arrives
-  - Fixes issue where dashboard only updated when official app was opened
-  - Uses `call_soon_threadsafe` for proper async function scheduling
-
-### Changed
-- 📊 **Automation Time Formatting** - Improved time display in notifications
-  - Changed time format from decimal hours (e.g., `2.4h`) to readable format (e.g., `2h 40m`)
-  - Battery level percentages now rounded to whole numbers (e.g., `75%` instead of `75.48937%`)
-  - Applied to all three automations: Smart Charging, Power Switch, Battery Alerts
-
-## [1.3.0-beta13] - 2025-12-11
-
-### Added
-- 🔄 **Device Wake-Up Mechanism** - Fixes data update issues
-  - Automatically sends wake-up request before fetching data
-  - Smart wake-up: skips if MQTT is active (device already awake)
-  - Fixes issue where data doesn't update until official app is opened
-  - Uses REST API wake-up with 0.5s delay for device activation
-  - Hybrid mode: leverages MQTT connection to keep device active
-
-### Fixed
-- 📊 **Timestamp Sensors** - Improved handling of timestamp data
-  - Added support for numeric Unix timestamps (milliseconds and seconds)
-  - Automatically converts numeric timestamps to datetime objects
-  - Fixes `quota_cloud_ts` and `quota_device_ts` sensors
-
-### Changed
-- 📝 **Repository Cleanup** - Non-commercial license and better organization
-  - Changed license to Non-Commercial License
-  - Renamed repository to `ecoflow-api-mqtt`
-  - Added direct HACS installation link
-  - Added Hybrid Mode documentation
-  - Removed development helper scripts from repository
-  - Cleaned up `.gitignore` rules
-
-### Home Assistant Automations (in `automations/` folder)
-- ⚡ **Smart Charging** - Adaptive charging based on power outage schedule
-  - Adjusts charging power based on Yasno power outage predictions
-  - Calculates optimal power to reach 100% before outage
-  - Adaptive polling intervals (5/10/15 min based on urgency)
-  - Shows outage type and duration in notifications
-- 🔌 **Power Switch** - Combined grid/battery switch notifications
-  - Single automation for both grid and battery mode
-  - Shows charge/discharge time and power consumption
-- 🔋 **Battery Alerts** - Combined battery status notifications
-  - Low battery (<20%), Critical (<10%), High temp (>40°C), Full charge
-  - Smart notifications with relevant information per alert type
+- Non-Commercial License
+- Repository renamed to `ecoflow-api-mqtt`
+- Direct HACS installation link in README
+- Hybrid Mode documentation
+- Removed development helper scripts
 
 ## [1.3.0-beta12] - 2025-12-10
 
