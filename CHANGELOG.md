@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.3.0-beta16] - 2025-12-11
+
+### Fixed
+- 🔧 **IntegrationSensor Initialization** - Fixed missing hass argument
+  - Added `hass` parameter to `EcoFlowIntegralEnergySensor.__init__()`
+  - Updated all `EcoFlowIntegralEnergySensor` instantiations to pass `hass`
+  - Fixes `TypeError: IntegrationSensor.__init__() missing 1 required positional argument: 'hass'`
+  - Energy sensors now initialize correctly for Home Assistant Energy Dashboard
+
 ## [1.3.0-beta15] - 2025-12-11
 
 ### Fixed
