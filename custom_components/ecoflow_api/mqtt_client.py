@@ -119,10 +119,17 @@ class EcoFlowMQTTClient:
             )
             self._client.username_pw_set(self.username, self.password)
             
-            # Configure TLS
-            ssl_context = ssl.create_default_context()
-            ssl_context.check_hostname = False
-            ssl_context.verify_mode = ssl.CERT_NONE
+            # Configure TLS - run in executor to avoid blocking the event loop
+            # ssl.create_default_context() loads certificates from disk which is blocking I/O
+            def create_ssl_context():
+                """Create SSL context (blocking operation)."""
+                context = ssl.create_default_context()
+                context.check_hostname = False
+                context.verify_mode = ssl.CERT_NONE
+                return context
+            
+            loop = asyncio.get_event_loop()
+            ssl_context = await loop.run_in_executor(None, create_ssl_context)
             self._client.tls_set_context(ssl_context)
             
             # Set callbacks
