@@ -95,6 +95,11 @@ EcoFlow_API_Postman_Collection.json
 POSTMAN_SETUP.md
 *_test.py
 
+# Development helper scripts (local use only)
+check_structure.py
+run_tests.py
+create_release_zip.py
+
 
 .cursorrules
 shared-rules/.cursor
