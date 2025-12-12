@@ -12,7 +12,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import EcoFlowApiClient, EcoFlowApiError
-from .const import DOMAIN, OPTS_DIAGNOSTIC_MODE
+from .const import DOMAIN, OPTS_DIAGNOSTIC_MODE, OPTS_VERBOSE_LOGGING
 from .data_holder import BoundFifoList
 
 _LOGGER = logging.getLogger(__name__)
@@ -91,6 +91,12 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # Don't fail on wake-up errors - device might already be awake
             pass
 
+    def _is_verbose_logging_enabled(self) -> bool:
+        """Check if verbose logging is enabled in options."""
+        if self.config_entry:
+            return self.config_entry.options.get(OPTS_VERBOSE_LOGGING, False)
+        return False
+
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from API.
         
@@ -103,12 +109,13 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         try:
             timestamp = datetime.now().strftime("%H:%M:%S")
             
-            _LOGGER.info(
-                "🔄 [%s] REST UPDATE for %s (interval=%ds, mode=REST-only)",
-                timestamp,
-                self.device_sn[-4:],
-                self.update_interval_seconds
-            )
+            if self._is_verbose_logging_enabled():
+                _LOGGER.info(
+                    "🔄 [%s] REST UPDATE for %s (interval=%ds, mode=REST-only)",
+                    timestamp,
+                    self.device_sn[-4:],
+                    self.update_interval_seconds
+                )
             
             # Wake up device before requesting data
             # This helps with devices that go to sleep and don't respond
@@ -134,30 +141,32 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     if key not in data:
                         changed_fields.append((key, self._last_data[key], None))
             
-            _LOGGER.info(
-                "✅ [%s] REST update for %s: received %d fields, %d changed",
-                timestamp,
-                self.device_sn[-4:],
-                field_count,
-                len(changed_fields)
-            )
-            
-            # Log changed fields
-            if changed_fields:
+            if self._is_verbose_logging_enabled():
                 _LOGGER.info(
-                    "📊 [%s] Changed fields (%d total):",
+                    "✅ [%s] REST update for %s: received %d fields, %d changed",
                     timestamp,
+                    self.device_sn[-4:],
+                    field_count,
                     len(changed_fields)
                 )
-                for key, old_val, new_val in changed_fields:
-                    old_str = str(old_val)[:50] if old_val is not None else "None"
-                    new_str = str(new_val)[:50] if new_val is not None else "None"
-                    _LOGGER.info("   • %s: %s → %s", key, old_str, new_str)
-            else:
-                _LOGGER.info(
-                    "📊 [%s] No changes detected (device in stable state)",
-                    timestamp
-                )
+            
+            # Log changed fields (only if verbose logging enabled)
+            if self._is_verbose_logging_enabled():
+                if changed_fields:
+                    _LOGGER.info(
+                        "📊 [%s] Changed fields (%d total):",
+                        timestamp,
+                        len(changed_fields)
+                    )
+                    for key, old_val, new_val in changed_fields:
+                        old_str = str(old_val)[:50] if old_val is not None else "None"
+                        new_str = str(new_val)[:50] if new_val is not None else "None"
+                        _LOGGER.info("   • %s: %s → %s", key, old_str, new_str)
+                else:
+                    _LOGGER.info(
+                        "📊 [%s] No changes detected (device in stable state)",
+                        timestamp
+                    )
             
             # Store diagnostic data if enabled
             if self._diagnostic_mode:

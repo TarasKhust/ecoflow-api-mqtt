@@ -87,10 +87,18 @@
         "title": "EcoFlow API Options",
         "description": "Configure update interval for sensor data polling.\n\n**Note:** Lower intervals provide faster updates but may increase API usage.",
         "data": {
-          "update_interval": "Update Interval"
+          "update_interval": "Update Interval",
+          "mqtt_enabled": "Enable MQTT (Real-time updates)",
+          "mqtt_username": "MQTT Username",
+          "mqtt_password": "MQTT Password",
+          "verbose_logging": "Verbose Logging (Debug Mode)",
+          "diagnostic_mode": "Diagnostic Mode"
         },
         "data_description": {
-          "update_interval": "How often to refresh sensor data from the EcoFlow API"
+          "update_interval": "How often to refresh sensor data from the EcoFlow API",
+          "mqtt_enabled": "Enable real-time updates via MQTT protocol",
+          "verbose_logging": "Enable detailed logging for debugging (shows REST/MQTT updates and field changes)",
+          "diagnostic_mode": "Enable diagnostic mode for troubleshooting"
         }
       }
     }
