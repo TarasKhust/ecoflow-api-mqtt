@@ -446,6 +446,11 @@
         "name": "Bluetooth Standby Time"
       }
     },
+    "button": {
+      "wake_device": {
+        "name": "Wake Device"
+      }
+    },
     "select": {
       "ac_standby_time": {
         "name": "AC Standby Time"
