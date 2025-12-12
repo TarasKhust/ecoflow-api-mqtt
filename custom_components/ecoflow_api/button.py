@@ -20,8 +20,8 @@ _LOGGER = logging.getLogger(__name__)
 class EcoFlowWakeDeviceButton(EcoFlowBaseEntity, ButtonEntity):
     """Button to manually wake up EcoFlow device."""
     
-    _attr_icon = "mdi:power-wake"
-    _attr_name = "Wake Device"
+    _attr_icon = "mdi:alarm-bell"
+    _attr_entity_category = None  # Show in main controls, not config
     
     def __init__(
         self,
@@ -32,6 +32,7 @@ class EcoFlowWakeDeviceButton(EcoFlowBaseEntity, ButtonEntity):
         """Initialize wake device button."""
         super().__init__(coordinator, device_sn, device_type)
         self._attr_unique_id = f"{device_sn}_wake_device"
+        self._attr_name = "Wake Device"
         self._attr_translation_key = "wake_device"
     
     async def async_press(self) -> None:
