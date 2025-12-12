@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from datetime import timedelta
 from typing import Any
 
@@ -18,6 +19,7 @@ from homeassistant.helpers.update_coordinator import UpdateFailed
 from .api import EcoFlowApiClient, EcoFlowApiError
 from .const import DOMAIN
 from .coordinator import EcoFlowDataCoordinator
+from .data_holder import BoundFifoList
 from .mqtt_client import EcoFlowMQTTClient
 
 _LOGGER = logging.getLogger(__name__)
@@ -78,6 +80,10 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         self._mqtt_data: dict[str, Any] = {}
         self._mqtt_connected = False
         self._use_mqtt = False
+        
+        # MQTT messages collection for diagnostic mode
+        if self._diagnostic_mode:
+            self.mqtt_messages: BoundFifoList[dict[str, Any]] = BoundFifoList(maxlen=20)
         
     @property
     def mqtt_connected(self) -> bool:
@@ -198,6 +204,15 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                 self.device_sn,
                 field_count
             )
+            
+            # Store MQTT message in diagnostic mode
+            if self._diagnostic_mode:
+                self.mqtt_messages.append({
+                    "timestamp": time.time(),
+                    "device_sn": self.device_sn,
+                    "topic": topic,
+                    "payload": mqtt_data,
+                })
             
             # Merge MQTT data with existing data
             self._mqtt_data.update(mqtt_data)

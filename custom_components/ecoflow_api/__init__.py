@@ -31,6 +31,7 @@ from .const import (
 )
 from .coordinator import EcoFlowDataCoordinator
 from .hybrid_coordinator import EcoFlowHybridCoordinator
+from .migrations import async_migrate_entry
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -53,6 +54,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     Returns:
         True if setup was successful
     """
+    # Migrate config entry if needed
+    await async_migrate_entry(hass, entry)
+    
     hass.data.setdefault(DOMAIN, {})
 
     # Create API client
@@ -172,6 +176,39 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         )
 
     return unload_ok
+
+
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Handle removal of an entry.
+    
+    Cleans up device and entity registry entries.
+    
+    Args:
+        hass: Home Assistant instance
+        entry: Config entry being removed
+    """
+    from homeassistant.helpers import device_registry as dr, entity_registry as er
+    
+    # Clean up device registry
+    device_registry = dr.async_get(hass)
+    devices = dr.async_entries_for_config_entry(device_registry, entry.entry_id)
+    for device in devices:
+        device_registry.async_remove_device(device.id)
+        _LOGGER.debug("Removed device %s from registry", device.id)
+    
+    # Clean up entity registry
+    entity_registry = er.async_get(hass)
+    entities = er.async_entries_for_config_entry(entity_registry, entry.entry_id)
+    for entity in entities:
+        entity_registry.async_remove(entity.entity_id)
+        _LOGGER.debug("Removed entity %s from registry", entity.entity_id)
+    
+    _LOGGER.info(
+        "Cleaned up %d devices and %d entities for config entry %s",
+        len(devices),
+        len(entities),
+        entry.entry_id,
+    )
 
 
 async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
