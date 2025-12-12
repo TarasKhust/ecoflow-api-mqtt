@@ -196,14 +196,21 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         if self._rest_update_timer:
             self._rest_update_timer.cancel()
         
-        # Schedule next update
+        # Schedule next update - use hass.async_create_task for proper tracking
+        async def do_update():
+            try:
+                await self._do_rest_update()
+            except Exception as err:
+                _LOGGER.error("Error in scheduled REST update: %s", err)
+        
         self._rest_update_timer = self.hass.loop.call_later(
             self.update_interval_seconds,
-            lambda: asyncio.create_task(self._do_rest_update())
+            lambda: self.hass.async_create_task(do_update())
         )
     
     async def _do_rest_update(self) -> None:
         """Perform REST update and schedule next one."""
+        _LOGGER.debug("Executing scheduled REST update")
         try:
             # Force refresh (this calls _async_update_data)
             await self.async_refresh()
