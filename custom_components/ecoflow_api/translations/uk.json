@@ -298,20 +298,29 @@
       }
     },
     "switch": {
-      "ac_out_state": {
-        "name": "AC вихід"
+      "ac_hv_out": {
+        "name": "AC HV вихід"
       },
-      "dc_out_state": {
-        "name": "DC вихід"
+      "ac_lv_out": {
+        "name": "AC LV вихід"
       },
-      "dc12v_out_state": {
+      "dc_12v_out": {
         "name": "12V DC вихід"
       },
-      "beep_state": {
+      "x_boost": {
+        "name": "X-Boost"
+      },
+      "beeper": {
         "name": "Звуковий сигнал"
       },
-      "x_boost_state": {
-        "name": "X-Boost"
+      "ac_energy_saving": {
+        "name": "Енергозбереження AC"
+      },
+      "generator_auto_start": {
+        "name": "Автозапуск генератора"
+      },
+      "gfci": {
+        "name": "GFCI"
       }
     },
     "number": {

@@ -755,7 +755,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
     "utc_timezone": {
         "name": "UTC Timezone Offset",
         "key": "utcTimezone",
-        "unit": None,
+        "unit": "min",
         "device_class": None,
         "state_class": None,
         "icon": "mdi:clock-outline",
@@ -1128,6 +1128,17 @@ class EcoFlowSensor(EcoFlowBaseEntity, SensorEntity):
         if api_key in ["bmsChgDsgState", "cmsChgDsgState"]:
             state_map = {0: "idle", 1: "charging", 2: "discharging"}
             return state_map.get(value, "idle")
+        
+        # UTC Timezone Offset - value is already in minutes from API
+        # EcoFlow API returns timezone offset in minutes (e.g., 200 = 200 minutes = UTC+3:20)
+        # We keep it as-is since it's already in the correct format
+        if api_key == "utcTimezone":
+            if isinstance(value, (int, float)):
+                # If value is very large (> 1000), might be in seconds, convert to minutes
+                if abs(value) > 1000:
+                    value = value / 60
+                # Return as integer minutes (value from API is already in minutes)
+                return int(value)
         
         # Convert boolean to string for text sensors
         if isinstance(value, bool):
