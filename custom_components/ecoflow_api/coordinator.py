@@ -105,6 +105,16 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             UpdateFailed: If data fetch fails
         """
         try:
+            # Debug logging (only if logger level is DEBUG)
+            if _LOGGER.isEnabledFor(logging.DEBUG):
+                timestamp = datetime.now().strftime("%H:%M:%S")
+                _LOGGER.debug(
+                    "🔄 [%s] REST UPDATE for %s (interval=%ds, mode=REST-only)",
+                    timestamp,
+                    self.device_sn[-4:],
+                    self.update_interval_seconds
+                )
+            
             # Wake up device before requesting data
             await self._async_wake_device()
             
@@ -119,6 +129,39 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     self.device_sn[-4:],
                     self.update_interval_seconds
                 )
+            
+            # Debug: Log data details
+            if _LOGGER.isEnabledFor(logging.DEBUG):
+                timestamp = datetime.now().strftime("%H:%M:%S")
+                field_count = len(data)
+                
+                # Compare with previous data
+                changed_fields = []
+                if self._last_data is not None:
+                    for key, new_value in data.items():
+                        old_value = self._last_data.get(key)
+                        if old_value != new_value:
+                            changed_fields.append((key, old_value, new_value))
+                    for key in self._last_data:
+                        if key not in data:
+                            changed_fields.append((key, self._last_data[key], None))
+                
+                _LOGGER.debug(
+                    "✅ [%s] REST update for %s: received %d fields, %d changed",
+                    timestamp,
+                    self.device_sn[-4:],
+                    field_count,
+                    len(changed_fields)
+                )
+                
+                if changed_fields:
+                    _LOGGER.debug("📊 [%s] Changed fields (%d total):", timestamp, len(changed_fields))
+                    for key, old_val, new_val in changed_fields[:10]:  # Show max 10
+                        old_str = str(old_val)[:50] if old_val is not None else "None"
+                        new_str = str(new_val)[:50] if new_val is not None else "None"
+                        _LOGGER.debug("   • %s: %s → %s", key, old_str, new_str)
+                    if len(changed_fields) > 10:
+                        _LOGGER.debug("   ... and %d more", len(changed_fields) - 10)
             
             # Store diagnostic data if enabled
             if self._diagnostic_mode:

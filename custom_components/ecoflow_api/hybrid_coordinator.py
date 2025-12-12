@@ -239,6 +239,29 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             # So payload here is the actual device data
             mqtt_data = payload
             
+            # Debug logging (only if logger level is DEBUG)
+            if _LOGGER.isEnabledFor(logging.DEBUG):
+                timestamp = datetime.now().strftime("%H:%M:%S")
+                fields_count = len(mqtt_data)
+                
+                _LOGGER.debug(
+                    "⚡ [%s] MQTT message for %s: %d fields updated",
+                    timestamp,
+                    self.device_sn[-4:],
+                    fields_count
+                )
+                
+                if fields_count > 0:
+                    field_names = list(mqtt_data.keys())
+                    if fields_count <= 10:
+                        _LOGGER.debug("   Fields: %s", ", ".join(field_names))
+                    else:
+                        _LOGGER.debug(
+                            "   Fields: %s ... (+%d more)",
+                            ", ".join(field_names[:10]),
+                            fields_count - 10
+                        )
+            
             # Store MQTT message in diagnostic mode
             if self._diagnostic_mode:
                 self.mqtt_messages.append({
@@ -323,6 +346,22 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             UpdateFailed: If data fetch fails
         """
         try:
+            # Debug logging (only if logger level is DEBUG)
+            if _LOGGER.isEnabledFor(logging.DEBUG):
+                timestamp = datetime.now().strftime("%H:%M:%S")
+                time_since_last = None
+                if self._last_rest_update:
+                    time_since_last = time.time() - self._last_rest_update
+                
+                _LOGGER.debug(
+                    "🔄 [%s] REST UPDATE TRIGGERED for %s (configured_interval=%ds, actual_since_last=%.1fs, mqtt=%s)",
+                    timestamp,
+                    self.device_sn[-4:],
+                    self.update_interval_seconds,
+                    time_since_last if time_since_last else 0,
+                    "ON" if self._mqtt_connected else "OFF"
+                )
+            
             # Wake up device before requesting data
             await self._async_wake_device()
             
@@ -340,6 +379,39 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                     self.update_interval_seconds
                 )
             
+            # Debug: Log data details
+            if _LOGGER.isEnabledFor(logging.DEBUG):
+                timestamp = datetime.now().strftime("%H:%M:%S")
+                field_count = len(rest_data)
+                
+                # Compare with previous data
+                changed_fields = []
+                if self._last_data is not None:
+                    for key, new_value in rest_data.items():
+                        old_value = self._last_data.get(key)
+                        if old_value != new_value:
+                            changed_fields.append((key, old_value, new_value))
+                    for key in self._last_data:
+                        if key not in rest_data:
+                            changed_fields.append((key, self._last_data[key], None))
+                
+                _LOGGER.debug(
+                    "✅ [%s] REST update for %s: received %d fields, %d changed",
+                    timestamp,
+                    self.device_sn[-4:],
+                    field_count,
+                    len(changed_fields)
+                )
+                
+                if changed_fields:
+                    _LOGGER.debug("📊 [%s] Changed fields (%d total):", timestamp, len(changed_fields))
+                    for key, old_val, new_val in changed_fields[:10]:  # Show max 10
+                        old_str = str(old_val)[:50] if old_val is not None else "None"
+                        new_str = str(new_val)[:50] if new_val is not None else "None"
+                        _LOGGER.debug("   • %s: %s → %s", key, old_str, new_str)
+                    if len(changed_fields) > 10:
+                        _LOGGER.debug("   ... and %d more", len(changed_fields) - 10)
+            
             # Update last REST update timestamp
             self._last_rest_update = time.time()
             
@@ -348,7 +420,21 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             
             # If MQTT is active, merge data
             if self._use_mqtt and self._mqtt_connected:
-                return self._merge_data()
+                merged = self._merge_data()
+                
+                # Debug: Log merge info
+                if _LOGGER.isEnabledFor(logging.DEBUG):
+                    timestamp = datetime.now().strftime("%H:%M:%S")
+                    _LOGGER.debug(
+                        "🔀 [%s] Merged data for %s: REST=%d + MQTT=%d = Total=%d unique fields",
+                        timestamp,
+                        self.device_sn[-4:],
+                        len(rest_data),
+                        len(self._mqtt_data),
+                        len(merged)
+                    )
+                
+                return merged
             else:
                 # REST only
                 return rest_data
