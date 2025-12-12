@@ -168,6 +168,14 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             # So payload here is the actual device data
             mqtt_data = payload
             
+            # Log what fields we received via MQTT
+            field_count = len(mqtt_data)
+            _LOGGER.debug(
+                "MQTT update for %s: received %d fields",
+                self.device_sn,
+                field_count
+            )
+            
             # Merge MQTT data with existing data
             self._mqtt_data.update(mqtt_data)
             
@@ -206,22 +214,30 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         until "woken up" by sending a request. This method sends a wake-up
         request to ensure device is responsive before fetching actual data.
         
-        If MQTT is active and receiving data, wake-up may not be needed.
-        Otherwise uses REST API wake-up (most reliable method).
-        """
-        # If MQTT is active and we have recent data, device is likely awake
-        if self._mqtt_connected and self._mqtt_data:
-            return
+        EcoFlow devices often go to sleep when:
+        - App is closed
+        - No activity for some time
+        - Screen is off
         
-        # Device might be sleeping - send wake-up request via REST API
+        When sleeping, devices may:
+        - Stop sending MQTT updates for some fields
+        - Return stale data via REST API
+        - Not update timestamps
+        
+        Solution: Always wake device before REST polling to ensure fresh data.
+        """
+        # Always wake device before REST polling
+        # This ensures we get fresh data even if device was sleeping
         try:
+            _LOGGER.debug("Waking up device %s before data fetch", self.device_sn)
             # Send a wake-up request (first quota request to wake device)
             # This is a lightweight operation that helps wake sleeping devices
             await self.client.get_device_quota(self.device_sn)
-            # Small delay to allow device to wake up
-            await asyncio.sleep(0.5)
-        except Exception:
+            # Small delay to allow device to wake up and prepare data
+            await asyncio.sleep(1.0)
+        except Exception as err:
             # Don't fail on wake-up errors - device might already be awake
+            _LOGGER.debug("Wake-up request failed (device may already be awake): %s", err)
             pass
 
     async def _async_update_data(self) -> dict[str, Any]:
@@ -240,16 +256,35 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             await self._async_wake_device()
             
             # Fetch from REST API (less frequently if MQTT is active)
+            _LOGGER.debug("Fetching REST data for %s", self.device_sn)
             rest_data = await self.client.get_device_quota(self.device_sn)
+            
+            rest_field_count = len(rest_data)
+            _LOGGER.debug(
+                "REST update for %s: received %d fields",
+                self.device_sn,
+                rest_field_count
+            )
             
             # Store last successful REST data
             self._last_data = rest_data
             
             # If MQTT is active, merge data
             if self._use_mqtt and self._mqtt_connected:
-                return self._merge_data()
+                merged = self._merge_data()
+                mqtt_field_count = len(self._mqtt_data)
+                total_fields = len(merged)
+                _LOGGER.debug(
+                    "Merged data for %s: REST=%d + MQTT=%d = Total=%d fields",
+                    self.device_sn,
+                    rest_field_count,
+                    mqtt_field_count,
+                    total_fields
+                )
+                return merged
             else:
                 # REST only
+                _LOGGER.debug("Using REST data only for %s", self.device_sn)
                 return rest_data
             
         except EcoFlowApiError as err:
