@@ -145,16 +145,16 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                 _LOGGER.info("MQTT connected successfully for device %s", self.device_sn)
                 
                 # Increase REST polling interval since we have real-time updates
-                self.update_interval = timedelta(seconds=self.update_interval_seconds * 4)
+                # Changed from 4x to 2x for better data freshness (15s → 30s instead of 60s)
+                self.update_interval = timedelta(seconds=self.update_interval_seconds * 2)
                 _LOGGER.info(
-                    "⚠️ REST polling interval changed: %d → %d seconds (MQTT active, real-time updates)",
+                    "⚠️ REST polling interval changed: %d → %d seconds (MQTT provides real-time updates for changing fields)",
                     self.update_interval_seconds,
-                    self.update_interval_seconds * 4
+                    self.update_interval_seconds * 2
                 )
                 _LOGGER.info(
-                    "⚠️ Current update_interval_seconds=%d, update_interval=%s",
-                    self.update_interval_seconds,
-                    self.update_interval
+                    "⚠️ Hybrid mode active: MQTT for real-time + REST every %d seconds for all fields",
+                    self.update_interval_seconds * 2
                 )
             else:
                 _LOGGER.warning(
