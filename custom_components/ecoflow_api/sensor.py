@@ -1087,15 +1087,23 @@ class EcoFlowSensor(EcoFlowBaseEntity, SensorEntity):
                 try:
                     # Parse timestamp string and make it timezone aware
                     dt = datetime.fromisoformat(value.replace(' ', 'T'))
-                    # If no timezone, assume UTC
+                    # If no timezone, assume UTC (EcoFlow API timestamps are in UTC)
                     if dt.tzinfo is None:
                         dt = dt_util.as_utc(dt)
+                    # Ensure it's timezone-aware UTC for proper local time conversion
+                    if dt.tzinfo != dt_util.UTC:
+                        dt = dt.astimezone(dt_util.UTC)
                     return dt
                 except (ValueError, AttributeError) as e:
                     _LOGGER.warning("Failed to parse timestamp '%s': %s", value, e)
                     return None
             # If it's already a datetime, return it
             if isinstance(value, datetime):
+                # Ensure it's timezone-aware UTC
+                if value.tzinfo is None:
+                    value = dt_util.as_utc(value)
+                elif value.tzinfo != dt_util.UTC:
+                    value = value.astimezone(dt_util.UTC)
                 return value
             # Handle numeric timestamps (Unix timestamp in milliseconds or seconds)
             if isinstance(value, (int, float)):
@@ -1103,6 +1111,7 @@ class EcoFlowSensor(EcoFlowBaseEntity, SensorEntity):
                     # If timestamp is in milliseconds (> year 2000 in seconds), convert to seconds
                     if value > 946684800000:  # Year 2000 in milliseconds
                         value = value / 1000
+                    # Convert to UTC datetime (Home Assistant will auto-convert to local time)
                     return dt_util.utc_from_timestamp(value)
                 except (ValueError, OSError) as e:
                     _LOGGER.warning("Failed to convert numeric timestamp '%s': %s", value, e)
