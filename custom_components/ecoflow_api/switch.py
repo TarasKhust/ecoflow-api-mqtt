@@ -181,13 +181,6 @@ class EcoFlowSwitch(EcoFlowBaseEntity, SwitchEntity):
             }
         }
         
-        _LOGGER.debug(
-            "Sending switch command for %s: %s = %s",
-            self._switch_key,
-            command_key,
-            state
-        )
-        
         try:
             await self.coordinator.api_client.set_device_quota(
                 device_sn=device_sn,

@@ -1005,7 +1005,6 @@ async def async_setup_entry(
                 energy_sensors.append(
                     EcoFlowIntegralEnergySensor(hass, sensor, enabled_default=True)
                 )
-                _LOGGER.debug("Created energy sensor for total input power")
             
             # Total Output Power sensor (for energy dashboard)
             elif sensor._sensor_id == "pow_out_sum_w":
@@ -1014,7 +1013,6 @@ async def async_setup_entry(
                 energy_sensors.append(
                     EcoFlowIntegralEnergySensor(hass, sensor, enabled_default=True)
                 )
-                _LOGGER.debug("Created energy sensor for total output power")
             
             # AC Input Power (optional, disabled by default)
             elif sensor._sensor_id == "pow_get_ac_in":

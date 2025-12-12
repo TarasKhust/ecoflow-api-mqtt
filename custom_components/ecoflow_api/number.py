@@ -255,13 +255,6 @@ class EcoFlowNumber(EcoFlowBaseEntity, NumberEntity):
             }
         }
         
-        _LOGGER.debug(
-            "Sending number command for %s: %s = %s",
-            self._number_key,
-            command_key,
-            int_value
-        )
-        
         try:
             await self.coordinator.api_client.set_device_quota(
                 device_sn=device_sn,

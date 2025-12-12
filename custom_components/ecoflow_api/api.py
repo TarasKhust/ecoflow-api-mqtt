@@ -129,8 +129,6 @@ class EcoFlowApiClient:
             # No params: signature only from auth params
             sign_str = auth_str
         
-        _LOGGER.debug("Sign string: %s", sign_str)
-        
         signature = hmac.new(
             self._secret_key.encode("utf-8"),
             sign_str.encode("utf-8"),
@@ -147,11 +145,6 @@ class EcoFlowApiClient:
         # Only add Content-Type for POST/PUT with JSON body
         if include_content_type:
             headers["Content-Type"] = "application/json;charset=UTF-8"
-        
-        _LOGGER.debug(
-            "Generated headers: accessKey=%s..., timestamp=%s, nonce=%s, sign=%s...",
-            self._access_key[:8], timestamp, nonce, signature[:16]
-        )
         
         return headers
 
@@ -196,11 +189,6 @@ class EcoFlowApiClient:
             url = f"{self._base_url}{endpoint}?{params_str}"
         else:
             url = f"{self._base_url}{endpoint}"
-        
-        _LOGGER.debug(
-            "Making %s request to %s",
-            method, url
-        )
         
         try:
             async with asyncio.timeout(API_TIMEOUT):
@@ -252,9 +240,6 @@ class EcoFlowApiClient:
             EcoFlowApiError: If API returns an error
         """
         text = await response.text()
-        _LOGGER.debug("Response status: %s", response.status)
-        _LOGGER.debug("Response headers: %s", dict(response.headers))
-        _LOGGER.debug("Response body: %s", text[:500] if len(text) > 500 else text)
         
         if response.status == 401:
             raise EcoFlowAuthError("Authentication failed - check your API credentials")

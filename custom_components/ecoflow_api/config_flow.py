@@ -29,11 +29,7 @@ from .const import (
     DEVICE_TYPES,
     DEVICE_TYPE_DELTA_PRO_3,
     DEFAULT_UPDATE_INTERVAL,
-    OPTS_REFRESH_PERIOD_SEC,
-    OPTS_POWER_STEP,
     OPTS_DIAGNOSTIC_MODE,
-    DEFAULT_REFRESH_PERIOD_SEC,
-    DEFAULT_POWER_STEP,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -124,7 +120,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
 
                 # Test connection and get device list
-                _LOGGER.debug("Testing API connection...")
                 devices = await client.get_device_list()
                 
                 self._access_key = user_input[CONF_ACCESS_KEY]
@@ -208,7 +203,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 
                 # Try to verify device access (non-blocking)
                 try:
-                    _LOGGER.debug("Testing API connection and device access...")
                     quota = await client.get_device_quota(device_sn)
                     _LOGGER.info("Device verification successful: %s", quota)
                 except EcoFlowApiError as err:
@@ -273,7 +267,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # Try to verify device access (non-blocking - just warn if fails)
             try:
                 if self._client:
-                    _LOGGER.debug("Verifying device access for SN: %s", device_sn)
                     quota = await self._client.get_device_quota(device_sn)
                     _LOGGER.info("Device verification successful: %s", quota)
             except EcoFlowApiError as err:
@@ -365,7 +358,6 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # Try to verify device access (non-blocking - just warn if fails)
             try:
                 if self._client:
-                    _LOGGER.debug("Verifying device access for SN: %s", device_sn)
                     quota = await self._client.get_device_quota(device_sn)
                     _LOGGER.info("Device verification successful: %s", quota)
             except EcoFlowApiError as err:
@@ -506,12 +498,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         mqtt_password = self.config_entry.options.get(CONF_MQTT_PASSWORD, "")
 
         # Get current device options
-        refresh_period = self.config_entry.options.get(
-            OPTS_REFRESH_PERIOD_SEC, DEFAULT_REFRESH_PERIOD_SEC
-        )
-        power_step = self.config_entry.options.get(
-            OPTS_POWER_STEP, DEFAULT_POWER_STEP
-        )
         diagnostic_mode = self.config_entry.options.get(
             OPTS_DIAGNOSTIC_MODE, False
         )
@@ -550,23 +536,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                             "description": "EcoFlow account password OR secret_key (leave empty to use secret_key from main config)"
                         },
                     ): str,
-                    vol.Required(
-                        OPTS_REFRESH_PERIOD_SEC,
-                        default=refresh_period,
-                    ): vol.All(
-                        vol.Coerce(int),
-                        vol.Range(min=5, max=300),
-                    ),
-                    vol.Required(
-                        OPTS_POWER_STEP,
-                        default=power_step,
-                    ): vol.In(
-                        {
-                            50: "50W (Precise)",
-                            100: "100W (Recommended)",
-                            200: "200W (Fast)",
-                        }
-                    ),
                     vol.Optional(
                         OPTS_DIAGNOSTIC_MODE,
                         default=diagnostic_mode,

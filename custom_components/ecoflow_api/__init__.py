@@ -194,14 +194,12 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     devices = dr.async_entries_for_config_entry(device_registry, entry.entry_id)
     for device in devices:
         device_registry.async_remove_device(device.id)
-        _LOGGER.debug("Removed device %s from registry", device.id)
     
     # Clean up entity registry
     entity_registry = er.async_get(hass)
     entities = er.async_entries_for_config_entry(entity_registry, entry.entry_id)
     for entity in entities:
         entity_registry.async_remove(entity.entity_id)
-        _LOGGER.debug("Removed entity %s from registry", entity.entity_id)
     
     _LOGGER.info(
         "Cleaned up %d devices and %d entities for config entry %s",

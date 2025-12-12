@@ -210,7 +210,6 @@ async def async_setup_entry(
                 sensor_def=sensor_def,
             )
         )
-        _LOGGER.debug("Adding binary sensor: %s", sensor_def["name"])
 
     # Detect and add extra battery binary sensors
     if coordinator.data:
@@ -229,10 +228,6 @@ async def async_setup_entry(
                         sensor_key=sensor_key,
                         sensor_def=sensor_def,
                     )
-                )
-                _LOGGER.debug(
-                    "Adding Extra Battery %d binary sensor: %s",
-                    battery_num, sensor_def["name"]
                 )
 
     async_add_entities(entities)

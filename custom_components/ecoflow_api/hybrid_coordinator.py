@@ -189,20 +189,11 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         try:
             # Check if event loop is still running (Home Assistant not shutting down)
             if not self.hass.loop.is_running() or self.hass.loop.is_closed():
-                _LOGGER.debug("Event loop closed, ignoring MQTT message")
                 return
             
             # MQTT client already extracts params from quota topic
             # So payload here is the actual device data
             mqtt_data = payload
-            
-            # Log what fields we received via MQTT
-            field_count = len(mqtt_data)
-            _LOGGER.debug(
-                "MQTT update for %s: received %d fields",
-                self.device_sn,
-                field_count
-            )
             
             # Store MQTT message in diagnostic mode
             if self._diagnostic_mode:
@@ -224,9 +215,9 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             # Use call_soon_threadsafe to schedule it in the correct event loop
             self.hass.loop.call_soon_threadsafe(lambda: self.async_set_updated_data(merged_data))
             
-        except RuntimeError as err:
-            # Event loop closed during shutdown
-            _LOGGER.debug("Event loop closed during MQTT message handling: %s", err)
+        except RuntimeError:
+            # Event loop closed during shutdown - ignore silently
+            pass
         except Exception as err:
             _LOGGER.error("Error handling MQTT message: %s", err)
 
@@ -268,17 +259,15 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         # Always wake device before REST polling
         # This ensures we get fresh data even if device was sleeping
         try:
-            _LOGGER.debug("Waking up device %s before data fetch", self.device_sn)
-            
             # Send wake-up request - this wakes the device
             await self.client.get_device_quota(self.device_sn)
             
             # Short delay to allow device to wake up and prepare data
             await asyncio.sleep(1.0)
                 
-        except Exception as err:
+        except Exception:
             # Don't fail on wake-up errors - device might already be awake
-            _LOGGER.debug("Wake-up request failed (device may already be awake): %s", err)
+            pass
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from API (and merge with MQTT if available).
         

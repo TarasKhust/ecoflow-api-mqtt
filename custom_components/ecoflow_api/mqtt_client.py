@@ -72,11 +72,6 @@ class EcoFlowMQTTClient:
         self._set_topic = f"/open/{self._certificate_account}/{device_sn}/set"
         self._set_reply_topic = f"/open/{self._certificate_account}/{device_sn}/set_reply"
         
-        _LOGGER.debug(
-            "MQTT client initialized for device %s",
-            device_sn
-        )
-        
     @property
     def is_connected(self) -> bool:
         """Return connection status."""
@@ -167,7 +162,6 @@ class EcoFlowMQTTClient:
             result = self._client.publish(self._set_topic, payload, qos=1)
             
             if result.rc == mqtt.MQTT_ERR_SUCCESS:
-                _LOGGER.debug("Published command to %s: %s", self._set_topic, payload)
                 return True
             else:
                 _LOGGER.error("Failed to publish command: %s", result.rc)

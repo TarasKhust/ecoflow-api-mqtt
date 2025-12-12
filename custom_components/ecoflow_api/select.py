@@ -192,14 +192,6 @@ class EcoFlowSelect(EcoFlowBaseEntity, SelectEntity):
             }
         }
         
-        _LOGGER.debug(
-            "Sending select command for %s: %s = %s (%s)",
-            self._select_key,
-            command_key,
-            value,
-            option
-        )
-        
         try:
             await self.coordinator.api_client.set_device_quota(
                 device_sn=device_sn,
