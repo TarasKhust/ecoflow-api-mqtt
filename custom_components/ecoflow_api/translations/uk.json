@@ -309,6 +309,11 @@
         "name": "Мін. рівень розряду"
       }
     },
+    "button": {
+      "wake_device": {
+        "name": "Пробудити пристрій"
+      }
+    },
     "select": {
       "ac_standby_time": {
         "name": "Час очікування AC"
