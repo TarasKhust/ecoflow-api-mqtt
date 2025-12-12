@@ -109,7 +109,19 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                 self.device_sn
             )
         
+        # Listen for Home Assistant stop event to gracefully shutdown
+        self.hass.bus.async_listen_once("homeassistant_stop", self._async_handle_stop)
+        
         return True
+    
+    async def _async_handle_stop(self, event) -> None:
+        """Handle Home Assistant stop event.
+        
+        This ensures MQTT client is properly disconnected before Home Assistant shuts down,
+        preventing "Event loop is closed" errors during restart.
+        """
+        _LOGGER.info("Home Assistant stopping, shutting down MQTT for %s", self.device_sn)
+        await self.async_shutdown()
 
     async def _async_setup_mqtt(self) -> None:
         """Set up MQTT client."""
@@ -164,6 +176,11 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             payload: MQTT message payload (already extracted from quota topic params)
         """
         try:
+            # Check if event loop is still running (Home Assistant not shutting down)
+            if not self.hass.loop.is_running() or self.hass.loop.is_closed():
+                _LOGGER.debug("Event loop closed, ignoring MQTT message")
+                return
+            
             # MQTT client already extracts params from quota topic
             # So payload here is the actual device data
             mqtt_data = payload
@@ -188,6 +205,9 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             # Use call_soon_threadsafe to schedule it in the correct event loop
             self.hass.loop.call_soon_threadsafe(lambda: self.async_set_updated_data(merged_data))
             
+        except RuntimeError as err:
+            # Event loop closed during shutdown
+            _LOGGER.debug("Event loop closed during MQTT message handling: %s", err)
         except Exception as err:
             _LOGGER.error("Error handling MQTT message: %s", err)
 
