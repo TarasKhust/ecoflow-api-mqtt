@@ -296,11 +296,39 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             rest_data = await self.client.get_device_quota(self.device_sn)
             
             rest_field_count = len(rest_data)
+            
+            # Compare with previous data to find changed fields
+            changed_fields = []
+            if self._last_data:
+                for key, new_value in rest_data.items():
+                    old_value = self._last_data.get(key)
+                    if old_value != new_value:
+                        changed_fields.append((key, old_value, new_value))
+            
             _LOGGER.info(
-                "✅ REST update for %s: received %d fields",
+                "✅ REST update for %s: received %d fields (%d changed)",
                 self.device_sn,
-                rest_field_count
+                rest_field_count,
+                len(changed_fields)
             )
+            
+            # Log changed fields (limit to first 20 to avoid log spam)
+            if changed_fields:
+                changes_summary = []
+                for key, old_val, new_val in changed_fields[:20]:
+                    # Format values for readability
+                    old_str = str(old_val)[:30] if old_val is not None else "None"
+                    new_str = str(new_val)[:30] if new_val is not None else "None"
+                    changes_summary.append(f"{key}: {old_str} → {new_str}")
+                
+                if len(changed_fields) > 20:
+                    changes_summary.append(f"... and {len(changed_fields) - 20} more changes")
+                
+                _LOGGER.info(
+                    "📊 Changed fields for %s: %s",
+                    self.device_sn,
+                    "; ".join(changes_summary)
+                )
             
             # Store last successful REST data
             self._last_data = rest_data
