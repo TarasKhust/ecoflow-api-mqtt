@@ -146,12 +146,12 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                 
                 # Increase REST polling interval since we have real-time updates
                 self.update_interval = timedelta(seconds=self.update_interval_seconds * 4)
-                _LOGGER.warning(
+                _LOGGER.info(
                     "⚠️ REST polling interval changed: %d → %d seconds (MQTT active, real-time updates)",
                     self.update_interval_seconds,
                     self.update_interval_seconds * 4
                 )
-                _LOGGER.warning(
+                _LOGGER.info(
                     "⚠️ Current update_interval_seconds=%d, update_interval=%s",
                     self.update_interval_seconds,
                     self.update_interval
@@ -276,7 +276,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             UpdateFailed: If data fetch fails
         """
         try:
-            _LOGGER.warning(
+            _LOGGER.info(
                 "🔄 REST UPDATE TRIGGERED for %s (interval=%s, mqtt_connected=%s, use_mqtt=%s)",
                 self.device_sn,
                 self.update_interval,
@@ -290,11 +290,11 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             await self._async_wake_device()
             
             # Fetch from REST API (less frequently if MQTT is active)
-            _LOGGER.warning("🌐 Fetching REST data for %s", self.device_sn)
+            _LOGGER.info("🌐 Fetching REST data for %s", self.device_sn)
             rest_data = await self.client.get_device_quota(self.device_sn)
             
             rest_field_count = len(rest_data)
-            _LOGGER.warning(
+            _LOGGER.info(
                 "✅ REST update for %s: received %d fields",
                 self.device_sn,
                 rest_field_count
@@ -308,7 +308,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                 merged = self._merge_data()
                 mqtt_field_count = len(self._mqtt_data)
                 total_fields = len(merged)
-                _LOGGER.warning(
+                _LOGGER.info(
                     "🔀 Merged data for %s: REST=%d + MQTT=%d = Total=%d fields",
                     self.device_sn,
                     rest_field_count,
@@ -318,7 +318,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                 return merged
             else:
                 # REST only
-                _LOGGER.warning("📡 Using REST data only for %s", self.device_sn)
+                _LOGGER.info("📡 Using REST data only for %s", self.device_sn)
                 return rest_data
             
         except EcoFlowApiError as err:
