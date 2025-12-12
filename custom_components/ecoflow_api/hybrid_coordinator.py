@@ -9,7 +9,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
@@ -80,6 +80,9 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         self._mqtt_connected = False
         self._use_mqtt = False
         
+        # Track last REST update time for interval verification
+        self._last_rest_update: float | None = None
+        
         # MQTT messages collection for diagnostic mode
         if self._diagnostic_mode:
             self.mqtt_messages: BoundFifoList[dict[str, Any]] = BoundFifoList(maxlen=20)
@@ -148,18 +151,9 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                 self._mqtt_connected = True
                 self._use_mqtt = True
                 _LOGGER.info("MQTT connected successfully for device %s", self.device_sn)
-                
-                # Increase REST polling interval since we have real-time updates
-                # Changed from 4x to 2x for better data freshness (15s → 30s instead of 60s)
-                self.update_interval = timedelta(seconds=self.update_interval_seconds * 2)
                 _LOGGER.info(
-                    "⚠️ REST polling interval changed: %d → %d seconds (MQTT provides real-time updates for changing fields)",
-                    self.update_interval_seconds,
-                    self.update_interval_seconds * 2
-                )
-                _LOGGER.info(
-                    "⚠️ Hybrid mode active: MQTT for real-time + REST every %d seconds for all fields",
-                    self.update_interval_seconds * 2
+                    "⚠️ Hybrid mode active: MQTT for real-time updates + REST every %d seconds for all fields",
+                    self.update_interval_seconds
                 )
             else:
                 _LOGGER.warning(
@@ -180,6 +174,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             await self._mqtt_client.async_disconnect()
             self._mqtt_client = None
 
+
     def _handle_mqtt_message(self, payload: dict[str, Any]) -> None:
         """Handle MQTT message from device.
         
@@ -195,6 +190,31 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             # So payload here is the actual device data
             mqtt_data = payload
             
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            fields_count = len(mqtt_data)
+            
+            # Log MQTT message with summary
+            _LOGGER.info(
+                "⚡ [%s] MQTT message for %s: %d fields updated",
+                timestamp,
+                self.device_sn[-4:],
+                fields_count
+            )
+            
+            # Log which fields were updated (keys only, to avoid spam)
+            if fields_count > 0:
+                field_names = list(mqtt_data.keys())
+                if fields_count <= 10:
+                    # Show all fields if 10 or less
+                    _LOGGER.info("   Fields: %s", ", ".join(field_names))
+                else:
+                    # Show first 10 + count
+                    _LOGGER.info(
+                        "   Fields: %s ... (+%d more)",
+                        ", ".join(field_names[:10]),
+                        fields_count - 10
+                    )
+            
             # Store MQTT message in diagnostic mode
             if self._diagnostic_mode:
                 self.mqtt_messages.append({
@@ -203,8 +223,21 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                     "payload": mqtt_data,
                 })
             
+            # Track what changed in MQTT data
+            old_mqtt_field_count = len(self._mqtt_data)
+            
             # Merge MQTT data with existing data
             self._mqtt_data.update(mqtt_data)
+            
+            new_mqtt_field_count = len(self._mqtt_data)
+            
+            if new_mqtt_field_count > old_mqtt_field_count:
+                _LOGGER.info(
+                    "   Total MQTT fields: %d → %d (+%d new)",
+                    old_mqtt_field_count,
+                    new_mqtt_field_count,
+                    new_mqtt_field_count - old_mqtt_field_count
+                )
             
             # Schedule update in Home Assistant event loop
             # MQTT callback runs in different thread, so we need to schedule it properly
@@ -278,12 +311,21 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             UpdateFailed: If data fetch fails
         """
         try:
+            # Calculate time since last REST update
+            current_time = time.time()
+            time_since_last = None
+            if self._last_rest_update:
+                time_since_last = current_time - self._last_rest_update
+            
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            
             _LOGGER.info(
-                "🔄 REST UPDATE TRIGGERED for %s (interval=%s, mqtt_connected=%s, use_mqtt=%s)",
-                self.device_sn,
-                self.update_interval,
-                self._mqtt_connected,
-                self._use_mqtt
+                "🔄 [%s] REST UPDATE TRIGGERED for %s (configured_interval=%ds, actual_since_last=%.1fs, mqtt=%s)",
+                timestamp,
+                self.device_sn[-4:],  # Only last 4 chars of SN
+                self.update_interval_seconds,
+                time_since_last if time_since_last else 0,
+                "ON" if self._mqtt_connected else "OFF"
             )
             
             # Wake up device before requesting data
@@ -291,8 +333,8 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             # until woken up by a request or command
             await self._async_wake_device()
             
-            # Fetch from REST API (less frequently if MQTT is active)
-            _LOGGER.info("🌐 Fetching REST data for %s", self.device_sn)
+            # Fetch from REST API
+            _LOGGER.info("🌐 [%s] Fetching REST data for %s...", timestamp, self.device_sn[-4:])
             rest_data = await self.client.get_device_quota(self.device_sn)
             
             rest_field_count = len(rest_data)
@@ -306,29 +348,38 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                         changed_fields.append((key, old_value, new_value))
             
             _LOGGER.info(
-                "✅ REST update for %s: received %d fields (%d changed)",
-                self.device_sn,
+                "✅ [%s] REST update for %s: received %d fields, %d changed",
+                timestamp,
+                self.device_sn[-4:],
                 rest_field_count,
                 len(changed_fields)
             )
             
-            # Log changed fields (limit to first 20 to avoid log spam)
+            # Log changed fields - show ALL changes with readable formatting
             if changed_fields:
-                changes_summary = []
-                for key, old_val, new_val in changed_fields[:20]:
-                    # Format values for readability
-                    old_str = str(old_val)[:30] if old_val is not None else "None"
-                    new_str = str(new_val)[:30] if new_val is not None else "None"
-                    changes_summary.append(f"{key}: {old_str} → {new_str}")
-                
-                if len(changed_fields) > 20:
-                    changes_summary.append(f"... and {len(changed_fields) - 20} more changes")
-                
                 _LOGGER.info(
-                    "📊 Changed fields for %s: %s",
-                    self.device_sn,
-                    "; ".join(changes_summary)
+                    "📊 [%s] Changed fields (%d total):",
+                    timestamp,
+                    len(changed_fields)
                 )
+                for key, old_val, new_val in changed_fields:
+                    # Format values for readability
+                    old_str = str(old_val)[:50] if old_val is not None else "None"
+                    new_str = str(new_val)[:50] if new_val is not None else "None"
+                    _LOGGER.info(
+                        "   • %s: %s → %s",
+                        key,
+                        old_str,
+                        new_str
+                    )
+            else:
+                _LOGGER.info(
+                    "📊 [%s] No changes detected (device in stable state)",
+                    timestamp
+                )
+            
+            # Update last REST update timestamp
+            self._last_rest_update = current_time
             
             # Store last successful REST data
             self._last_data = rest_data
@@ -339,8 +390,9 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                 mqtt_field_count = len(self._mqtt_data)
                 total_fields = len(merged)
                 _LOGGER.info(
-                    "🔀 Merged data for %s: REST=%d + MQTT=%d = Total=%d fields",
-                    self.device_sn,
+                    "🔀 [%s] Merged data for %s: REST=%d + MQTT=%d = Total=%d unique fields",
+                    timestamp,
+                    self.device_sn[-4:],
                     rest_field_count,
                     mqtt_field_count,
                     total_fields
@@ -348,7 +400,12 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                 return merged
             else:
                 # REST only
-                _LOGGER.info("📡 Using REST data only for %s", self.device_sn)
+                _LOGGER.info(
+                    "📡 [%s] Using REST data only for %s (%d fields)",
+                    timestamp,
+                    self.device_sn[-4:],
+                    rest_field_count
+                )
                 return rest_data
             
         except EcoFlowApiError as err:
