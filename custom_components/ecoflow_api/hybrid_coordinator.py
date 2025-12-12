@@ -304,9 +304,25 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
 
     def _is_verbose_logging_enabled(self) -> bool:
         """Check if verbose logging is enabled in options."""
-        if self.config_entry:
-            return self.config_entry.options.get(OPTS_VERBOSE_LOGGING, False)
-        return False
+        if not self.config_entry:
+            # No config entry - always show logs for debugging
+            return True
+        
+        # Check if option exists in options
+        verbose = self.config_entry.options.get(OPTS_VERBOSE_LOGGING, False)
+        
+        # Debug: log once what we found
+        if not hasattr(self, "_logged_verbose_state"):
+            self._logged_verbose_state = True
+            _LOGGER.info(
+                "Verbose logging is %s for %s (config_entry=%s, options=%s)",
+                "ENABLED" if verbose else "DISABLED",
+                self.device_sn[-4:],
+                "present" if self.config_entry else "missing",
+                self.config_entry.options if self.config_entry else None
+            )
+        
+        return verbose
 
     def _merge_data(self) -> dict[str, Any]:
         """Merge REST API and MQTT data.
