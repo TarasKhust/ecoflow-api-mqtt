@@ -32,6 +32,7 @@ UPDATE_INTERVAL_OPTIONS: Final = {
 OPTS_REFRESH_PERIOD_SEC: Final = "refresh_period_sec"
 OPTS_POWER_STEP: Final = "power_step"
 OPTS_DIAGNOSTIC_MODE: Final = "diagnostic_mode"
+OPTS_VERBOSE_LOGGING: Final = "verbose_logging"
 DEFAULT_REFRESH_PERIOD_SEC: Final = 15
 DEFAULT_POWER_STEP: Final = 100
 
