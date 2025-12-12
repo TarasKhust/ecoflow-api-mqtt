@@ -17,7 +17,6 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from .api import EcoFlowApiClient, EcoFlowApiError
-from .const import DOMAIN
 from .coordinator import EcoFlowDataCoordinator
 from .data_holder import BoundFifoList
 from .mqtt_client import EcoFlowMQTTClient
@@ -210,7 +209,6 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                 self.mqtt_messages.append({
                     "timestamp": time.time(),
                     "device_sn": self.device_sn,
-                    "topic": topic,
                     "payload": mqtt_data,
                 })
             
