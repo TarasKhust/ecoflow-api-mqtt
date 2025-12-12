@@ -4,7 +4,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
@@ -101,6 +101,15 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             UpdateFailed: If data fetch fails
         """
         try:
+            timestamp = datetime.now().strftime("%H:%M:%S")
+            
+            _LOGGER.info(
+                "🔄 [%s] REST UPDATE for %s (interval=%ds, mode=REST-only)",
+                timestamp,
+                self.device_sn[-4:],
+                self.update_interval_seconds
+            )
+            
             # Wake up device before requesting data
             # This helps with devices that go to sleep and don't respond
             # until woken up by a request or command
@@ -108,6 +117,41 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             
             # Fetch device data
             data = await self.client.get_device_quota(self.device_sn)
+            
+            field_count = len(data)
+            
+            # Compare with previous data to find changed fields
+            changed_fields = []
+            if self._last_data:
+                for key, new_value in data.items():
+                    old_value = self._last_data.get(key)
+                    if old_value != new_value:
+                        changed_fields.append((key, old_value, new_value))
+            
+            _LOGGER.info(
+                "✅ [%s] REST update for %s: received %d fields, %d changed",
+                timestamp,
+                self.device_sn[-4:],
+                field_count,
+                len(changed_fields)
+            )
+            
+            # Log changed fields
+            if changed_fields:
+                _LOGGER.info(
+                    "📊 [%s] Changed fields (%d total):",
+                    timestamp,
+                    len(changed_fields)
+                )
+                for key, old_val, new_val in changed_fields:
+                    old_str = str(old_val)[:50] if old_val is not None else "None"
+                    new_str = str(new_val)[:50] if new_val is not None else "None"
+                    _LOGGER.info("   • %s: %s → %s", key, old_str, new_str)
+            else:
+                _LOGGER.info(
+                    "📊 [%s] No changes detected (device in stable state)",
+                    timestamp
+                )
             
             # Store diagnostic data if enabled
             if self._diagnostic_mode:
