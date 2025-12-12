@@ -105,12 +105,23 @@ actions:
       # Поточна потужність заряджання
       current_charge_power: "{{ states('number.ecoflow_delta_pro_3_ac_charging_power') | int(1000) }}"
       
-      # Час заряджання до 100% (в хвилинах) - сенсор повертає години, конвертуємо в хвилини
-      charge_time_min: "{{ (states('sensor.ecoflow_delta_pro_3_system_charge_remaining_time') | float(0) * 60) | int }}"
+      # Час заряджання до 100% (в хвилинах) - сенсор вже повертає хвилини
+      charge_time_min: "{{ states('sensor.ecoflow_delta_pro_3_system_charge_remaining_time') | float(0) | int }}"
       
       # Визначення наступного відключення (спочатку заплановане, потім імовірне)
       planned_outage: "{{ states('sensor.yasno_kiiv_dtek_3_2_next_planned_outage') }}"
       probable_outage: "{{ states('sensor.yasno_kiiv_dtek_3_2_next_probable_outage') }}"
+      # Час до відключення (хвилини) - ПРІОРИТЕТ: planned > probable
+      outage_time_min: |
+        {% if planned_outage not in ['unavailable', 'unknown', 'none', ''] %}
+          {{ ((as_timestamp(planned_outage) - as_timestamp(now())) / 60) | int }}
+        {% elif probable_outage not in ['unavailable', 'unknown', 'none', ''] %}
+          {{ ((as_timestamp(probable_outage) - as_timestamp(now())) / 60) | int }}
+        {% else %}
+          9999
+        {% endif %}
+      
+      # Найближче відключення (для логування)
       next_outage: |
         {% if planned_outage not in ['unavailable', 'unknown', 'none', ''] %}
           {{ planned_outage }}
@@ -135,26 +146,18 @@ actions:
           0
         {% endif %}
       
-      # Визначення типу відключення з деталями
+      # Визначення типу відключення з деталями (ПРІОРИТЕТ: planned > emergency > probable > інше)
       outage_type: |
-        {% if status == 'emergency_shutdowns' %}
-          🚨 Екстрене
-        {% elif electricity_event_type == 'NotPlanned' %}
-          ⚠️ Незаплановане
-        {% elif planned_outage not in ['unavailable', 'unknown', 'none', ''] %}
+        {% if planned_outage not in ['unavailable', 'unknown', 'none', ''] %}
           📅 Заплановане
+        {% elif status == 'emergency_shutdowns' %}
+          🚨 Екстрене
         {% elif probable_outage not in ['unavailable', 'unknown', 'none', ''] %}
           ❓ Імовірне
+        {% elif electricity_event_type == 'NotPlanned' %}
+          ⚠️ Незаплановане
         {% else %}
           ❓ Невідоме
-        {% endif %}
-      
-      # Розрахунок часу до відключення в хвилинах
-      outage_time_min: |
-        {% if next_outage not in ['unavailable', 'unknown', 'none', ''] %}
-          {{ ((as_timestamp(next_outage) - as_timestamp(now())) / 60) | int }}
-        {% else %}
-          9999
         {% endif %}
       
       # Параметри батареї для безпеки
@@ -162,22 +165,10 @@ actions:
       battery_temp: >-
         {{ states('sensor.ecoflow_delta_pro_3_max_cell_temperature') | float(25) }}
       
-      # Розрахунок оптимальної потужності
+      # Розрахунок оптимальної потужності (ПРІОРИТЕТ: відключення > температура > інше)
       optimal_power: >
-        {# 🚨 АВАРІЙНИЙ РЕЖИМ - максимальна потужність #}
-        {% if status == 'emergency_shutdowns' %}
-          2900
-
-        {# 🌡️ ПЕРЕГРІВ - зменшуємо потужність #}
-        {% elif battery_temp > 40 %}
-          800
-
-        {# 📊 ЗДОРОВ'Я БАТАРЕЇ НИЗЬКЕ (<80%) - обережний режим #}
-        {% elif battery_health < 80 %}
-          1200
-
-        {# ⏰ КРИТИЧНО МАЛО ЧАСУ (<30 хв до відключення) - максимум #}
-        {% elif outage_time_min < 30 and outage_time_min < 9999 %}
+        {# ⏰ КРИТИЧНО МАЛО ЧАСУ (<30 хв до відключення) - максимум (найвищий пріоритет) #}
+        {% if outage_time_min < 30 and outage_time_min < 9999 %}
           2900
 
         {# ⚡ ПОТРІБНО ЗАРЯДИТИ ШВИДШЕ (час заряду > час до відключення) #}
@@ -187,13 +178,37 @@ actions:
           {# Обмежуємо: мін 800W, макс 2900W #}
           {{ [needed_power, 2900] | min if needed_power > 800 else 800 }}
 
-        {# 🔌 ДОСТАТНЬО ЧАСУ (заряд займе <50% доступного часу) - економний режим #}
+        {# 🔌 ДОСТАТНЬО ЧАСУ (заряд займе <50% доступного часу) - враховуємо температуру #}
         {% elif charge_time_min < (outage_time_min * 0.5) and outage_time_min < 9999 %}
-          1000
+          {# Якщо є час, зменшуємо потужність при підвищеній температурі #}
+          {% if battery_temp >= 38 %}
+            800
+          {% elif battery_temp >= 35 %}
+            1000
+          {% elif battery_temp >= 32 %}
+            1200
+          {% else %}
+            1000
+          {% endif %}
 
-        {# 📶 НЕВІДОМИЙ СТАТУС АБО НЕМАЄ ВІДКЛЮЧЕНЬ - середня потужність #}
+        {# 🚨 АВАРІЙНИЙ РЕЖИМ (якщо немає планових відключень, але є екстрені) #}
+        {% elif status == 'emergency_shutdowns' %}
+          2900
+
+        {# 📶 НЕВІДОМИЙ СТАТУС АБО НЕМАЄ ВІДКЛЮЧЕНЬ - враховуємо температуру та здоров'я #}
         {% elif status in ['waiting_for_schedule', 'unknown'] or outage_time_min >= 9999 %}
-          1200
+          {# Якщо немає відключень, оптимізуємо по температурі та здоров'ю батареї #}
+          {% if battery_temp >= 38 %}
+            800
+          {% elif battery_temp >= 35 %}
+            1200
+          {% elif battery_temp >= 32 %}
+            1500
+          {% elif battery_health < 80 %}
+            1200
+          {% else %}
+            1200
+          {% endif %}
 
         {# ✅ НОРМАЛЬНИЙ РЕЖИМ - поточна потужність #}
         {% else %}
@@ -230,12 +245,10 @@ actions:
     data:
       title: "{{ charge_mode }} заряд"
       message: >
-        ⚡ {{ optimal_power }}W
-        {% if outage_time_min < 9999 %}
-        ⏰ {{ outage_time_min }}хв ({{ outage_type }}{% if outage_duration_min > 0 %}, {{ outage_duration_min }}хв{% endif %})
-        {% endif %}
-        ⏱️ {{ (charge_time_min / 60) | int }}h {{ (charge_time_min % 60) | int }}m
-        🔋 {{ battery_level | round(0) }}%
+        ⚡ {{ current_charge_power }}W → {{ optimal_power }}W | 🔋 {{ battery_level | round(0) }}% | 🌡️ {{ battery_temp | round(1) }}°C
+        {% if outage_time_min < 9999 %}⏰ {{ outage_type }} через {{ outage_time_min }}хв{% if outage_duration_min > 0 %} ({{ outage_duration_min }}хв){% endif %}{% else %}📶 Відключень немає{% endif %}
+        
+        {% if outage_time_min < 30 and outage_time_min < 9999 %}💡 Критично мало часу!{% elif charge_time_min > outage_time_min and outage_time_min < 9999 %}💡 Не встигнемо зарядити{% elif charge_time_min < (outage_time_min * 0.5) and outage_time_min < 9999 %}💡 Достатньо часу{% if battery_temp >= 32 %}, оптимізація по температурі{% endif %}{% elif status == 'emergency_shutdowns' %}💡 Аварійний режим{% elif battery_temp >= 38 %}💡 Критична температура!{% elif battery_temp >= 35 %}💡 Підвищена температура{% elif battery_temp >= 32 %}💡 Тепла батарея{% elif battery_health < 80 %}💡 Низьке здоров'я батареї{% else %}💡 Стандартний режим{% endif %}
     enabled: true
 
 mode: single
