@@ -122,11 +122,17 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             
             # Compare with previous data to find changed fields
             changed_fields = []
-            if self._last_data:
+            if self._last_data is not None:  # Fix: use 'is not None' to handle empty dict
+                # Check for changed or new fields
                 for key, new_value in data.items():
                     old_value = self._last_data.get(key)
                     if old_value != new_value:
                         changed_fields.append((key, old_value, new_value))
+                
+                # Check for removed fields (existed before but not now)
+                for key in self._last_data:
+                    if key not in data:
+                        changed_fields.append((key, self._last_data[key], None))
             
             _LOGGER.info(
                 "✅ [%s] REST update for %s: received %d fields, %d changed",
