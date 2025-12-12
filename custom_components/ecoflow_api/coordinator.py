@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from datetime import timedelta
 from typing import Any
 
@@ -11,7 +12,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import EcoFlowApiClient, EcoFlowApiError
-from .const import DOMAIN
+from .const import DOMAIN, OPTS_DIAGNOSTIC_MODE
+from .data_holder import BoundFifoList
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -61,6 +63,16 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self._last_data: dict[str, Any] = {}
         if config_entry:
             self.config_entry = config_entry
+        
+        # Diagnostic mode data collection (only if enabled)
+        self._diagnostic_mode = False
+        if config_entry:
+            self._diagnostic_mode = config_entry.options.get(OPTS_DIAGNOSTIC_MODE, False)
+        
+        if self._diagnostic_mode:
+            self.rest_requests: BoundFifoList[dict[str, Any]] = BoundFifoList(maxlen=20)
+            self.set_commands: BoundFifoList[dict[str, Any]] = BoundFifoList(maxlen=20)
+            self.set_replies: BoundFifoList[dict[str, Any]] = BoundFifoList(maxlen=20)
 
     async def _async_wake_device(self) -> None:
         """Wake up device before requesting data.
@@ -97,6 +109,14 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # Fetch device data
             data = await self.client.get_device_quota(self.device_sn)
             
+            # Store diagnostic data if enabled
+            if self._diagnostic_mode:
+                self.rest_requests.append({
+                    "timestamp": time.time(),
+                    "device_sn": self.device_sn,
+                    "response": data,
+                })
+            
             # Store last successful data
             self._last_data = data
             return data
@@ -128,10 +148,36 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """
         try:
             _LOGGER.info("Setting AC charging power to %dW for %s", power, self.device_sn)
+            
+            # Store command in diagnostic mode
+            if self._diagnostic_mode:
+                self.set_commands.append({
+                    "timestamp": time.time(),
+                    "command": "set_ac_charging_power",
+                    "params": {"power": power},
+                })
+            
             await self.client.set_ac_charging_power(self.device_sn, power)
+            
+            # Store reply in diagnostic mode
+            if self._diagnostic_mode:
+                self.set_replies.append({
+                    "timestamp": time.time(),
+                    "command": "set_ac_charging_power",
+                    "success": True,
+                })
+            
             # Force refresh to get updated state
             await self.async_request_refresh()
         except EcoFlowApiError as err:
+            # Store error reply in diagnostic mode
+            if self._diagnostic_mode:
+                self.set_replies.append({
+                    "timestamp": time.time(),
+                    "command": "set_ac_charging_power",
+                    "success": False,
+                    "error": str(err),
+                })
             _LOGGER.error("Failed to set AC charging power: %s", err)
             raise
 

@@ -87,10 +87,16 @@
         "title": "EcoFlow API Options",
         "description": "Configure update interval for sensor data polling.\n\n**Note:** Lower intervals provide faster updates but may increase API usage.",
         "data": {
-          "update_interval": "Update Interval"
+          "update_interval": "Update Interval",
+          "refresh_period_sec": "Data refresh period (sec)",
+          "power_step": "Power adjustment step (W)",
+          "diagnostic_mode": "Diagnostic mode"
         },
         "data_description": {
-          "update_interval": "How often to refresh sensor data from the EcoFlow API"
+          "update_interval": "How often to refresh sensor data from the EcoFlow API",
+          "refresh_period_sec": "Period for refreshing device data (5-300 seconds)",
+          "power_step": "Step size for AC charging power adjustment (50W, 100W, or 200W)",
+          "diagnostic_mode": "Enable diagnostic mode to collect raw data for debugging (increases memory usage)"
         }
       }
     }

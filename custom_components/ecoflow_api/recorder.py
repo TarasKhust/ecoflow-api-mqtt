@@ -14,6 +14,7 @@ def exclude_attributes(hass: HomeAssistant) -> set[str]:
     in the database history.
     """
     return {
+        # Existing
         "mqtt_connected",
         "mqtt_connection_mode",
         "last_update_success",
@@ -21,5 +22,17 @@ def exclude_attributes(hass: HomeAssistant) -> set[str]:
         "update_interval",
         "device_info",
         "attribution",
+        # Additional (from ecoflow-cloud)
+        "status_request_count",
+        "status_last_update",
+        "data_last_update",
+        "status_phase",
+        "quota_requests",
+        "reconnects",
+        # Diagnostic
+        "rest_requests",
+        "mqtt_messages",
+        "set_commands",
+        "set_replies",
     }
 

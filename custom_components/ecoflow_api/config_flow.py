@@ -29,6 +29,11 @@ from .const import (
     DEVICE_TYPES,
     DEVICE_TYPE_DELTA_PRO_3,
     DEFAULT_UPDATE_INTERVAL,
+    OPTS_REFRESH_PERIOD_SEC,
+    OPTS_POWER_STEP,
+    OPTS_DIAGNOSTIC_MODE,
+    DEFAULT_REFRESH_PERIOD_SEC,
+    DEFAULT_POWER_STEP,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -70,7 +75,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     3. Select device type
     """
 
-    VERSION = 1
+    VERSION = 2
 
     def __init__(self) -> None:
         """Initialize the config flow."""
@@ -500,6 +505,17 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         mqtt_username = self.config_entry.options.get(CONF_MQTT_USERNAME, "")
         mqtt_password = self.config_entry.options.get(CONF_MQTT_PASSWORD, "")
 
+        # Get current device options
+        refresh_period = self.config_entry.options.get(
+            OPTS_REFRESH_PERIOD_SEC, DEFAULT_REFRESH_PERIOD_SEC
+        )
+        power_step = self.config_entry.options.get(
+            OPTS_POWER_STEP, DEFAULT_POWER_STEP
+        )
+        diagnostic_mode = self.config_entry.options.get(
+            OPTS_DIAGNOSTIC_MODE, False
+        )
+
         return self.async_show_form(
             step_id="init",
             data_schema=vol.Schema(
@@ -534,6 +550,27 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                             "description": "EcoFlow account password OR secret_key (leave empty to use secret_key from main config)"
                         },
                     ): str,
+                    vol.Required(
+                        OPTS_REFRESH_PERIOD_SEC,
+                        default=refresh_period,
+                    ): vol.All(
+                        vol.Coerce(int),
+                        vol.Range(min=5, max=300),
+                    ),
+                    vol.Required(
+                        OPTS_POWER_STEP,
+                        default=power_step,
+                    ): vol.In(
+                        {
+                            50: "50W (Precise)",
+                            100: "100W (Recommended)",
+                            200: "200W (Fast)",
+                        }
+                    ),
+                    vol.Optional(
+                        OPTS_DIAGNOSTIC_MODE,
+                        default=diagnostic_mode,
+                    ): bool,
                 }
             ),
         )

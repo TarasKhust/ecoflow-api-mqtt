@@ -28,6 +28,13 @@ UPDATE_INTERVAL_OPTIONS: Final = {
     "60": 60,
 }
 
+# Device Options
+OPTS_REFRESH_PERIOD_SEC: Final = "refresh_period_sec"
+OPTS_POWER_STEP: Final = "power_step"
+OPTS_DIAGNOSTIC_MODE: Final = "diagnostic_mode"
+DEFAULT_REFRESH_PERIOD_SEC: Final = 15
+DEFAULT_POWER_STEP: Final = 100
+
 # Device types
 DEVICE_TYPE_DELTA_PRO_3: Final = "delta_pro_3"
 DEVICE_TYPE_DELTA_PRO: Final = "delta_pro"

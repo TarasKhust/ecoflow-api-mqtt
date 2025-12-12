@@ -16,7 +16,7 @@ from homeassistant.const import (
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN
+from .const import DOMAIN, OPTS_POWER_STEP, DEFAULT_POWER_STEP
 from .coordinator import EcoFlowDataCoordinator
 from .entity import EcoFlowBaseEntity
 
@@ -204,7 +204,14 @@ class EcoFlowNumber(EcoFlowBaseEntity, NumberEntity):
         # Set number attributes from config
         self._attr_native_min_value = number_def["min"]
         self._attr_native_max_value = number_def["max"]
-        self._attr_native_step = number_def["step"]
+        
+        # Use power_step from options for AC Charging Power, otherwise use default step
+        if number_key == "ac_charge_power":
+            power_step = entry.options.get(OPTS_POWER_STEP, DEFAULT_POWER_STEP)
+            self._attr_native_step = power_step
+        else:
+            self._attr_native_step = number_def["step"]
+        
         self._attr_native_unit_of_measurement = number_def.get("unit")
         self._attr_icon = number_def.get("icon")
         self._attr_mode = number_def.get("mode", NumberMode.AUTO)
