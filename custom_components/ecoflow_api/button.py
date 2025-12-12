@@ -60,8 +60,12 @@ async def async_setup_entry(
     device_sn = entry.data["device_sn"]
     device_type = entry.data.get("device_type", "unknown")
     
+    _LOGGER.info("Setting up Wake Device button for %s (type: %s)", device_sn, device_type)
+    
     # Add wake device button
-    async_add_entities([
-        EcoFlowWakeDeviceButton(coordinator, device_sn, device_type)
-    ])
+    button = EcoFlowWakeDeviceButton(coordinator, device_sn, device_type)
+    async_add_entities([button])
+    
+    _LOGGER.info("✅ Wake Device button added: %s (unique_id: %s)", 
+                 button.name, button.unique_id)
 
