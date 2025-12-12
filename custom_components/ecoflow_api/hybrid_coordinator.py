@@ -233,7 +233,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         
         return merged
 
-    async def _async_wake_device(self, aggressive: bool = False) -> None:
+    async def _async_wake_device(self) -> None:
         """Wake up device before requesting data.
         
         Some EcoFlow devices go to sleep and don't respond to API requests
@@ -251,48 +251,21 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         - Not update timestamps
         
         Solution: Always wake device before REST polling to ensure fresh data.
-        
-        Args:
-            aggressive: If True, send 2 wake-up requests with longer delay (for manual wake-up)
         """
         # Always wake device before REST polling
         # This ensures we get fresh data even if device was sleeping
         try:
-            if aggressive:
-                _LOGGER.info("🔔 Aggressively waking up device %s (manual wake-up)", self.device_sn)
-            else:
-                _LOGGER.debug("Waking up device %s before data fetch", self.device_sn)
+            _LOGGER.debug("Waking up device %s before data fetch", self.device_sn)
             
-            # Send wake-up request(s)
-            # First request wakes the device
+            # Send wake-up request - this wakes the device
             await self.client.get_device_quota(self.device_sn)
             
-            if aggressive:
-                # For aggressive wake-up, send second request and wait longer
-                await asyncio.sleep(0.5)
-                await self.client.get_device_quota(self.device_sn)
-                await asyncio.sleep(1.5)  # Longer delay for device to fully wake up
-            else:
-                # Normal wake-up: single request with short delay
-                await asyncio.sleep(1.0)
+            # Short delay to allow device to wake up and prepare data
+            await asyncio.sleep(1.0)
                 
         except Exception as err:
             # Don't fail on wake-up errors - device might already be awake
-            if aggressive:
-                _LOGGER.warning("Wake-up request failed: %s", err)
-            else:
-                _LOGGER.debug("Wake-up request failed (device may already be awake): %s", err)
-    
-    async def async_wake_device(self) -> None:
-        """Manually wake up device (public method for service/button).
-        
-        This method can be called manually to wake up a sleeping device.
-        Uses aggressive wake-up (2 requests + longer delay) to ensure device wakes up.
-        """
-        await self._async_wake_device(aggressive=True)
-        # Force immediate data refresh after wake-up
-        await self.async_request_refresh()
-
+            _LOGGER.debug("Wake-up request failed (device may already be awake): %s", err)
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from API (and merge with MQTT if available).
         
