@@ -12,7 +12,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import EcoFlowApiClient, EcoFlowApiError
-from .const import DOMAIN, OPTS_DIAGNOSTIC_MODE, OPTS_VERBOSE_LOGGING
+from .const import DOMAIN, OPTS_DIAGNOSTIC_MODE
 from .data_holder import BoundFifoList
 
 _LOGGER = logging.getLogger(__name__)
@@ -73,6 +73,9 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self.rest_requests: BoundFifoList[dict[str, Any]] = BoundFifoList(maxlen=20)
             self.set_commands: BoundFifoList[dict[str, Any]] = BoundFifoList(maxlen=20)
             self.set_replies: BoundFifoList[dict[str, Any]] = BoundFifoList(maxlen=20)
+        
+        # Track if we've logged connection success (to avoid spam)
+        self._logged_rest_success = False
 
     async def _async_wake_device(self) -> None:
         """Wake up device before requesting data.
@@ -91,27 +94,6 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # Don't fail on wake-up errors - device might already be awake
             pass
 
-    def _is_verbose_logging_enabled(self) -> bool:
-        """Check if verbose logging is enabled in options."""
-        if not self.config_entry:
-            # No config entry - always show logs for debugging
-            return True
-        
-        # Check if option exists in options
-        verbose = self.config_entry.options.get(OPTS_VERBOSE_LOGGING, False)
-        
-        # Debug: log once what we found
-        if not hasattr(self, "_logged_verbose_state"):
-            self._logged_verbose_state = True
-            _LOGGER.info(
-                "Verbose logging is %s for %s (config_entry=%s, options=%s)",
-                "ENABLED" if verbose else "DISABLED",
-                self.device_sn[-4:],
-                "present" if self.config_entry else "missing",
-                self.config_entry.options if self.config_entry else None
-            )
-        
-        return verbose
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from API.
@@ -123,66 +105,20 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             UpdateFailed: If data fetch fails
         """
         try:
-            timestamp = datetime.now().strftime("%H:%M:%S")
-            
-            if self._is_verbose_logging_enabled():
-                _LOGGER.info(
-                    "🔄 [%s] REST UPDATE for %s (interval=%ds, mode=REST-only)",
-                    timestamp,
-                    self.device_sn[-4:],
-                    self.update_interval_seconds
-                )
-            
             # Wake up device before requesting data
-            # This helps with devices that go to sleep and don't respond
-            # until woken up by a request or command
             await self._async_wake_device()
             
             # Fetch device data
             data = await self.client.get_device_quota(self.device_sn)
             
-            field_count = len(data)
-            
-            # Compare with previous data to find changed fields
-            changed_fields = []
-            if self._last_data is not None:  # Fix: use 'is not None' to handle empty dict
-                # Check for changed or new fields
-                for key, new_value in data.items():
-                    old_value = self._last_data.get(key)
-                    if old_value != new_value:
-                        changed_fields.append((key, old_value, new_value))
-                
-                # Check for removed fields (existed before but not now)
-                for key in self._last_data:
-                    if key not in data:
-                        changed_fields.append((key, self._last_data[key], None))
-            
-            if self._is_verbose_logging_enabled():
+            # Log success only once (first successful request)
+            if not self._logged_rest_success:
+                self._logged_rest_success = True
                 _LOGGER.info(
-                    "✅ [%s] REST update for %s: received %d fields, %d changed",
-                    timestamp,
+                    "✅ REST API connected for device %s (REST-only mode, update interval: %ds)",
                     self.device_sn[-4:],
-                    field_count,
-                    len(changed_fields)
+                    self.update_interval_seconds
                 )
-            
-            # Log changed fields (only if verbose logging enabled)
-            if self._is_verbose_logging_enabled():
-                if changed_fields:
-                    _LOGGER.info(
-                        "📊 [%s] Changed fields (%d total):",
-                        timestamp,
-                        len(changed_fields)
-                    )
-                    for key, old_val, new_val in changed_fields:
-                        old_str = str(old_val)[:50] if old_val is not None else "None"
-                        new_str = str(new_val)[:50] if new_val is not None else "None"
-                        _LOGGER.info("   • %s: %s → %s", key, old_str, new_str)
-                else:
-                    _LOGGER.info(
-                        "📊 [%s] No changes detected (device in stable state)",
-                        timestamp
-                    )
             
             # Store diagnostic data if enabled
             if self._diagnostic_mode:

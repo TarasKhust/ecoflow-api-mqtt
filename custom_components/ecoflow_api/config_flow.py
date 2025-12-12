@@ -30,7 +30,6 @@ from .const import (
     DEVICE_TYPE_DELTA_PRO_3,
     DEFAULT_UPDATE_INTERVAL,
     OPTS_DIAGNOSTIC_MODE,
-    OPTS_VERBOSE_LOGGING,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -502,9 +501,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         diagnostic_mode = self.config_entry.options.get(
             OPTS_DIAGNOSTIC_MODE, False
         )
-        verbose_logging = self.config_entry.options.get(
-            OPTS_VERBOSE_LOGGING, False
-        )
 
         return self.async_show_form(
             step_id="init",
@@ -540,10 +536,6 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                             "description": "EcoFlow account password OR secret_key (leave empty to use secret_key from main config)"
                         },
                     ): str,
-                    vol.Optional(
-                        OPTS_VERBOSE_LOGGING,
-                        default=verbose_logging,
-                    ): bool,
                     vol.Optional(
                         OPTS_DIAGNOSTIC_MODE,
                         default=diagnostic_mode,

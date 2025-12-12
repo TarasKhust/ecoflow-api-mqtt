@@ -17,7 +17,6 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from .api import EcoFlowApiClient, EcoFlowApiError
-from .const import OPTS_VERBOSE_LOGGING
 from .coordinator import EcoFlowDataCoordinator
 from .data_holder import BoundFifoList
 from .mqtt_client import EcoFlowMQTTClient
@@ -91,6 +90,10 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         if self._diagnostic_mode:
             self.mqtt_messages: BoundFifoList[dict[str, Any]] = BoundFifoList(maxlen=20)
         
+        # Track if we've logged connection success (to avoid spam)
+        self._logged_rest_success = False
+        self._logged_mqtt_connected = False
+        
     @property
     def mqtt_connected(self) -> bool:
         """Return MQTT connection status."""
@@ -136,14 +139,12 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         This ensures MQTT client is properly disconnected before Home Assistant shuts down,
         preventing "Event loop is closed" errors during restart.
         """
-        _LOGGER.info("Home Assistant stopping, shutting down MQTT for %s", self.device_sn)
+        _LOGGER.info("🔵 Shutting down EcoFlow API for device %s", self.device_sn[-4:])
         await self.async_shutdown()
 
     async def _async_setup_mqtt(self) -> None:
         """Set up MQTT client."""
         try:
-            _LOGGER.info("Setting up MQTT for device %s", self.device_sn)
-            
             self._mqtt_client = EcoFlowMQTTClient(
                 username=self.mqtt_username,
                 password=self.mqtt_password,
@@ -158,21 +159,22 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             if connected:
                 self._mqtt_connected = True
                 self._use_mqtt = True
-                _LOGGER.info("MQTT connected successfully for device %s", self.device_sn)
+                self._logged_mqtt_connected = True
                 _LOGGER.info(
-                    "⚠️ Hybrid mode active: MQTT for real-time updates + REST every %d seconds for all fields",
+                    "✅ MQTT connected to broker for device %s (hybrid mode: MQTT + REST every %ds)",
+                    self.device_sn[-4:],
                     self.update_interval_seconds
                 )
             else:
                 _LOGGER.warning(
-                    "MQTT connection failed for device %s, falling back to REST API only",
-                    self.device_sn
+                    "⚠️ MQTT connection failed for device %s, using REST API only",
+                    self.device_sn[-4:]
                 )
                 self._mqtt_connected = False
                 self._use_mqtt = False
                 
         except Exception as err:
-            _LOGGER.error("Error setting up MQTT for device %s: %s", self.device_sn, err)
+            _LOGGER.error("🔴 MQTT connection error for device %s: %s", self.device_sn[-4:], err)
             self._mqtt_connected = False
             self._use_mqtt = False
 
@@ -237,32 +239,6 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             # So payload here is the actual device data
             mqtt_data = payload
             
-            timestamp = datetime.now().strftime("%H:%M:%S")
-            fields_count = len(mqtt_data)
-            
-            # Log MQTT message with summary (only if verbose logging enabled)
-            if self._is_verbose_logging_enabled():
-                _LOGGER.info(
-                    "⚡ [%s] MQTT message for %s: %d fields updated",
-                    timestamp,
-                    self.device_sn[-4:],
-                    fields_count
-                )
-                
-                # Log which fields were updated (keys only, to avoid spam)
-                if fields_count > 0:
-                    field_names = list(mqtt_data.keys())
-                    if fields_count <= 10:
-                        # Show all fields if 10 or less
-                        _LOGGER.info("   Fields: %s", ", ".join(field_names))
-                    else:
-                        # Show first 10 + count
-                        _LOGGER.info(
-                            "   Fields: %s ... (+%d more)",
-                            ", ".join(field_names[:10]),
-                            fields_count - 10
-                        )
-            
             # Store MQTT message in diagnostic mode
             if self._diagnostic_mode:
                 self.mqtt_messages.append({
@@ -271,21 +247,8 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                     "payload": mqtt_data,
                 })
             
-            # Track what changed in MQTT data
-            old_mqtt_field_count = len(self._mqtt_data)
-            
             # Merge MQTT data with existing data
             self._mqtt_data.update(mqtt_data)
-            
-            new_mqtt_field_count = len(self._mqtt_data)
-            
-            if self._is_verbose_logging_enabled() and new_mqtt_field_count > old_mqtt_field_count:
-                _LOGGER.info(
-                    "   Total MQTT fields: %d → %d (+%d new)",
-                    old_mqtt_field_count,
-                    new_mqtt_field_count,
-                    new_mqtt_field_count - old_mqtt_field_count
-                )
             
             # Schedule update in Home Assistant event loop
             # MQTT callback runs in different thread, so we need to schedule it properly
@@ -302,27 +265,6 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         except Exception as err:
             _LOGGER.error("Error handling MQTT message: %s", err)
 
-    def _is_verbose_logging_enabled(self) -> bool:
-        """Check if verbose logging is enabled in options."""
-        if not self.config_entry:
-            # No config entry - always show logs for debugging
-            return True
-        
-        # Check if option exists in options
-        verbose = self.config_entry.options.get(OPTS_VERBOSE_LOGGING, False)
-        
-        # Debug: log once what we found
-        if not hasattr(self, "_logged_verbose_state"):
-            self._logged_verbose_state = True
-            _LOGGER.info(
-                "Verbose logging is %s for %s (config_entry=%s, options=%s)",
-                "ENABLED" if verbose else "DISABLED",
-                self.device_sn[-4:],
-                "present" if self.config_entry else "missing",
-                self.config_entry.options if self.config_entry else None
-            )
-        
-        return verbose
 
     def _merge_data(self) -> dict[str, Any]:
         """Merge REST API and MQTT data.
@@ -381,112 +323,34 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             UpdateFailed: If data fetch fails
         """
         try:
-            # Calculate time since last REST update
-            current_time = time.time()
-            time_since_last = None
-            if self._last_rest_update:
-                time_since_last = current_time - self._last_rest_update
-            
-            timestamp = datetime.now().strftime("%H:%M:%S")
-            
-            if self._is_verbose_logging_enabled():
-                _LOGGER.info(
-                    "🔄 [%s] REST UPDATE TRIGGERED for %s (configured_interval=%ds, actual_since_last=%.1fs, mqtt=%s)",
-                    timestamp,
-                    self.device_sn[-4:],  # Only last 4 chars of SN
-                    self.update_interval_seconds,
-                    time_since_last if time_since_last else 0,
-                    "ON" if self._mqtt_connected else "OFF"
-                )
-            
             # Wake up device before requesting data
-            # This helps with devices that go to sleep and don't respond
-            # until woken up by a request or command
             await self._async_wake_device()
             
             # Fetch from REST API
-            if self._is_verbose_logging_enabled():
-                _LOGGER.info("🌐 [%s] Fetching REST data for %s...", timestamp, self.device_sn[-4:])
             rest_data = await self.client.get_device_quota(self.device_sn)
             
-            rest_field_count = len(rest_data)
-            
-            # Compare with previous data to find changed fields
-            changed_fields = []
-            if self._last_data is not None:  # Fix: use 'is not None' to handle empty dict
-                # Check for changed or new fields
-                for key, new_value in rest_data.items():
-                    old_value = self._last_data.get(key)
-                    if old_value != new_value:
-                        changed_fields.append((key, old_value, new_value))
-                
-                # Check for removed fields (existed before but not now)
-                for key in self._last_data:
-                    if key not in rest_data:
-                        changed_fields.append((key, self._last_data[key], None))
-            
-            if self._is_verbose_logging_enabled():
+            # Log success only once (first successful request)
+            if not self._logged_rest_success:
+                self._logged_rest_success = True
+                mode = "hybrid (REST + MQTT)" if self._use_mqtt else "REST-only"
                 _LOGGER.info(
-                    "✅ [%s] REST update for %s: received %d fields, %d changed",
-                    timestamp,
+                    "✅ REST API connected for device %s (%s mode, update interval: %ds)",
                     self.device_sn[-4:],
-                    rest_field_count,
-                    len(changed_fields)
+                    mode,
+                    self.update_interval_seconds
                 )
-                
-                # Log changed fields - show ALL changes with readable formatting
-                if changed_fields:
-                    _LOGGER.info(
-                        "📊 [%s] Changed fields (%d total):",
-                        timestamp,
-                        len(changed_fields)
-                    )
-                    for key, old_val, new_val in changed_fields:
-                        # Format values for readability
-                        old_str = str(old_val)[:50] if old_val is not None else "None"
-                        new_str = str(new_val)[:50] if new_val is not None else "None"
-                        _LOGGER.info(
-                            "   • %s: %s → %s",
-                            key,
-                            old_str,
-                            new_str
-                        )
-                else:
-                    _LOGGER.info(
-                        "📊 [%s] No changes detected (device in stable state)",
-                        timestamp
-                    )
             
             # Update last REST update timestamp
-            self._last_rest_update = current_time
+            self._last_rest_update = time.time()
             
             # Store last successful REST data
             self._last_data = rest_data
             
             # If MQTT is active, merge data
             if self._use_mqtt and self._mqtt_connected:
-                merged = self._merge_data()
-                mqtt_field_count = len(self._mqtt_data)
-                total_fields = len(merged)
-                if self._is_verbose_logging_enabled():
-                    _LOGGER.info(
-                        "🔀 [%s] Merged data for %s: REST=%d + MQTT=%d = Total=%d unique fields",
-                        timestamp,
-                        self.device_sn[-4:],
-                        rest_field_count,
-                        mqtt_field_count,
-                        total_fields
-                    )
-                return merged
+                return self._merge_data()
             else:
                 # REST only
-                if self._is_verbose_logging_enabled():
-                    _LOGGER.info(
-                        "📡 [%s] Using REST data only for %s (%d fields)",
-                        timestamp,
-                        self.device_sn[-4:],
-                        rest_field_count
-                    )
                 return rest_data
             
         except EcoFlowApiError as err:
