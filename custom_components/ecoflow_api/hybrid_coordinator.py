@@ -83,6 +83,9 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         # Track last REST update time for interval verification
         self._last_rest_update: float | None = None
         
+        # Timer for periodic REST updates (independent of MQTT)
+        self._rest_update_timer: asyncio.TimerHandle | None = None
+        
         # MQTT messages collection for diagnostic mode
         if self._diagnostic_mode:
             self.mqtt_messages: BoundFifoList[dict[str, Any]] = BoundFifoList(maxlen=20)
@@ -116,6 +119,10 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                 "MQTT disabled or credentials not provided for %s, using REST API only",
                 self.device_sn
             )
+        
+        # Start periodic REST updates (independent of MQTT updates)
+        # This ensures REST polling happens even when MQTT is updating data
+        self._schedule_rest_update()
         
         # Listen for Home Assistant stop event to gracefully shutdown
         self.hass.bus.async_listen_once("homeassistant_stop", self._async_handle_stop)
@@ -170,9 +177,41 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
 
     async def async_shutdown(self) -> None:
         """Shut down the coordinator."""
+        # Cancel REST update timer
+        if self._rest_update_timer:
+            self._rest_update_timer.cancel()
+            self._rest_update_timer = None
+            
+        # Disconnect MQTT
         if self._mqtt_client:
             await self._mqtt_client.async_disconnect()
             self._mqtt_client = None
+    
+    def _schedule_rest_update(self) -> None:
+        """Schedule next REST update.
+        
+        This runs independently of MQTT updates to ensure periodic REST polling.
+        """
+        # Cancel any existing timer
+        if self._rest_update_timer:
+            self._rest_update_timer.cancel()
+        
+        # Schedule next update
+        self._rest_update_timer = self.hass.loop.call_later(
+            self.update_interval_seconds,
+            lambda: asyncio.create_task(self._do_rest_update())
+        )
+    
+    async def _do_rest_update(self) -> None:
+        """Perform REST update and schedule next one."""
+        try:
+            # Force refresh (this calls _async_update_data)
+            await self.async_refresh()
+        except Exception as err:
+            _LOGGER.error("Error during REST update: %s", err)
+        finally:
+            # Schedule next update
+            self._schedule_rest_update()
 
 
     def _handle_mqtt_message(self, payload: dict[str, Any]) -> None:
