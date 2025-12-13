@@ -1,18 +1,22 @@
 """Select platform for EcoFlow API integration."""
+
 from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.select import SelectEntity
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
-from .coordinator import EcoFlowDataCoordinator
 from .entity import EcoFlowBaseEntity
+
+if TYPE_CHECKING:
+    from homeassistant.config_entries import ConfigEntry
+    from homeassistant.core import HomeAssistant
+    from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
+    from .coordinator import EcoFlowDataCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -92,9 +96,9 @@ async def async_setup_entry(
 ) -> None:
     """Set up EcoFlow select entities."""
     coordinator: EcoFlowDataCoordinator = hass.data[DOMAIN][entry.entry_id]
-    
+
     entities: list[EcoFlowSelect] = []
-    
+
     for select_key, select_def in DELTA_PRO_3_SELECT_DEFINITIONS.items():
         entities.append(
             EcoFlowSelect(
@@ -104,7 +108,7 @@ async def async_setup_entry(
                 select_def=select_def,
             )
         )
-    
+
     async_add_entities(entities)
     _LOGGER.info("Added %d select entities", len(entities))
 
@@ -126,11 +130,11 @@ class EcoFlowSelect(EcoFlowBaseEntity, SelectEntity):
         self._attr_unique_id = f"{entry.entry_id}_{select_key}"
         self._attr_translation_key = select_key
         self._attr_icon = select_def.get("icon")
-        
+
         # Set options from config
         self._options_map = select_def["options"]
         self._attr_options = list(self._options_map.keys())
-        
+
         # Create reverse map for value to option
         self._value_to_option = {v: k for k, v in self._options_map.items()}
 
@@ -143,17 +147,17 @@ class EcoFlowSelect(EcoFlowBaseEntity, SelectEntity):
                 value = self.coordinator.update_interval_seconds
                 return self._value_to_option.get(value)
             return None
-        
+
         # Handle device settings
         if not self.coordinator.data:
             return None
-        
+
         state_key = self._select_def["state_key"]
         value = self.coordinator.data.get(state_key)
-        
+
         if value is None:
             return None
-        
+
         # Convert value to option string
         return self._value_to_option.get(value)
 
@@ -162,9 +166,9 @@ class EcoFlowSelect(EcoFlowBaseEntity, SelectEntity):
         if option not in self._options_map:
             _LOGGER.error("Invalid option %s for %s", option, self._select_key)
             return
-        
+
         value = self._options_map[option]
-        
+
         # Handle local settings (like update_interval)
         if self._select_def.get("is_local"):
             if self._select_key == "update_interval":
@@ -173,11 +177,11 @@ class EcoFlowSelect(EcoFlowBaseEntity, SelectEntity):
                 # Trigger state update
                 self.async_write_ha_state()
             return
-        
+
         # Handle device settings
         command_key = self._select_def["command_key"]
         device_sn = self.coordinator.config_entry.data["device_sn"]
-        
+
         # Build command payload according to Delta Pro 3 API format
         payload = {
             "sn": device_sn,
@@ -187,11 +191,9 @@ class EcoFlowSelect(EcoFlowBaseEntity, SelectEntity):
             "cmdFunc": 254,
             "dest": 2,
             "needAck": True,
-            "params": {
-                command_key: value
-            }
+            "params": {command_key: value},
         }
-        
+
         try:
             await self.coordinator.api_client.set_device_quota(
                 device_sn=device_sn,
@@ -201,10 +203,5 @@ class EcoFlowSelect(EcoFlowBaseEntity, SelectEntity):
             await asyncio.sleep(2)
             await self.coordinator.async_request_refresh()
         except Exception as err:
-            _LOGGER.error(
-                "Failed to set %s to %s: %s",
-                self._select_key,
-                option,
-                err
-            )
+            _LOGGER.error("Failed to set %s to %s: %s", self._select_key, option, err)
             raise

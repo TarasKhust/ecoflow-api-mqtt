@@ -12,4 +12,3 @@ aiohttp>=3.8.0
 
 # Home Assistant core dependencies needed for development
 voluptuous>=0.13.0
-
