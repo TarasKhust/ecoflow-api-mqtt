@@ -1,5 +1,5 @@
 """Constants for EcoFlow API integration."""
-from datetime import timedelta
+
 from typing import Final
 
 DOMAIN: Final = "ecoflow_api"
@@ -75,9 +75,13 @@ PLATFORMS: Final = ["sensor", "binary_sensor", "switch", "number", "select"]
 
 # Extra Battery prefixes that can be detected in API response
 EXTRA_BATTERY_PREFIXES: Final = [
-    "slave1", "slave2", "slave3",
-    "bms2", "bms3",
-    "eb1", "eb2",
+    "slave1",
+    "slave2",
+    "slave3",
+    "bms2",
+    "bms3",
+    "eb1",
+    "eb2",
     "extraBms",
     "slaveBattery",
 ]
@@ -131,7 +135,7 @@ DELTA_PRO_3_SENSORS: Final = {
     },
     # Note: Cycles are not available via REST API for Delta Pro 3
     # They are only available via MQTT (WebSocket) connection
-    # We can estimate cycles based on SOH: estimated_cycles ≈ (100 - SOH) × 10
+    # We can estimate cycles based on SOH: estimated_cycles ≈ (100 - SOH) x 10
     # For a new battery (SOH=100%), estimated cycles ≈ 0
     # For a degraded battery (SOH=80%), estimated cycles ≈ 200
     "cmsChgRemTime": {
@@ -306,7 +310,6 @@ DELTA_PRO_3_SENSORS: Final = {
         "device_class": "frequency",
         "icon": "mdi:sine-wave",
     },
-    
     # Device Status
     "errcode": {
         "name": "Device Error Code",
@@ -332,7 +335,6 @@ DELTA_PRO_3_SENSORS: Final = {
         "device_class": "duration",
         "icon": "mdi:bluetooth",
     },
-    
     # Battery Status (BMS) - Additional
     "bmsChgDsgState": {
         "name": "BMS Charge/Discharge State",
@@ -341,7 +343,6 @@ DELTA_PRO_3_SENSORS: Final = {
         "icon": "mdi:battery-sync",
         "options": ["idle", "discharging", "charging"],
     },
-    
     # Battery Status (CMS) - Additional
     "cmsChgDsgState": {
         "name": "CMS Charge/Discharge State",
@@ -374,7 +375,6 @@ DELTA_PRO_3_SENSORS: Final = {
         "device_class": "battery",
         "icon": "mdi:engine",
     },
-    
     # Power Flow - Additional
     "powGet5p8": {
         "name": "Power In/Out Port Power",
@@ -400,7 +400,6 @@ DELTA_PRO_3_SENSORS: Final = {
         "device_class": "power",
         "icon": "mdi:power-socket",
     },
-    
     # Plug-in Info - Power Limits
     "plugInInfoAcInChgHalPowMax": {
         "name": "AC Input Half Charging Power Max",
@@ -546,8 +545,7 @@ DELTA_PRO_3_SENSORS: Final = {
         "device_class": None,
         "icon": "mdi:battery-sync",
     },
-    
-    # Flow Info - Additional (these are already in binary sensors, but adding as sensors too)
+    # Flow Info - Additional (already in binary sensors, adding as sensors too)
     "flowInfoPvL": {
         "name": "PV Low Voltage Flow Status",
         "unit": None,
@@ -667,7 +665,6 @@ DELTA_PRO_3_SENSORS: Final = {
         "icon": "mdi:power-plug",
         "options": ["off", "unknown", "on"],
     },
-    
     # Additional Settings
     "fastChargeSwitch": {
         "name": "Fast Charge Switch",
@@ -729,7 +726,6 @@ DELTA_PRO_3_SENSORS: Final = {
         "device_class": "battery",
         "icon": "mdi:engine",
     },
-    
     # MQTT-only sensors (available only when MQTT is enabled)
     "bmsCycles": {
         "name": "Battery Cycles",
@@ -905,5 +901,3 @@ DELTA_PRO_3_NUMBERS: Final = {
         "param_key": "lcdLight",
     },
 }
-
-

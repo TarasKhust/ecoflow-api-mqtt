@@ -176,9 +176,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                 self._use_mqtt = False
 
         except Exception as err:
-            _LOGGER.error(
-                "🔴 MQTT connection error for device %s: %s", self.device_sn[-4:], err
-            )
+            _LOGGER.error("🔴 MQTT connection error for device %s: %s", self.device_sn[-4:], err)
             self._mqtt_connected = False
             self._use_mqtt = False
 
@@ -285,9 +283,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             # Schedule update in HA event loop from MQTT thread
             # async_set_updated_data is a sync method (despite the async_ prefix)
             # Use call_soon_threadsafe to schedule it in the correct event loop
-            self.hass.loop.call_soon_threadsafe(
-                lambda: self.async_set_updated_data(merged_data)
-            )
+            self.hass.loop.call_soon_threadsafe(lambda: self.async_set_updated_data(merged_data))
 
         except RuntimeError:
             # Event loop closed during shutdown - ignore silently
