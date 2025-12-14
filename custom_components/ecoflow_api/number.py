@@ -7,12 +7,7 @@ import logging
 from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.number import NumberEntity, NumberMode
-from homeassistant.const import (
-    PERCENTAGE,
-    UnitOfElectricCurrent,
-    UnitOfPower,
-    UnitOfTime,
-)
+from homeassistant.const import PERCENTAGE, UnitOfElectricCurrent, UnitOfPower, UnitOfTime
 
 from .const import DEFAULT_POWER_STEP, DOMAIN, OPTS_POWER_STEP
 from .entity import EcoFlowBaseEntity
@@ -161,6 +156,18 @@ DELTA_PRO_3_NUMBER_DEFINITIONS = {
         "icon": "mdi:bluetooth",
         "mode": NumberMode.BOX,
     },
+    "backup_reserve_level": {
+        "name": "Backup Reserve Level",
+        "state_key": "backupReverseSoc",
+        "command_key": "cfgEnergyBackup",
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "unit": PERCENTAGE,
+        "icon": "mdi:battery-lock",
+        "mode": NumberMode.SLIDER,
+        "nested_params": True,
+    },
 }
 
 
@@ -245,6 +252,19 @@ class EcoFlowNumber(EcoFlowBaseEntity, NumberEntity):
         # Convert to int for API
         int_value = int(value)
 
+        # Handle nested parameters for backup reserve level
+        if self._number_def.get("nested_params"):
+            # Special case for backup reserve level - needs nested structure
+            params = {
+                command_key: {
+                    "energyBackupStartSoc": int_value,
+                    "energyBackupEn": True
+                }
+            }
+        else:
+            # Standard simple parameter structure
+            params = {command_key: int_value}
+
         # Build command payload according to Delta Pro 3 API format
         payload = {
             "sn": device_sn,
@@ -254,7 +274,7 @@ class EcoFlowNumber(EcoFlowBaseEntity, NumberEntity):
             "cmdFunc": 254,
             "dest": 2,
             "needAck": True,
-            "params": {command_key: int_value},
+            "params": params,
         }
 
         try:
