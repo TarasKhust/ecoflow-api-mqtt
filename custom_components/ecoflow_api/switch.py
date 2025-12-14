@@ -99,16 +99,7 @@ DELTA_PRO_3_SWITCH_DEFINITIONS = {
         "icon_off": "mdi:weather-night-outline",
         "device_class": SwitchDeviceClass.SWITCH,
     },
-    "tou_intelligent_schedule": {
-        "name": "TOU Intelligent Schedule",
-        "state_key": "energyStrategyOperateMode.operateIntelligentScheduleModeOpen",  # bool
-        "command_key": "cfgEnergyStrategyOperateMode",
-        "icon_on": "mdi:brain",
-        "icon_off": "mdi:brain-outline",
-        "device_class": SwitchDeviceClass.SWITCH,
-        "nested_params": True,
-    },
-}
+    }
 
 
 async def async_setup_entry(
@@ -193,24 +184,10 @@ class EcoFlowSwitch(EcoFlowBaseEntity, SwitchEntity):
         command_key = self._switch_def["command_key"]
         device_sn = self.coordinator.device_sn
         
-        # Handle nested parameters for TOU switches
-        if self._switch_key.startswith("tou_"):
-            # Get current TOU mode state to preserve it
-            tou_mode = self.coordinator.data.get("energyStrategyOperateMode.operateTouModeOpen", False)
-            
-            params = {
-                command_key: {
-                    "operateSelfPoweredOpen": self.coordinator.data.get("energyStrategyOperateMode.operateSelfPoweredOpen", False),
-                    "operateTouModeOpen": tou_mode,
-                    "operateIntelligentScheduleModeOpen": state,
-                    "operateScheduledOpen": self.coordinator.data.get("energyStrategyOperateMode.operateScheduledOpen", False),
-                }
-            }
-        else:
-            # Standard handling for other switches
-            params = {
-                command_key: state
-            }
+        # Standard handling for all switches
+        params = {
+            command_key: state
+        }
         
         # Build command payload according to Delta Pro 3 API format
         payload = {
