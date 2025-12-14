@@ -17,18 +17,10 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 
 from .api import EcoFlowApiClient
-from .const import (
-    DOMAIN,
-    CONF_ACCESS_KEY,
-    CONF_SECRET_KEY,
-    CONF_DEVICE_SN,
-    CONF_DEVICE_TYPE,
-    CONF_UPDATE_INTERVAL,
-    CONF_MQTT_ENABLED,
-    CONF_MQTT_USERNAME,
-    CONF_MQTT_PASSWORD,
-    DEFAULT_UPDATE_INTERVAL,
-)
+from .const import (CONF_ACCESS_KEY, CONF_DEVICE_SN, CONF_DEVICE_TYPE,
+                    CONF_MQTT_ENABLED, CONF_MQTT_PASSWORD, CONF_MQTT_USERNAME,
+                    CONF_SECRET_KEY, CONF_UPDATE_INTERVAL,
+                    DEFAULT_UPDATE_INTERVAL, DOMAIN)
 from .coordinator import EcoFlowDataCoordinator
 from .hybrid_coordinator import EcoFlowHybridCoordinator
 from .migrations import async_migrate_entry
@@ -98,6 +90,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             _LOGGER.error("Error fetching MQTT credentials: %s. Using manual credentials if provided.", err)
     
     # Create coordinator (hybrid if MQTT enabled, otherwise standard)
+    coordinator: EcoFlowDataCoordinator | EcoFlowHybridCoordinator
     if mqtt_enabled and mqtt_username and mqtt_password:
         _LOGGER.info("Creating hybrid coordinator (REST + MQTT) for device %s", entry.data[CONF_DEVICE_SN])
         coordinator = EcoFlowHybridCoordinator(
@@ -187,8 +180,9 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
         hass: Home Assistant instance
         entry: Config entry being removed
     """
-    from homeassistant.helpers import device_registry as dr, entity_registry as er
-    
+    from homeassistant.helpers import device_registry as dr
+    from homeassistant.helpers import entity_registry as er
+
     # Clean up device registry
     device_registry = dr.async_get(hass)
     devices = dr.async_entries_for_config_entry(device_registry, entry.entry_id)
@@ -218,5 +212,6 @@ async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     """
     await async_unload_entry(hass, entry)
     await async_setup_entry(hass, entry)
+
 
 

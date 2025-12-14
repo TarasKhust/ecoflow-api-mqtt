@@ -7,16 +7,12 @@ from typing import Any
 
 from homeassistant.components.number import NumberEntity, NumberMode
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import (
-    PERCENTAGE,
-    UnitOfPower,
-    UnitOfTime,
-    UnitOfElectricCurrent,
-)
+from homeassistant.const import (PERCENTAGE, UnitOfElectricCurrent,
+                                 UnitOfPower, UnitOfTime)
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN, OPTS_POWER_STEP, DEFAULT_POWER_STEP
+from .const import DEFAULT_POWER_STEP, DOMAIN, OPTS_POWER_STEP
 from .coordinator import EcoFlowDataCoordinator
 from .entity import EcoFlowBaseEntity
 
@@ -157,6 +153,40 @@ DELTA_PRO_3_NUMBER_DEFINITIONS = {
         "icon": "mdi:bluetooth",
         "mode": NumberMode.BOX,
     },
+    "backup_reserve_level": {
+        "name": "Backup Reserve Level",
+        "state_key": "backupReverseSoc",
+        "command_key": "cfgEnergyBackup",
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "unit": PERCENTAGE,
+        "icon": "mdi:battery-lock",
+        "mode": NumberMode.SLIDER,
+        "nested_params": True,
+    },
+    "generator_pv_hybrid_max_soc": {
+        "name": "Generator PV Hybrid Max SOC",
+        "state_key": "generatorPvHybridModeSocMax",
+        "command_key": "cfgGeneratorPvHybridModeSocMax",
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "unit": PERCENTAGE,
+        "icon": "mdi:solar-power",
+        "mode": NumberMode.SLIDER,
+    },
+    "generator_care_start_time": {
+        "name": "Generator Care Start Time",
+        "state_key": "generatorCareModeStartTime",
+        "command_key": "cfgGeneratorCareModeStartTime",
+        "min": 0,
+        "max": 1440,
+        "step": 1,
+        "unit": UnitOfTime.MINUTES,
+        "icon": "mdi:weather-night",
+        "mode": NumberMode.BOX,
+    },
 }
 
 
@@ -195,10 +225,12 @@ class EcoFlowNumber(EcoFlowBaseEntity, NumberEntity):
         number_def: dict[str, Any],
     ) -> None:
         """Initialize the number entity."""
-        super().__init__(coordinator, entry)
+        super().__init__(coordinator, number_key)
         self._number_key = number_key
         self._number_def = number_def
+        self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_{number_key}"
+        self._attr_name = number_def["name"]
         self._attr_translation_key = number_key
         
         # Set number attributes from config
@@ -207,7 +239,7 @@ class EcoFlowNumber(EcoFlowBaseEntity, NumberEntity):
         
         # Use power_step from options for AC Charging Power, otherwise use default step
         if number_key == "ac_charge_power":
-            power_step = entry.options.get(OPTS_POWER_STEP, DEFAULT_POWER_STEP)
+            power_step = self._entry.options.get(OPTS_POWER_STEP, DEFAULT_POWER_STEP)
             self._attr_native_step = power_step
         else:
             self._attr_native_step = number_def["step"]
@@ -241,6 +273,20 @@ class EcoFlowNumber(EcoFlowBaseEntity, NumberEntity):
         # Convert to int for API
         int_value = int(value)
         
+        # Handle nested parameters for backup reserve level
+        params: dict[str, Any]
+        if self._number_def.get("nested_params"):
+            # Special case for backup reserve level - needs nested structure
+            params = {
+                command_key: {
+                    "energyBackupStartSoc": int_value,
+                    "energyBackupEn": True
+                }
+            }
+        else:
+            # Standard simple parameter structure
+            params = {command_key: int_value}
+        
         # Build command payload according to Delta Pro 3 API format
         payload = {
             "sn": device_sn,
@@ -250,9 +296,7 @@ class EcoFlowNumber(EcoFlowBaseEntity, NumberEntity):
             "cmdFunc": 254,
             "dest": 2,
             "needAck": True,
-            "params": {
-                command_key: int_value
-            }
+            "params": params,
         }
         
         try:

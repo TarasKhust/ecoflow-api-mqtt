@@ -5,7 +5,7 @@ import asyncio
 import logging
 from typing import Any
 
-from homeassistant.components.switch import SwitchEntity, SwitchDeviceClass
+from homeassistant.components.switch import SwitchDeviceClass, SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -83,7 +83,23 @@ DELTA_PRO_3_SWITCH_DEFINITIONS = {
         "icon_off": "mdi:shield-off",
         "device_class": SwitchDeviceClass.SWITCH,
     },
-}
+    "generator_pv_hybrid": {
+        "name": "Generator PV Hybrid Mode",
+        "state_key": "generatorPvHybridModeOpen",  # bool
+        "command_key": "cfgGeneratorPvHybridModeOpen",
+        "icon_on": "mdi:solar-power",
+        "icon_off": "mdi:solar-power",
+        "device_class": SwitchDeviceClass.SWITCH,
+    },
+    "generator_care_mode": {
+        "name": "Generator Care Mode",
+        "state_key": "generatorCareModeOpen",  # bool
+        "command_key": "cfgGeneratorCareModeOpen",
+        "icon_on": "mdi:weather-night",
+        "icon_off": "mdi:weather-night",
+        "device_class": SwitchDeviceClass.SWITCH,
+    },
+    }
 
 
 async def async_setup_entry(
@@ -121,10 +137,11 @@ class EcoFlowSwitch(EcoFlowBaseEntity, SwitchEntity):
         switch_def: dict[str, Any],
     ) -> None:
         """Initialize the switch."""
-        super().__init__(coordinator, entry)
+        super().__init__(coordinator, switch_key)
         self._switch_key = switch_key
         self._switch_def = switch_def
         self._attr_unique_id = f"{entry.entry_id}_{switch_key}"
+        self._attr_name = switch_def["name"]
         self._attr_translation_key = switch_key
         self._attr_device_class = switch_def.get("device_class")
 
@@ -165,7 +182,12 @@ class EcoFlowSwitch(EcoFlowBaseEntity, SwitchEntity):
     async def _send_command(self, state: bool) -> None:
         """Send command to device."""
         command_key = self._switch_def["command_key"]
-        device_sn = self.coordinator.config_entry.data["device_sn"]
+        device_sn = self.coordinator.device_sn
+        
+        # Standard handling for all switches
+        params = {
+            command_key: state
+        }
         
         # Build command payload according to Delta Pro 3 API format
         payload = {
@@ -176,9 +198,7 @@ class EcoFlowSwitch(EcoFlowBaseEntity, SwitchEntity):
             "cmdFunc": 254,
             "dest": 2,
             "needAck": True,
-            "params": {
-                command_key: state
-            }
+            "params": params
         }
         
         try:
