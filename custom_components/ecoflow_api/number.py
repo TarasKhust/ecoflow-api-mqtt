@@ -208,6 +208,7 @@ class EcoFlowNumber(EcoFlowBaseEntity, NumberEntity):
         self._number_def = number_def
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_{number_key}"
+        self._attr_name = number_def["name"]
         self._attr_translation_key = number_key
         
         # Set number attributes from config
