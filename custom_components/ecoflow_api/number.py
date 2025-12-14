@@ -155,7 +155,7 @@ DELTA_PRO_3_NUMBER_DEFINITIONS = {
     },
     "backup_reserve_level": {
         "name": "Backup Reserve Level",
-        "state_key": "energyBackupStartSoc",
+        "state_key": "backupReverseSoc",
         "command_key": "cfgEnergyBackup",
         "min": 0,
         "max": 100,
