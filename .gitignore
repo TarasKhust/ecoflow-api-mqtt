@@ -90,6 +90,10 @@ home-assistant_v2.db-wal
 test_*.py
 get_device_data.py
 test_device_controls.py
+generate_signature.py
+EcoFlow_API_Postman_Collection.json
+POSTMAN_SETUP.md
+*_test.py
 
 # Development helper scripts (local use only)
 check_structure.py
@@ -97,91 +101,8 @@ run_tests.py
 create_release_zip.py
 make_zip.py
 
-# Linting and code quality tool cache
-.ruff_cache/
-.mypy_cache/
-.flake8
-.bandit
-.pre-commit-hooks.yaml
 
-# IDE and editor specific files
 .cursorrules
 shared-rules/.cursor
 .cursor/
-.windsurf/
-.vscode/settings.json
-.idea/
-*.swp
-*.swo
-*~
-*.code-workspace
-
-# OS specific files
-.DS_Store
-Thumbs.db
-desktop.ini
-
-# Local configuration and secrets
-.env.local
-.env.development
-.env.production
-config.local.json
-secrets.json
-credentials.json
-*.key
-*.pem
-*.p12
-*.pfx
-
-# Logs and debugging
-*.log
-debug.log
-error.log
-access.log
-
-# Temporary files
-*.tmp
-*.temp
-*.bak
-*.backup
-*.old
-*.orig
-*.rej
-
-# Database files
-*.db
-*.sqlite
-*.sqlite3
-
-# Cache and runtime
-.cache/
-cache/
-tmp/
-temp/
-
-# Build artifacts
-build/
-dist/
-*.egg-info/
-
-# Documentation build
-docs/_build/
-site/
-
-# Package files
-*.tar.gz
-*.zip
-*.rar
-*.7z
-
-# Local development
-local/
-dev/
-test_local.py
-debug_*.py
-
-# API keys and tokens (be extra careful)
-api_key.txt
-token.txt
-.secret
-*.env.secret
+.cursor/

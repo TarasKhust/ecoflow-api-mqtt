@@ -1,22 +1,18 @@
 """Switch platform for EcoFlow API integration."""
-
 from __future__ import annotations
 
 import asyncio
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-from homeassistant.components.switch import SwitchDeviceClass, SwitchEntity
+from homeassistant.components.switch import SwitchEntity, SwitchDeviceClass
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
+from .coordinator import EcoFlowDataCoordinator
 from .entity import EcoFlowBaseEntity
-
-if TYPE_CHECKING:
-    from homeassistant.config_entries import ConfigEntry
-    from homeassistant.core import HomeAssistant
-    from homeassistant.helpers.entity_platform import AddEntitiesCallback
-
-    from .coordinator import EcoFlowDataCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -97,9 +93,9 @@ async def async_setup_entry(
 ) -> None:
     """Set up EcoFlow switch entities."""
     coordinator: EcoFlowDataCoordinator = hass.data[DOMAIN][entry.entry_id]
-
+    
     entities: list[EcoFlowSwitch] = []
-
+    
     for switch_key, switch_def in DELTA_PRO_3_SWITCH_DEFINITIONS.items():
         entities.append(
             EcoFlowSwitch(
@@ -109,7 +105,7 @@ async def async_setup_entry(
                 switch_def=switch_def,
             )
         )
-
+    
     async_add_entities(entities)
     _LOGGER.info("Added %d switch entities", len(entities))
 
@@ -137,17 +133,17 @@ class EcoFlowSwitch(EcoFlowBaseEntity, SwitchEntity):
         """Return true if switch is on."""
         if not self.coordinator.data:
             return None
-
+        
         state_key = self._switch_def["state_key"]
         value = self.coordinator.data.get(state_key)
-
+        
         if value is None:
             return None
-
+        
         # Handle flow info status (0: off, 2: on)
         if state_key.startswith("flowInfo"):
             return value == 2
-
+        
         # Handle boolean values
         return bool(value)
 
@@ -158,11 +154,11 @@ class EcoFlowSwitch(EcoFlowBaseEntity, SwitchEntity):
             return self._switch_def.get("icon_on")
         return self._switch_def.get("icon_off")
 
-    async def async_turn_on(self, **_kwargs: Any) -> None:
+    async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the switch on."""
         await self._send_command(True)
 
-    async def async_turn_off(self, **_kwargs: Any) -> None:
+    async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the switch off."""
         await self._send_command(False)
 
@@ -170,7 +166,7 @@ class EcoFlowSwitch(EcoFlowBaseEntity, SwitchEntity):
         """Send command to device."""
         command_key = self._switch_def["command_key"]
         device_sn = self.coordinator.config_entry.data["device_sn"]
-
+        
         # Build command payload according to Delta Pro 3 API format
         payload = {
             "sn": device_sn,
@@ -180,9 +176,11 @@ class EcoFlowSwitch(EcoFlowBaseEntity, SwitchEntity):
             "cmdFunc": 254,
             "dest": 2,
             "needAck": True,
-            "params": {command_key: state},
+            "params": {
+                command_key: state
+            }
         }
-
+        
         try:
             await self.coordinator.api_client.set_device_quota(
                 device_sn=device_sn,
@@ -192,5 +190,10 @@ class EcoFlowSwitch(EcoFlowBaseEntity, SwitchEntity):
             await asyncio.sleep(2)
             await self.coordinator.async_request_refresh()
         except Exception as err:
-            _LOGGER.error("Failed to set %s to %s: %s", self._switch_key, state, err)
+            _LOGGER.error(
+                "Failed to set %s to %s: %s",
+                self._switch_key,
+                state,
+                err
+            )
             raise

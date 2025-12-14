@@ -1,5 +1,4 @@
 """Constants for Delta Pro 3."""
-
 from __future__ import annotations
 
 from typing import Final
@@ -17,3 +16,5 @@ COMMAND_BASE: Final = {
     "dest": 2,
     "needAck": True,
 }
+
+
