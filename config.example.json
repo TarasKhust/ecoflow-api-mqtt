@@ -1,0 +1,32 @@
+{
+  "_comment": "This is an example configuration file. Copy to config.local.json and modify for your local development.",
+
+  "ecoflow_api": {
+    "username": "your_ecoflow_username",
+    "password": "your_ecoflow_password",
+    "device_sn": "your_device_serial_number",
+    "api_url": "https://api.ecoflow.com",
+    "timeout": 30
+  },
+
+  "development": {
+    "debug_mode": true,
+    "log_level": "DEBUG",
+    "mock_api": false,
+    "cache_responses": true
+  },
+
+  "home_assistant": {
+    "debug": true,
+    "log_level": "DEBUG",
+    "enable_debug_mode": true
+  },
+
+  "security": {
+    "encrypt_credentials": true,
+    "use_keyring": true,
+    "session_timeout": 3600
+  },
+
+  "_security_note": "NEVER commit real credentials to version control. Use environment variables or secure credential storage in production."
+}

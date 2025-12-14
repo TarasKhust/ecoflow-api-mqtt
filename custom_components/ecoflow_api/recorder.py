@@ -3,13 +3,14 @@
 Excludes technical attributes from being recorded in Home Assistant database
 to reduce database size and improve performance.
 """
+
 from homeassistant.core import HomeAssistant, callback
 
 
 @callback
-def exclude_attributes(hass: HomeAssistant) -> set[str]:
+def exclude_attributes(_hass: HomeAssistant) -> set[str]:
     """Return attributes that should be excluded from recorder.
-    
+
     These attributes are technical/diagnostic and don't need to be stored
     in the database history.
     """
@@ -35,4 +36,3 @@ def exclude_attributes(hass: HomeAssistant) -> set[str]:
         "set_commands",
         "set_replies",
     }
-

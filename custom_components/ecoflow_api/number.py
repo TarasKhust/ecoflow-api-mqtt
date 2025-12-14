@@ -1,24 +1,28 @@
 """Number platform for EcoFlow API integration."""
+
 from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from homeassistant.components.number import NumberEntity, NumberMode
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     PERCENTAGE,
+    UnitOfElectricCurrent,
     UnitOfPower,
     UnitOfTime,
-    UnitOfElectricCurrent,
 )
-from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN, OPTS_POWER_STEP, DEFAULT_POWER_STEP
-from .coordinator import EcoFlowDataCoordinator
+from .const import DEFAULT_POWER_STEP, DOMAIN, OPTS_POWER_STEP
 from .entity import EcoFlowBaseEntity
+
+if TYPE_CHECKING:
+    from homeassistant.config_entries import ConfigEntry
+    from homeassistant.core import HomeAssistant
+    from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
+    from .coordinator import EcoFlowDataCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -167,9 +171,9 @@ async def async_setup_entry(
 ) -> None:
     """Set up EcoFlow number entities."""
     coordinator: EcoFlowDataCoordinator = hass.data[DOMAIN][entry.entry_id]
-    
+
     entities: list[EcoFlowNumber] = []
-    
+
     for number_key, number_def in DELTA_PRO_3_NUMBER_DEFINITIONS.items():
         entities.append(
             EcoFlowNumber(
@@ -179,7 +183,7 @@ async def async_setup_entry(
                 number_def=number_def,
             )
         )
-    
+
     async_add_entities(entities)
     _LOGGER.info("Added %d number entities", len(entities))
 
@@ -200,18 +204,18 @@ class EcoFlowNumber(EcoFlowBaseEntity, NumberEntity):
         self._number_def = number_def
         self._attr_unique_id = f"{entry.entry_id}_{number_key}"
         self._attr_translation_key = number_key
-        
+
         # Set number attributes from config
         self._attr_native_min_value = number_def["min"]
         self._attr_native_max_value = number_def["max"]
-        
+
         # Use power_step from options for AC Charging Power, otherwise use default step
         if number_key == "ac_charge_power":
             power_step = entry.options.get(OPTS_POWER_STEP, DEFAULT_POWER_STEP)
             self._attr_native_step = power_step
         else:
             self._attr_native_step = number_def["step"]
-        
+
         self._attr_native_unit_of_measurement = number_def.get("unit")
         self._attr_icon = number_def.get("icon")
         self._attr_mode = number_def.get("mode", NumberMode.AUTO)
@@ -221,13 +225,13 @@ class EcoFlowNumber(EcoFlowBaseEntity, NumberEntity):
         """Return the current value."""
         if not self.coordinator.data:
             return None
-        
+
         state_key = self._number_def["state_key"]
         value = self.coordinator.data.get(state_key)
-        
+
         if value is None:
             return None
-        
+
         try:
             return float(value)
         except (ValueError, TypeError):
@@ -237,10 +241,10 @@ class EcoFlowNumber(EcoFlowBaseEntity, NumberEntity):
         """Set new value."""
         command_key = self._number_def["command_key"]
         device_sn = self.coordinator.config_entry.data["device_sn"]
-        
+
         # Convert to int for API
         int_value = int(value)
-        
+
         # Build command payload according to Delta Pro 3 API format
         payload = {
             "sn": device_sn,
@@ -250,11 +254,9 @@ class EcoFlowNumber(EcoFlowBaseEntity, NumberEntity):
             "cmdFunc": 254,
             "dest": 2,
             "needAck": True,
-            "params": {
-                command_key: int_value
-            }
+            "params": {command_key: int_value},
         }
-        
+
         try:
             await self.coordinator.api_client.set_device_quota(
                 device_sn=device_sn,
@@ -264,10 +266,5 @@ class EcoFlowNumber(EcoFlowBaseEntity, NumberEntity):
             await asyncio.sleep(2)
             await self.coordinator.async_request_refresh()
         except Exception as err:
-            _LOGGER.error(
-                "Failed to set %s to %s: %s",
-                self._number_key,
-                int_value,
-                err
-            )
+            _LOGGER.error("Failed to set %s to %s: %s", self._number_key, int_value, err)
             raise

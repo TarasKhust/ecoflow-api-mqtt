@@ -1,0 +1,17 @@
+# Linting and formatting dependencies
+ruff>=0.1.8
+mypy>=1.8.0
+flake8>=7.0.0
+flake8-docstrings
+bandit>=1.7.5
+pre-commit>=3.6.0
+
+# Type checking stubs (individual packages instead of types-all)
+types-requests>=2.31.0
+types-aiofiles>=23.2.0
+types-setuptools>=68.0.0
+types-paho-mqtt>=1.6.0.20240321
+
+# Development dependencies (optional - ruff replaces these)
+# black>=23.0.0
+# isort>=5.12.0
