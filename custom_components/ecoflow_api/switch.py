@@ -88,7 +88,7 @@ DELTA_PRO_3_SWITCH_DEFINITIONS = {
         "state_key": "generatorPvHybridModeOpen",  # bool
         "command_key": "cfgGeneratorPvHybridModeOpen",
         "icon_on": "mdi:solar-power",
-        "icon_off": "mdi:solar-power-outline",
+        "icon_off": "mdi:solar-power",
         "device_class": SwitchDeviceClass.SWITCH,
     },
     "generator_care_mode": {
@@ -96,7 +96,7 @@ DELTA_PRO_3_SWITCH_DEFINITIONS = {
         "state_key": "generatorCareModeOpen",  # bool
         "command_key": "cfgGeneratorCareModeOpen",
         "icon_on": "mdi:weather-night",
-        "icon_off": "mdi:weather-night-outline",
+        "icon_off": "mdi:weather-night",
         "device_class": SwitchDeviceClass.SWITCH,
     },
     }
