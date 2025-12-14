@@ -203,10 +203,10 @@ class EcoFlowNumber(EcoFlowBaseEntity, NumberEntity):
         number_def: dict[str, Any],
     ) -> None:
         """Initialize the number entity."""
-        super().__init__(coordinator, entry)
+        super().__init__(coordinator, number_key)
         self._number_key = number_key
         self._number_def = number_def
-        self._attr_unique_id = f"{entry.entry_id}_{number_key}"
+        self._entry = entry
         self._attr_translation_key = number_key
         
         # Set number attributes from config
@@ -215,7 +215,7 @@ class EcoFlowNumber(EcoFlowBaseEntity, NumberEntity):
         
         # Use power_step from options for AC Charging Power, otherwise use default step
         if number_key == "ac_charge_power":
-            power_step = entry.options.get(OPTS_POWER_STEP, DEFAULT_POWER_STEP)
+            power_step = self._entry.options.get(OPTS_POWER_STEP, DEFAULT_POWER_STEP)
             self._attr_native_step = power_step
         else:
             self._attr_native_step = number_def["step"]
@@ -250,6 +250,7 @@ class EcoFlowNumber(EcoFlowBaseEntity, NumberEntity):
         int_value = int(value)
         
         # Handle nested parameters for backup reserve level
+        params: dict[str, Any]
         if self._number_def.get("nested_params"):
             # Special case for backup reserve level - needs nested structure
             params = {
