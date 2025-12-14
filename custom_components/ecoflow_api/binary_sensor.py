@@ -1,25 +1,21 @@
 """Binary sensor platform for EcoFlow API integration."""
-
 from __future__ import annotations
 
 import logging
 import re
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
     BinarySensorEntity,
 )
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
+from .coordinator import EcoFlowDataCoordinator
 from .entity import EcoFlowBaseEntity
-
-if TYPE_CHECKING:
-    from homeassistant.config_entries import ConfigEntry
-    from homeassistant.core import HomeAssistant
-    from homeassistant.helpers.entity_platform import AddEntitiesCallback
-
-    from .coordinator import EcoFlowDataCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -151,13 +147,9 @@ EXTRA_BATTERY_BINARY_SENSOR_DEFINITIONS = {
 
 # Possible prefixes for extra battery data in API response
 EXTRA_BATTERY_PREFIXES = [
-    "slave1",
-    "slave2",
-    "slave3",
-    "bms2",
-    "bms3",
-    "eb1",
-    "eb2",
+    "slave1", "slave2", "slave3",
+    "bms2", "bms3",
+    "eb1", "eb2",
     "extraBms",
     "slaveBattery",
 ]
@@ -165,29 +157,29 @@ EXTRA_BATTERY_PREFIXES = [
 
 def _detect_extra_batteries(data: dict[str, Any]) -> list[str]:
     """Detect extra battery prefixes in API response data.
-
+    
     Args:
         data: API response data
-
+        
     Returns:
         List of found battery prefixes
     """
     if not data:
         return []
-
+    
     found_prefixes: set[str] = set()
-
-    for key in data:
+    
+    for key in data.keys():
         for prefix in EXTRA_BATTERY_PREFIXES:
             if key.startswith(prefix):
                 found_prefixes.add(prefix)
-
-    return sorted(found_prefixes)
+    
+    return sorted(list(found_prefixes))
 
 
 def _get_battery_number(prefix: str) -> int:
     """Extract battery number from prefix."""
-    match = re.search(r"(\d+)", prefix)
+    match = re.search(r'(\d+)', prefix)
     if match:
         return int(match.group(1))
     return 1
@@ -199,16 +191,16 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up EcoFlow binary sensor entities.
-
+    
     Args:
         hass: Home Assistant instance
         entry: Config entry
         async_add_entities: Callback to add entities
     """
     coordinator: EcoFlowDataCoordinator = hass.data[DOMAIN][entry.entry_id]
-
+    
     entities: list[BinarySensorEntity] = []
-
+    
     # Add main device binary sensors
     for sensor_key, sensor_def in DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS.items():
         entities.append(
@@ -222,18 +214,12 @@ async def async_setup_entry(
     # Detect and add extra battery binary sensors
     if coordinator.data:
         extra_battery_prefixes = _detect_extra_batteries(coordinator.data)
-        _LOGGER.info(
-            "Detected %d extra batteries for binary sensors",
-            len(extra_battery_prefixes),
-        )
-
+        _LOGGER.info("Detected %d extra batteries for binary sensors", len(extra_battery_prefixes))
+        
         for prefix in extra_battery_prefixes:
             battery_num = _get_battery_number(prefix)
-
-            for (
-                sensor_key,
-                sensor_def,
-            ) in EXTRA_BATTERY_BINARY_SENSOR_DEFINITIONS.items():
+            
+            for sensor_key, sensor_def in EXTRA_BATTERY_BINARY_SENSOR_DEFINITIONS.items():
                 entities.append(
                     EcoFlowExtraBatteryBinarySensor(
                         coordinator=coordinator,
@@ -258,20 +244,20 @@ class EcoFlowBinarySensor(EcoFlowBaseEntity, BinarySensorEntity):
         sensor_def: dict[str, Any],
     ) -> None:
         """Initialize the binary sensor.
-
+        
         Args:
             coordinator: Data update coordinator
             sensor_key: Unique key for this sensor
             sensor_def: Sensor definition dictionary
         """
         super().__init__(coordinator, sensor_key)
-
+        
         self._sensor_def = sensor_def
         self._data_key = sensor_def.get("key", sensor_key)
         self._is_derived = sensor_def.get("derived", False)
         self._derive_from = sensor_def.get("derive_from")
         self._derive_condition = sensor_def.get("derive_condition")
-
+        
         # Set entity attributes from definition
         self._attr_name = sensor_def["name"]
         self._attr_device_class = sensor_def.get("device_class")
@@ -283,18 +269,18 @@ class EcoFlowBinarySensor(EcoFlowBaseEntity, BinarySensorEntity):
         """Return True if the binary sensor is on."""
         if not self.coordinator.data:
             return None
-
+        
         # Handle derived sensors
         if self._is_derived and self._derive_from and self._derive_condition:
             source_value = self.coordinator.data.get(self._derive_from)
             return self._derive_condition(source_value)
-
+        
         # Handle direct state sensors
         value = self.coordinator.data.get(self._data_key)
-
+        
         if value is None:
             return None
-
+            
         # Handle different value types
         if isinstance(value, bool):
             return value
@@ -302,7 +288,7 @@ class EcoFlowBinarySensor(EcoFlowBaseEntity, BinarySensorEntity):
             return value == 1
         if isinstance(value, str):
             return value.lower() in ("1", "true", "on")
-
+            
         return None
 
     @property
@@ -325,7 +311,7 @@ class EcoFlowExtraBatteryBinarySensor(EcoFlowBaseEntity, BinarySensorEntity):
         sensor_def: dict[str, Any],
     ) -> None:
         """Initialize the extra battery binary sensor.
-
+        
         Args:
             coordinator: Data update coordinator
             battery_prefix: Battery prefix (e.g., "slave1")
@@ -335,14 +321,14 @@ class EcoFlowExtraBatteryBinarySensor(EcoFlowBaseEntity, BinarySensorEntity):
         """
         entity_key = f"extra_battery_{battery_number}_{sensor_key}"
         super().__init__(coordinator, entity_key)
-
+        
         self._battery_prefix = battery_prefix
         self._battery_number = battery_number
         self._sensor_key = sensor_key
         self._sensor_def = sensor_def
         self._check_key = f"{battery_prefix}{sensor_def.get('check_key', 'Soc')}"
         self._condition = sensor_def.get("condition")
-
+        
         # Set entity attributes
         self._attr_name = f"Extra Battery {battery_number} {sensor_def['name']}"
         self._attr_device_class = sensor_def.get("device_class")
@@ -354,17 +340,17 @@ class EcoFlowExtraBatteryBinarySensor(EcoFlowBaseEntity, BinarySensorEntity):
         """Return True if the binary sensor is on."""
         if not self.coordinator.data:
             return None
-
+        
         value = self.coordinator.data.get(self._check_key)
-
+        
         # For "connected" sensor, check if we have data
         if self._sensor_key == "connected":
             return value is not None
-
+        
         # For conditional sensors
         if self._condition:
             return self._condition(value)
-
+        
         return None
 
     @property

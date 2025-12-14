@@ -8,7 +8,6 @@ Each device type has its own subdirectory containing:
 Supported devices:
 - Delta Pro 3 (devices/delta_pro_3/)
 """
-
 from __future__ import annotations
 
 from . import delta_pro_3
@@ -19,6 +18,7 @@ DEVICE_MODULES = {
 }
 
 __all__ = [
-    "DEVICE_MODULES",
     "delta_pro_3",
+    "DEVICE_MODULES",
 ]
+

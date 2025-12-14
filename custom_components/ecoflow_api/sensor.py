@@ -1,43 +1,39 @@
 """Sensor platform for EcoFlow API integration."""
-
 from __future__ import annotations
 
-import logging
 from datetime import datetime, timedelta
-from typing import TYPE_CHECKING, Any
+import logging
+from typing import Any
 
-from homeassistant.components.integration.sensor import IntegrationSensor
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
     SensorStateClass,
 )
+from homeassistant.components.integration.sensor import IntegrationSensor
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import (
     PERCENTAGE,
-    STATE_UNAVAILABLE,
-    STATE_UNKNOWN,
-    UnitOfElectricCurrent,
-    UnitOfElectricPotential,
-    UnitOfEnergy,
-    UnitOfFrequency,
     UnitOfPower,
     UnitOfTemperature,
     UnitOfTime,
+    UnitOfElectricPotential,
+    UnitOfElectricCurrent,
+    UnitOfEnergy,
+    UnitOfFrequency,
+    STATE_UNAVAILABLE,
+    STATE_UNKNOWN,
 )
-from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
+from homeassistant.core import HomeAssistant, Event, EventStateChangedData, callback
 from homeassistant.helpers.entity import EntityCategory
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.util import dt as dt_util
 
 from .const import DOMAIN
+from .coordinator import EcoFlowDataCoordinator
 from .entity import EcoFlowBaseEntity
 from .hybrid_coordinator import EcoFlowHybridCoordinator
-
-if TYPE_CHECKING:
-    from homeassistant.config_entries import ConfigEntry
-    from homeassistant.helpers.entity_platform import AddEntitiesCallback
-
-    from .coordinator import EcoFlowDataCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -112,6 +108,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.TOTAL_INCREASING,
         "icon": "mdi:sync",
     },
+    
     # ============================================================================
     # BATTERY - CMS (Combined Management System)
     # ============================================================================
@@ -204,6 +201,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:battery-10",
     },
+    
     # ============================================================================
     # TEMPERATURE
     # ============================================================================
@@ -239,6 +237,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:thermometer-low",
     },
+    
     # ============================================================================
     # POWER - Input
     # ============================================================================
@@ -298,6 +297,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:battery-charging",
     },
+    
     # ============================================================================
     # POWER - Output
     # ============================================================================
@@ -381,6 +381,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:usb-c-port",
     },
+    
     # ============================================================================
     # AC SYSTEM
     # ============================================================================
@@ -424,6 +425,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:lightning-bolt",
     },
+    
     # ============================================================================
     # SOLAR (PV) SYSTEM
     # ============================================================================
@@ -475,6 +477,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:flash",
     },
+    
     # ============================================================================
     # PLUG-IN INFO - Extra Batteries
     # ============================================================================
@@ -494,6 +497,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": None,
         "icon": "mdi:battery-plus",
     },
+    
     # ============================================================================
     # FLOW INFO - Connection Status
     # ============================================================================
@@ -596,6 +600,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "icon": "mdi:connection",
         "options": ["disconnected", "connected", "active"],
     },
+    
     # ============================================================================
     # SETTINGS & TIMERS
     # ============================================================================
@@ -647,6 +652,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:battery-lock",
     },
+    
     # ============================================================================
     # GENERATOR & ENERGY STRATEGY
     # ============================================================================
@@ -682,6 +688,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:battery-charging-100",
     },
+    
     # ============================================================================
     # ERROR CODES & STATUS
     # ============================================================================
@@ -741,6 +748,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": None,
         "icon": "mdi:battery-sync",
     },
+    
     # ============================================================================
     # TIMEZONE & TIME
     # ============================================================================
@@ -790,26 +798,19 @@ DEVICE_SENSOR_MAP = {
 # Energy Integration Sensors
 # ============================================================================
 
-
 class EcoFlowIntegralEnergySensor(IntegrationSensor):
     """Integration sensor that calculates energy (kWh) from power (W) sensors.
-
+    
     Automatically integrates power sensors to provide energy consumption/generation
     compatible with Home Assistant Energy Dashboard.
     """
-
     _attr_device_class = SensorDeviceClass.ENERGY
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_native_unit_of_measurement = UnitOfEnergy.KILO_WATT_HOUR
     _attr_state_class = SensorStateClass.TOTAL_INCREASING
     _attr_entity_registry_visible_default = False
 
-    def __init__(
-        self,
-        hass: HomeAssistant,
-        power_sensor: SensorEntity,
-        enabled_default: bool = True,
-    ) -> None:
+    def __init__(self, hass: HomeAssistant, power_sensor: SensorEntity, enabled_default: bool = True):
         """Initialize energy sensor from power sensor."""
         super().__init__(
             hass=hass,
@@ -829,11 +830,10 @@ class EcoFlowIntegralEnergySensor(IntegrationSensor):
 
 class EcoFlowPowerDifferenceSensor(SensorEntity, EcoFlowBaseEntity):
     """Sensor that calculates power difference (input - output).
-
+    
     Useful for Home Assistant Energy Dashboard to show net power flow.
     Positive = charging, Negative = discharging.
     """
-
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_device_class = SensorDeviceClass.POWER
     _attr_native_unit_of_measurement = UnitOfPower.WATT
@@ -846,13 +846,13 @@ class EcoFlowPowerDifferenceSensor(SensorEntity, EcoFlowBaseEntity):
         entry: ConfigEntry,
         input_sensor: SensorEntity,
         output_sensor: SensorEntity,
-    ) -> None:
+    ):
         """Initialize power difference sensor."""
         super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_power_difference"
         self._attr_name = "Power Difference"
         self._attr_icon = "mdi:transmission-tower-export"
-
+        
         self._input_sensor = input_sensor
         self._output_sensor = output_sensor
         self._difference: float | None = None
@@ -861,16 +861,11 @@ class EcoFlowPowerDifferenceSensor(SensorEntity, EcoFlowBaseEntity):
     async def async_added_to_hass(self) -> None:
         """Handle added to Hass."""
         await super().async_added_to_hass()
-
-        source_entity_ids = [
-            self._input_sensor.entity_id,
-            self._output_sensor.entity_id,
-        ]
+        
+        source_entity_ids = [self._input_sensor.entity_id, self._output_sensor.entity_id]
         self.async_on_remove(
             async_track_state_change_event(
-                self.hass,
-                source_entity_ids,
-                self._async_difference_sensor_state_listener,
+                self.hass, source_entity_ids, self._async_difference_sensor_state_listener
             )
         )
 
@@ -898,7 +893,11 @@ class EcoFlowPowerDifferenceSensor(SensorEntity, EcoFlowBaseEntity):
         new_state = event.data["new_state"]
         entity = event.data["entity_id"]
 
-        if new_state is None or new_state.state is None or new_state.state in [STATE_UNKNOWN, STATE_UNAVAILABLE]:
+        if (
+            new_state is None
+            or new_state.state is None
+            or new_state.state in [STATE_UNKNOWN, STATE_UNAVAILABLE]
+        ):
             self._states[entity] = STATE_UNKNOWN
             if not update_state:
                 return
@@ -910,10 +909,7 @@ class EcoFlowPowerDifferenceSensor(SensorEntity, EcoFlowBaseEntity):
         try:
             self._states[entity] = float(new_state.state)
         except ValueError:
-            _LOGGER.warning(
-                "Unable to store state for %s. Only numerical states are supported",
-                entity,
-            )
+            _LOGGER.warning("Unable to store state for %s. Only numerical states are supported", entity)
             return
 
         if not update_state:
@@ -944,7 +940,6 @@ class EcoFlowPowerDifferenceSensor(SensorEntity, EcoFlowBaseEntity):
 # Sensor Setup
 # ============================================================================
 
-
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
@@ -952,13 +947,13 @@ async def async_setup_entry(
 ) -> None:
     """Set up EcoFlow sensors from a config entry."""
     coordinator: EcoFlowDataCoordinator = hass.data[DOMAIN][entry.entry_id]
-
+    
     # Get device type from config
     device_type = entry.data.get("device_type", "DELTA Pro 3")
-
+    
     # Get sensor definitions for this device type
     sensor_definitions = DEVICE_SENSOR_MAP.get(device_type, DELTA_PRO_3_SENSOR_DEFINITIONS)
-
+    
     # Create sensor entities
     entities = []
     for sensor_id, sensor_config in sensor_definitions.items():
@@ -970,7 +965,7 @@ async def async_setup_entry(
                 sensor_config=sensor_config,
             )
         )
-
+    
     # Add MQTT status sensors if using hybrid coordinator
     if isinstance(coordinator, EcoFlowHybridCoordinator):
         entities.append(
@@ -988,37 +983,43 @@ async def async_setup_entry(
             )
         )
         _LOGGER.info("Added MQTT status sensors for hybrid coordinator")
-
+    
     async_add_entities(entities)
     _LOGGER.info("Added %d sensor entities for %s", len(entities), device_type)
-
+    
     # ============================================================================
     # Add Energy Integration Sensors (for HA Energy Dashboard)
     # ============================================================================
     energy_sensors = []
-
+    
     # Find total input and output power sensors
     total_input_sensor = None
     total_output_sensor = None
-
+    
     for sensor in entities:
         if isinstance(sensor, EcoFlowSensor):
             # Total Input Power sensor (for energy dashboard)
             if sensor._sensor_id == "pow_in_sum_w":
                 total_input_sensor = sensor
                 # Add energy sensor for total input
-                energy_sensors.append(EcoFlowIntegralEnergySensor(hass, sensor, enabled_default=True))
-
+                energy_sensors.append(
+                    EcoFlowIntegralEnergySensor(hass, sensor, enabled_default=True)
+                )
+            
             # Total Output Power sensor (for energy dashboard)
             elif sensor._sensor_id == "pow_out_sum_w":
                 total_output_sensor = sensor
                 # Add energy sensor for total output
-                energy_sensors.append(EcoFlowIntegralEnergySensor(hass, sensor, enabled_default=True))
-
+                energy_sensors.append(
+                    EcoFlowIntegralEnergySensor(hass, sensor, enabled_default=True)
+                )
+            
             # AC Input Power (optional, disabled by default)
             elif sensor._sensor_id == "pow_get_ac_in":
-                energy_sensors.append(EcoFlowIntegralEnergySensor(hass, sensor, enabled_default=False))
-
+                energy_sensors.append(
+                    EcoFlowIntegralEnergySensor(hass, sensor, enabled_default=False)
+                )
+    
     # Add Power Difference Sensor (for HA Energy "Now" tab)
     if total_input_sensor and total_output_sensor:
         energy_sensors.append(
@@ -1030,13 +1031,10 @@ async def async_setup_entry(
             )
         )
         _LOGGER.info("Created power difference sensor for energy dashboard")
-
+    
     if energy_sensors:
         async_add_entities(energy_sensors)
-        _LOGGER.info(
-            "Added %d energy sensors for Home Assistant Energy Dashboard",
-            len(energy_sensors),
-        )
+        _LOGGER.info("Added %d energy sensors for Home Assistant Energy Dashboard", len(energy_sensors))
 
 
 class EcoFlowSensor(EcoFlowBaseEntity, SensorEntity):
@@ -1055,13 +1053,13 @@ class EcoFlowSensor(EcoFlowBaseEntity, SensorEntity):
         self._sensor_config = sensor_config
         self._attr_unique_id = f"{entry.entry_id}_{sensor_id}"
         self._attr_translation_key = sensor_id
-
+        
         # Set sensor attributes from config
         self._attr_native_unit_of_measurement = sensor_config.get("unit")
         self._attr_device_class = sensor_config.get("device_class")
         self._attr_state_class = sensor_config.get("state_class")
         self._attr_icon = sensor_config.get("icon")
-
+        
         # For ENUM sensors, set options
         if sensor_config.get("device_class") == SensorDeviceClass.ENUM:
             self._attr_options = sensor_config.get("options", [])
@@ -1071,14 +1069,14 @@ class EcoFlowSensor(EcoFlowBaseEntity, SensorEntity):
         """Return the state of the sensor."""
         if not self.coordinator.data:
             return None
-
+        
         # Get the API key for this sensor
         api_key = self._sensor_config["key"]
         value = self.coordinator.data.get(api_key)
-
+        
         if value is None:
             return None
-
+        
         # Handle special cases
         # Timestamp sensors - convert string to datetime
         if self._attr_device_class == SensorDeviceClass.TIMESTAMP:
@@ -1088,7 +1086,7 @@ class EcoFlowSensor(EcoFlowBaseEntity, SensorEntity):
             if isinstance(value, str):
                 try:
                     # Parse timestamp string and make it timezone aware
-                    dt = datetime.fromisoformat(value.replace(" ", "T"))
+                    dt = datetime.fromisoformat(value.replace(' ', 'T'))
                     # If no timezone, assume UTC (EcoFlow API timestamps are in UTC)
                     if dt.tzinfo is None:
                         dt = dt_util.as_utc(dt)
@@ -1110,47 +1108,48 @@ class EcoFlowSensor(EcoFlowBaseEntity, SensorEntity):
             # Handle numeric timestamps (Unix timestamp in milliseconds or seconds)
             if isinstance(value, (int, float)):
                 try:
-                    # If timestamp is in ms (> year 2000), convert to seconds
+                    # If timestamp is in milliseconds (> year 2000 in seconds), convert to seconds
                     if value > 946684800000:  # Year 2000 in milliseconds
                         value = value / 1000
-                    # Convert to UTC datetime (HA will auto-convert to local time)
+                    # Convert to UTC datetime (Home Assistant will auto-convert to local time)
                     return dt_util.utc_from_timestamp(value)
                 except (ValueError, OSError) as e:
                     _LOGGER.warning("Failed to convert numeric timestamp '%s': %s", value, e)
                     return None
             # For any other type, return None
             return None
-
+        
         # Flow info status mapping
         if api_key.startswith("flowInfo"):
             flow_map = {0: "disconnected", 1: "connected", 2: "active"}
             return flow_map.get(value, "disconnected")
-
+        
         # Charge/discharge state mapping
         if api_key in ["bmsChgDsgState", "cmsChgDsgState"]:
             state_map = {0: "idle", 1: "charging", 2: "discharging"}
             return state_map.get(value, "idle")
-
+        
         # UTC Timezone Offset - value is already in minutes from API
-        # EcoFlow API returns timezone offset in minutes (e.g., 200 = UTC+3:20)
+        # EcoFlow API returns timezone offset in minutes (e.g., 200 = 200 minutes = UTC+3:20)
         # We keep it as-is since it's already in the correct format
-        if api_key == "utcTimezone" and isinstance(value, (int, float)):
-            # If value is very large (> 1000), might be in seconds, convert to minutes
-            if abs(value) > 1000:
-                value = value / 60
-            # Return as integer minutes (value from API is already in minutes)
-            return int(value)
-
+        if api_key == "utcTimezone":
+            if isinstance(value, (int, float)):
+                # If value is very large (> 1000), might be in seconds, convert to minutes
+                if abs(value) > 1000:
+                    value = value / 60
+                # Return as integer minutes (value from API is already in minutes)
+                return int(value)
+        
         # Convert boolean to string for text sensors
         if isinstance(value, bool):
             return "on" if value else "off"
-
+        
         return value
 
 
 class EcoFlowMQTTStatusSensor(EcoFlowBaseEntity, SensorEntity):
     """Sensor for MQTT connection status."""
-
+    
     def __init__(
         self,
         coordinator: EcoFlowHybridCoordinator,
@@ -1163,14 +1162,14 @@ class EcoFlowMQTTStatusSensor(EcoFlowBaseEntity, SensorEntity):
         self._attr_name = "MQTT Connection Status"
         self._attr_unique_id = f"{entry.entry_id}_mqtt_connection_status"
         self._attr_icon = "mdi:cloud-check"
-
+        
     @property
     def native_value(self) -> str:
         """Return MQTT connection status."""
         if self._coordinator.mqtt_connected:
             return "connected"
         return "disconnected"
-
+    
     @property
     def icon(self) -> str:
         """Return icon based on connection status."""
@@ -1181,7 +1180,7 @@ class EcoFlowMQTTStatusSensor(EcoFlowBaseEntity, SensorEntity):
 
 class EcoFlowMQTTModeSensor(EcoFlowBaseEntity, SensorEntity):
     """Sensor for connection mode (hybrid/rest_only)."""
-
+    
     def __init__(
         self,
         coordinator: EcoFlowHybridCoordinator,
@@ -1194,18 +1193,18 @@ class EcoFlowMQTTModeSensor(EcoFlowBaseEntity, SensorEntity):
         self._attr_name = "Connection Mode"
         self._attr_unique_id = f"{entry.entry_id}_connection_mode"
         self._attr_icon = "mdi:connection"
-
+        
     @property
     def native_value(self) -> str:
         """Return connection mode."""
         return self._coordinator.connection_mode
-
+    
     @property
     def icon(self) -> str:
         """Return icon based on connection mode."""
         mode = self._coordinator.connection_mode
         if mode == "hybrid":
             return "mdi:connection"
-        if mode == "mqtt_standby":
+        elif mode == "mqtt_standby":
             return "mdi:cloud-sync"
         return "mdi:cloud-off"
