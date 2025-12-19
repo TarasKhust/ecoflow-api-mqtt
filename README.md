@@ -304,7 +304,6 @@ This project is licensed under a **Non-Commercial License** - see the [LICENSE](
 
 - [EcoFlow](https://www.ecoflow.com/) for providing the Developer API
 - [Home Assistant](https://www.home-assistant.io/) community
-- [hassio-ecoflow-cloud](https://github.com/tolwi/hassio-ecoflow-cloud) for inspiration
 
 ## ☕ Support
 
