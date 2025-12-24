@@ -13,10 +13,23 @@ CONF_UPDATE_INTERVAL: Final = "update_interval"
 CONF_MQTT_ENABLED: Final = "mqtt_enabled"
 CONF_MQTT_USERNAME: Final = "mqtt_username"
 CONF_MQTT_PASSWORD: Final = "mqtt_password"
+CONF_REGION: Final = "region"
 
-# API
-API_BASE_URL: Final = "https://api-e.ecoflow.com"
+# API Regions
+REGION_EU: Final = "eu"
+REGION_US: Final = "us"
+
+API_BASE_URL_EU: Final = "https://api-e.ecoflow.com"
+API_BASE_URL_US: Final = "https://api.ecoflow.com"
+
+# Default to EU for backward compatibility
+API_BASE_URL: Final = API_BASE_URL_EU
 API_TIMEOUT: Final = 30
+
+REGIONS: Final = {
+    REGION_EU: "Europe (api-e.ecoflow.com)",
+    REGION_US: "United States (api.ecoflow.com)",
+}
 
 # Update interval
 DEFAULT_UPDATE_INTERVAL: Final = 15  # seconds
