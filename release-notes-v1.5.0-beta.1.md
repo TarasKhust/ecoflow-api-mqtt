@@ -1,12 +1,12 @@
-# 🚀 Beta Release v1.5.0-beta.1 - Delta Pro & River 3 Support
+# 🚀 Beta Release v1.5.0-beta.2 - Delta Pro, River 3 & Delta 3 Plus Support
 
-**Бета-реліз з підтримкою нових пристроїв EcoFlow Delta Pro та River 3!**
+**Бета-реліз з підтримкою нових пристроїв EcoFlow Delta Pro, River 3 та Delta 3 Plus!**
 
 ## ⚠️ Beta Notice
 
 Це бета-версія для тестування нових пристроїв. Будь ласка, повідомляйте про будь-які проблеми в [Issues](https://github.com/TarasKhust/ecoflow-api-mqtt/issues).
 
-## ✨ Нові пристрої:
+## ✨ Нові пристрої
 
 ### 🔋 Delta Pro (Original)
 
@@ -75,9 +75,47 @@
 - AC/DC Output Enabled, Battery Low/Full
 - X-Boost/Beeper Enabled
 
-## 🔧 Технічні деталі:
+### ⚡ Delta 3 Plus
 
-### Delta Pro API Format:
+Повна підтримка EcoFlow Delta 3 Plus:
+
+**Sensors (50+):**
+
+- Battery: SOC, SOH, Voltage, Current, Temperature, Capacity
+- CMS: Overall Battery Status, Total Energy
+- Power: Total In/Out, AC, PV1/PV2, USB, Type-C, 12V, DC Port
+- AC: Input/Output Voltage, Current, Frequency
+- Dual PV Input support (PV1 + PV2)
+
+**Switches (6):**
+
+- AC Output, 12V DC Output, USB Output
+- X-Boost, Beeper, Smart Generator Auto Start
+
+**Numbers (10):**
+
+- Charge/Discharge Limits
+- AC Charging Power (100-1500W)
+- Device/AC/DC/Screen Standby Times
+- LCD Brightness
+- Generator Start/Stop SOC
+
+**Selects (2):**
+
+- Update Interval
+- AC Charging Mode (Fast/Custom/Silent)
+
+**Binary Sensors (13):**
+
+- AC/PV1/PV2 Connected, Charging/Discharging
+- AC/DC/USB Output Enabled, Battery Low/Full
+- X-Boost/Beeper/Backup Reserve Enabled
+- AC/DC Output Enabled, Battery Low/Full
+- X-Boost/Beeper Enabled
+
+## 🔧 Технічні деталі
+
+### Delta Pro API Format
 
 ```json
 {
@@ -88,7 +126,7 @@
 }
 ```
 
-### River 3 / Delta Pro 3 API Format:
+### River 3 / Delta Pro 3 API Format
 
 ```json
 {
@@ -99,9 +137,9 @@
 }
 ```
 
-## 📦 Встановлення:
+## 📦 Встановлення
 
-### Через HACS (Custom Repository):
+### Через HACS (Custom Repository)
 
 1. HACS → Integrations → ⋮ → Custom repositories
 2. Add: `https://github.com/TarasKhust/ecoflow-api-mqtt`
@@ -109,27 +147,27 @@
 4. Download version `1.5.0-beta.1`
 5. Restart Home Assistant
 
-### Або вручну:
+### Або вручну
 
 1. Завантажити ZIP з [Releases](https://github.com/TarasKhust/ecoflow-api-mqtt/releases/tag/v1.5.0-beta.1)
 2. Розпакувати в `custom_components/ecoflow_api/`
 3. Restart Home Assistant
 
-## 🧪 Тестування:
+## 🧪 Тестування
 
-### Delta Pro:
+### Delta Pro
 
 1. Додайте пристрій через Configuration → Integrations → EcoFlow API
 2. Виберіть тип пристрою "Delta Pro"
 3. Перевірте всі entities в Developer Tools → States
 
-### River 3:
+### River 3
 
 1. Додайте пристрій через Configuration → Integrations → EcoFlow API
 2. Виберіть тип пристрою "River 3"
 3. Перевірте всі entities в Developer Tools → States
 
-## 📝 Зворотній зв'язок:
+## 📝 Зворотній зв'язок
 
 Будь ласка, повідомляйте про:
 
@@ -137,13 +175,13 @@
 - Проблеми з командами (switches, numbers, selects)
 - Помилки в логах Home Assistant
 
-Створіть issue: https://github.com/TarasKhust/ecoflow-api-mqtt/issues
+Створіть issue: <https://github.com/TarasKhust/ecoflow-api-mqtt/issues>
 
-## 🔗 Посилання:
+## 🔗 Посилання
 
-- GitHub: https://github.com/TarasKhust/ecoflow-api-mqtt
+- GitHub: <https://github.com/TarasKhust/ecoflow-api-mqtt>
 - Branch: `feature/delta-pro-support`
-- Issues: https://github.com/TarasKhust/ecoflow-api-mqtt/issues
+- Issues: <https://github.com/TarasKhust/ecoflow-api-mqtt/issues>
 
 ---
 
