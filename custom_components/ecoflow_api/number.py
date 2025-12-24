@@ -554,6 +554,8 @@ DEVICE_NUMBER_MAP = {
     "delta_pro": DELTA_PRO_NUMBER_DEFINITIONS,
     "delta_3_plus": DELTA_3_PLUS_NUMBER_DEFINITIONS,
     "river_3": RIVER_3_NUMBER_DEFINITIONS,
+    "river_3_plus": RIVER_3_NUMBER_DEFINITIONS,  # Same API as River 3
+    "River 3 Plus": RIVER_3_NUMBER_DEFINITIONS,
 }
 
 
