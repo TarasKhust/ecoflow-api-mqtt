@@ -11,7 +11,12 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DEVICE_TYPE_DELTA_PRO, DEVICE_TYPE_DELTA_PRO_3, DOMAIN
+from .const import (
+    DEVICE_TYPE_DELTA_PRO,
+    DEVICE_TYPE_DELTA_PRO_3,
+    DEVICE_TYPE_RIVER_3,
+    DOMAIN,
+)
 from .coordinator import EcoFlowDataCoordinator
 from .entity import EcoFlowBaseEntity
 
@@ -140,12 +145,44 @@ DELTA_PRO_SELECT_DEFINITIONS = {
     },
 }
 
+# Select definitions for River 3 based on API documentation
+# Uses Delta Pro 3 API format (cmdId: 17, cmdFunc: 254)
+RIVER_3_SELECT_DEFINITIONS = {
+    "update_interval": {
+        "name": "Update Interval",
+        "state_key": None,
+        "command_key": None,
+        "icon": "mdi:update",
+        "options": {
+            "5 seconds (Fast)": 5,
+            "10 seconds": 10,
+            "15 seconds (Recommended)": 15,
+            "30 seconds": 30,
+            "60 seconds (Slow)": 60,
+        },
+        "is_local": True,
+    },
+    "pv_charging_type": {
+        "name": "DC Charging Mode",
+        "state_key": "pvChgType",
+        "command_key": "pvChgType",
+        "icon": "mdi:solar-power",
+        "options": {
+            "Auto": 0,
+            "Solar": 1,
+            "Car": 2,
+        },
+    },
+}
+
 # Map device types to select definitions
 DEVICE_SELECT_MAP = {
     DEVICE_TYPE_DELTA_PRO_3: DELTA_PRO_3_SELECT_DEFINITIONS,
     DEVICE_TYPE_DELTA_PRO: DELTA_PRO_SELECT_DEFINITIONS,
+    DEVICE_TYPE_RIVER_3: RIVER_3_SELECT_DEFINITIONS,
     "delta_pro_3": DELTA_PRO_3_SELECT_DEFINITIONS,
     "delta_pro": DELTA_PRO_SELECT_DEFINITIONS,
+    "river_3": RIVER_3_SELECT_DEFINITIONS,
 }
 
 
