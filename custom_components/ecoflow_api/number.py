@@ -619,6 +619,7 @@ class EcoFlowNumber(EcoFlowBaseEntity, NumberEntity):
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_{number_key}"
         self._attr_name = number_def["name"]
+        self._attr_has_entity_name = True
         self._attr_translation_key = number_key
 
         # Set number attributes from config
@@ -719,6 +720,7 @@ class EcoFlowDeltaProNumber(EcoFlowBaseEntity, NumberEntity):
         self._entry = entry
         self._attr_unique_id = f"{entry.entry_id}_{number_key}"
         self._attr_name = number_def["name"]
+        self._attr_has_entity_name = True
         self._attr_translation_key = number_key
 
         # Set number attributes from config
