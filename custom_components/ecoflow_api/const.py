@@ -1,5 +1,5 @@
 """Constants for EcoFlow API integration."""
-from datetime import timedelta
+
 from typing import Final
 
 DOMAIN: Final = "ecoflow_api"
@@ -75,9 +75,13 @@ PLATFORMS: Final = ["sensor", "binary_sensor", "switch", "number", "select"]
 
 # Extra Battery prefixes that can be detected in API response
 EXTRA_BATTERY_PREFIXES: Final = [
-    "slave1", "slave2", "slave3",
-    "bms2", "bms3",
-    "eb1", "eb2",
+    "slave1",
+    "slave2",
+    "slave3",
+    "bms2",
+    "bms3",
+    "eb1",
+    "eb2",
     "extraBms",
     "slaveBattery",
 ]
@@ -306,7 +310,6 @@ DELTA_PRO_3_SENSORS: Final = {
         "device_class": "frequency",
         "icon": "mdi:sine-wave",
     },
-    
     # Device Status
     "errcode": {
         "name": "Device Error Code",
@@ -332,7 +335,6 @@ DELTA_PRO_3_SENSORS: Final = {
         "device_class": "duration",
         "icon": "mdi:bluetooth",
     },
-    
     # Battery Status (BMS) - Additional
     "bmsChgDsgState": {
         "name": "BMS Charge/Discharge State",
@@ -341,7 +343,6 @@ DELTA_PRO_3_SENSORS: Final = {
         "icon": "mdi:battery-sync",
         "options": ["idle", "discharging", "charging"],
     },
-    
     # Battery Status (CMS) - Additional
     "cmsChgDsgState": {
         "name": "CMS Charge/Discharge State",
@@ -374,7 +375,6 @@ DELTA_PRO_3_SENSORS: Final = {
         "device_class": "battery",
         "icon": "mdi:engine",
     },
-    
     # Power Flow - Additional
     "powGet5p8": {
         "name": "Power In/Out Port Power",
@@ -400,7 +400,6 @@ DELTA_PRO_3_SENSORS: Final = {
         "device_class": "power",
         "icon": "mdi:power-socket",
     },
-    
     # Plug-in Info - Power Limits
     "plugInInfoAcInChgHalPowMax": {
         "name": "AC Input Half Charging Power Max",
@@ -546,7 +545,6 @@ DELTA_PRO_3_SENSORS: Final = {
         "device_class": None,
         "icon": "mdi:battery-sync",
     },
-    
     # Flow Info - Additional (these are already in binary sensors, but adding as sensors too)
     "flowInfoPvL": {
         "name": "PV Low Voltage Flow Status",
@@ -667,7 +665,6 @@ DELTA_PRO_3_SENSORS: Final = {
         "icon": "mdi:power-plug",
         "options": ["off", "unknown", "on"],
     },
-    
     # Additional Settings
     "fastChargeSwitch": {
         "name": "Fast Charge Switch",
@@ -729,7 +726,6 @@ DELTA_PRO_3_SENSORS: Final = {
         "device_class": "battery",
         "icon": "mdi:engine",
     },
-    
     # MQTT-only sensors (available only when MQTT is enabled)
     "bmsCycles": {
         "name": "Battery Cycles",
@@ -906,4 +902,765 @@ DELTA_PRO_3_NUMBERS: Final = {
     },
 }
 
+# ============================================================================
+# DELTA PRO (Original) - API Definitions
+# Based on EcoFlow Developer API documentation
+# ============================================================================
 
+# Delta Pro Sensors - based on GetAllQuotaResponse
+DELTA_PRO_SENSORS: Final = {
+    # ============================================================================
+    # BMS Master - Battery Management System
+    # ============================================================================
+    "bmsMaster.soc": {
+        "name": "Battery Level",
+        "unit": "%",
+        "device_class": "battery",
+        "icon": "mdi:battery",
+    },
+    "bmsMaster.temp": {
+        "name": "Battery Temperature",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer",
+    },
+    "bmsMaster.inputWatts": {
+        "name": "Battery Input Power",
+        "unit": "W",
+        "device_class": "power",
+        "icon": "mdi:battery-charging",
+    },
+    "bmsMaster.outputWatts": {
+        "name": "Battery Output Power",
+        "unit": "W",
+        "device_class": "power",
+        "icon": "mdi:battery-arrow-down",
+    },
+    "bmsMaster.vol": {
+        "name": "Battery Voltage",
+        "unit": "V",
+        "device_class": "voltage",
+        "icon": "mdi:flash",
+    },
+    "bmsMaster.amp": {
+        "name": "Battery Current",
+        "unit": "A",
+        "device_class": "current",
+        "icon": "mdi:current-dc",
+    },
+    "bmsMaster.soh": {
+        "name": "Battery Health",
+        "unit": "%",
+        "device_class": None,
+        "icon": "mdi:battery-heart",
+    },
+    "bmsMaster.designCap": {
+        "name": "Design Capacity",
+        "unit": "mAh",
+        "device_class": None,
+        "icon": "mdi:battery-high",
+    },
+    "bmsMaster.remainCap": {
+        "name": "Remaining Capacity",
+        "unit": "mAh",
+        "device_class": None,
+        "icon": "mdi:battery",
+    },
+    "bmsMaster.fullCap": {
+        "name": "Full Capacity",
+        "unit": "mAh",
+        "device_class": None,
+        "icon": "mdi:battery-high",
+    },
+    "bmsMaster.maxCellVol": {
+        "name": "Max Cell Voltage",
+        "unit": "mV",
+        "device_class": "voltage",
+        "icon": "mdi:flash",
+    },
+    "bmsMaster.minCellVol": {
+        "name": "Min Cell Voltage",
+        "unit": "mV",
+        "device_class": "voltage",
+        "icon": "mdi:flash",
+    },
+    "bmsMaster.maxCellTemp": {
+        "name": "Max Cell Temperature",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer-high",
+    },
+    "bmsMaster.minCellTemp": {
+        "name": "Min Cell Temperature",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer-low",
+    },
+    "bmsMaster.maxMosTemp": {
+        "name": "Max MOS Temperature",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer-high",
+    },
+    "bmsMaster.minMosTemp": {
+        "name": "Min MOS Temperature",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer-low",
+    },
+    "bmsMaster.remainTime": {
+        "name": "Battery Remaining Time",
+        "unit": "min",
+        "device_class": "duration",
+        "icon": "mdi:timer",
+    },
+    "bmsMaster.errCode": {
+        "name": "BMS Error Code",
+        "unit": None,
+        "device_class": None,
+        "icon": "mdi:alert-circle",
+    },
+    # ============================================================================
+    # Inverter
+    # ============================================================================
+    "inv.inputWatts": {
+        "name": "Inverter Input Power",
+        "unit": "W",
+        "device_class": "power",
+        "icon": "mdi:power-plug",
+    },
+    "inv.outputWatts": {
+        "name": "Inverter Output Power",
+        "unit": "W",
+        "device_class": "power",
+        "icon": "mdi:power-socket",
+    },
+    "inv.invOutVol": {
+        "name": "AC Output Voltage",
+        "unit": "mV",
+        "device_class": "voltage",
+        "icon": "mdi:flash",
+    },
+    "inv.invOutAmp": {
+        "name": "AC Output Current",
+        "unit": "mA",
+        "device_class": "current",
+        "icon": "mdi:current-ac",
+    },
+    "inv.invOutFreq": {
+        "name": "AC Output Frequency",
+        "unit": "Hz",
+        "device_class": "frequency",
+        "icon": "mdi:sine-wave",
+    },
+    "inv.acInVol": {
+        "name": "AC Input Voltage",
+        "unit": "mV",
+        "device_class": "voltage",
+        "icon": "mdi:flash",
+    },
+    "inv.acInAmp": {
+        "name": "AC Input Current",
+        "unit": "mA",
+        "device_class": "current",
+        "icon": "mdi:current-ac",
+    },
+    "inv.acInFreq": {
+        "name": "AC Input Frequency",
+        "unit": "Hz",
+        "device_class": "frequency",
+        "icon": "mdi:sine-wave",
+    },
+    "inv.outTemp": {
+        "name": "Inverter Temperature",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer",
+    },
+    "inv.dcInVol": {
+        "name": "DC Input Voltage",
+        "unit": "mV",
+        "device_class": "voltage",
+        "icon": "mdi:flash",
+    },
+    "inv.dcInAmp": {
+        "name": "DC Input Current",
+        "unit": "mA",
+        "device_class": "current",
+        "icon": "mdi:current-dc",
+    },
+    "inv.dcInTemp": {
+        "name": "DC Input Temperature",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer",
+    },
+    "inv.cfgAcOutFreq": {
+        "name": "Configured AC Output Frequency",
+        "unit": None,
+        "device_class": None,
+        "icon": "mdi:sine-wave",
+    },
+    "inv.cfgSlowChgWatts": {
+        "name": "AC Slow Charging Power",
+        "unit": "W",
+        "device_class": "power",
+        "icon": "mdi:lightning-bolt",
+    },
+    "inv.cfgFastChgWatts": {
+        "name": "AC Fast Charging Power",
+        "unit": "W",
+        "device_class": "power",
+        "icon": "mdi:lightning-bolt",
+    },
+    "inv.cfgStandbyMin": {
+        "name": "AC Standby Time",
+        "unit": "min",
+        "device_class": "duration",
+        "icon": "mdi:timer",
+    },
+    "inv.errCode": {
+        "name": "Inverter Error Code",
+        "unit": None,
+        "device_class": None,
+        "icon": "mdi:alert-circle",
+    },
+    # ============================================================================
+    # MPPT - Solar Charger
+    # ============================================================================
+    "mppt.inVol": {
+        "name": "Solar Input Voltage",
+        "unit": "mV",
+        "device_class": "voltage",
+        "icon": "mdi:solar-power",
+    },
+    "mppt.inAmp": {
+        "name": "Solar Input Current",
+        "unit": "mA",
+        "device_class": "current",
+        "icon": "mdi:solar-power",
+    },
+    "mppt.inWatts": {
+        "name": "Solar Input Power",
+        "unit": "W",
+        "device_class": "power",
+        "icon": "mdi:solar-power",
+    },
+    "mppt.outVol": {
+        "name": "MPPT Output Voltage",
+        "unit": "mV",
+        "device_class": "voltage",
+        "icon": "mdi:flash",
+    },
+    "mppt.outAmp": {
+        "name": "MPPT Output Current",
+        "unit": "mA",
+        "device_class": "current",
+        "icon": "mdi:current-dc",
+    },
+    "mppt.outWatts": {
+        "name": "MPPT Output Power",
+        "unit": "W",
+        "device_class": "power",
+        "icon": "mdi:flash",
+    },
+    "mppt.mpptTemp": {
+        "name": "MPPT Temperature",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer",
+    },
+    "mppt.dcdc12vVol": {
+        "name": "DC 12V Output Voltage",
+        "unit": "mV",
+        "device_class": "voltage",
+        "icon": "mdi:car-battery",
+    },
+    "mppt.dcdc12vAmp": {
+        "name": "DC 12V Output Current",
+        "unit": "mA",
+        "device_class": "current",
+        "icon": "mdi:car-battery",
+    },
+    "mppt.dcdc12vWatts": {
+        "name": "DC 12V Output Power",
+        "unit": "W",
+        "device_class": "power",
+        "icon": "mdi:car-battery",
+    },
+    "mppt.carOutVol": {
+        "name": "Car Charger Output Voltage",
+        "unit": "mV",
+        "device_class": "voltage",
+        "icon": "mdi:car",
+    },
+    "mppt.carOutAmp": {
+        "name": "Car Charger Output Current",
+        "unit": "mA",
+        "device_class": "current",
+        "icon": "mdi:car",
+    },
+    "mppt.carOutWatts": {
+        "name": "Car Charger Output Power",
+        "unit": "W",
+        "device_class": "power",
+        "icon": "mdi:car",
+    },
+    "mppt.carTemp": {
+        "name": "Car Charger Temperature",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer",
+    },
+    "mppt.cfgDcChgCurrent": {
+        "name": "Car Charging Current Setting",
+        "unit": "mA",
+        "device_class": "current",
+        "icon": "mdi:car-battery",
+    },
+    "mppt.faultCode": {
+        "name": "MPPT Fault Code",
+        "unit": None,
+        "device_class": None,
+        "icon": "mdi:alert-circle",
+    },
+    # ============================================================================
+    # PD - Power Distribution
+    # ============================================================================
+    "pd.soc": {
+        "name": "Display SOC",
+        "unit": "%",
+        "device_class": "battery",
+        "icon": "mdi:battery",
+    },
+    "pd.wattsOutSum": {
+        "name": "Total Output Power",
+        "unit": "W",
+        "device_class": "power",
+        "icon": "mdi:transmission-tower-export",
+    },
+    "pd.wattsInSum": {
+        "name": "Total Input Power",
+        "unit": "W",
+        "device_class": "power",
+        "icon": "mdi:transmission-tower-import",
+    },
+    "pd.remainTime": {
+        "name": "Remaining Time",
+        "unit": "min",
+        "device_class": "duration",
+        "icon": "mdi:timer",
+    },
+    "pd.usb1Watts": {
+        "name": "USB 1 Output Power",
+        "unit": "W",
+        "device_class": "power",
+        "icon": "mdi:usb-port",
+    },
+    "pd.usb2Watts": {
+        "name": "USB 2 Output Power",
+        "unit": "W",
+        "device_class": "power",
+        "icon": "mdi:usb-port",
+    },
+    "pd.qcUsb1Watts": {
+        "name": "QC USB 1 Output Power",
+        "unit": "W",
+        "device_class": "power",
+        "icon": "mdi:usb-port",
+    },
+    "pd.qcUsb2Watts": {
+        "name": "QC USB 2 Output Power",
+        "unit": "W",
+        "device_class": "power",
+        "icon": "mdi:usb-port",
+    },
+    "pd.typec1Watts": {
+        "name": "Type-C 1 Output Power",
+        "unit": "W",
+        "device_class": "power",
+        "icon": "mdi:usb-c-port",
+    },
+    "pd.typec2Watts": {
+        "name": "Type-C 2 Output Power",
+        "unit": "W",
+        "device_class": "power",
+        "icon": "mdi:usb-c-port",
+    },
+    "pd.typec1Temp": {
+        "name": "Type-C 1 Temperature",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer",
+    },
+    "pd.typec2Temp": {
+        "name": "Type-C 2 Temperature",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer",
+    },
+    "pd.carWatts": {
+        "name": "Car Output Power",
+        "unit": "W",
+        "device_class": "power",
+        "icon": "mdi:car",
+    },
+    "pd.carTemp": {
+        "name": "Car Output Temperature",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer",
+    },
+    "pd.standByMode": {
+        "name": "Device Standby Time",
+        "unit": "min",
+        "device_class": "duration",
+        "icon": "mdi:timer-sleep",
+    },
+    "pd.lcdOffSec": {
+        "name": "Screen Off Time",
+        "unit": "s",
+        "device_class": "duration",
+        "icon": "mdi:monitor-off",
+    },
+    "pd.lcdBrightness": {
+        "name": "Screen Brightness",
+        "unit": "%",
+        "device_class": None,
+        "icon": "mdi:brightness-6",
+    },
+    "pd.chgPowerDc": {
+        "name": "Cumulative DC Charged",
+        "unit": "Wh",
+        "device_class": "energy",
+        "icon": "mdi:battery-charging",
+    },
+    "pd.chgSunPower": {
+        "name": "Cumulative Solar Charged",
+        "unit": "Wh",
+        "device_class": "energy",
+        "icon": "mdi:solar-power",
+    },
+    "pd.chgPowerAc": {
+        "name": "Cumulative AC Charged",
+        "unit": "Wh",
+        "device_class": "energy",
+        "icon": "mdi:power-plug",
+    },
+    "pd.dsgPowerDc": {
+        "name": "Cumulative DC Discharged",
+        "unit": "Wh",
+        "device_class": "energy",
+        "icon": "mdi:battery-arrow-down",
+    },
+    "pd.dsgPowerAc": {
+        "name": "Cumulative AC Discharged",
+        "unit": "Wh",
+        "device_class": "energy",
+        "icon": "mdi:power-socket",
+    },
+    "pd.errCode": {
+        "name": "PD Error Code",
+        "unit": None,
+        "device_class": None,
+        "icon": "mdi:alert-circle",
+    },
+    "pd.wifiRssi": {
+        "name": "WiFi Signal Strength",
+        "unit": "dBm",
+        "device_class": "signal_strength",
+        "icon": "mdi:wifi",
+    },
+    # ============================================================================
+    # EMS - Energy Management System
+    # ============================================================================
+    "ems.maxChargeSoc": {
+        "name": "Max Charge Level",
+        "unit": "%",
+        "device_class": None,
+        "icon": "mdi:battery-charging-100",
+    },
+    "ems.minDsgSoc": {
+        "name": "Min Discharge Level",
+        "unit": "%",
+        "device_class": None,
+        "icon": "mdi:battery-10",
+    },
+    "ems.minOpenOilEbSoc": {
+        "name": "Generator Auto Start SOC",
+        "unit": "%",
+        "device_class": None,
+        "icon": "mdi:engine",
+    },
+    "ems.maxCloseOilEbSoc": {
+        "name": "Generator Auto Stop SOC",
+        "unit": "%",
+        "device_class": None,
+        "icon": "mdi:engine-off",
+    },
+    "ems.chgRemainTime": {
+        "name": "Charge Remaining Time",
+        "unit": "min",
+        "device_class": "duration",
+        "icon": "mdi:battery-charging",
+    },
+    "ems.dsgRemainTime": {
+        "name": "Discharge Remaining Time",
+        "unit": "min",
+        "device_class": "duration",
+        "icon": "mdi:battery-arrow-down",
+    },
+    "ems.lcdShowSoc": {
+        "name": "LCD Display SOC",
+        "unit": "%",
+        "device_class": "battery",
+        "icon": "mdi:battery",
+    },
+    "ems.f32LcdShowSoc": {
+        "name": "LCD Display SOC (Float)",
+        "unit": "%",
+        "device_class": "battery",
+        "icon": "mdi:battery",
+    },
+}
+
+# Delta Pro Binary Sensors
+DELTA_PRO_BINARY_SENSORS: Final = {
+    "inv.cfgAcEnabled": {
+        "name": "AC Output Enabled",
+        "device_class": "power",
+        "icon": "mdi:power-socket",
+    },
+    "inv.cfgAcXboost": {
+        "name": "X-Boost Enabled",
+        "device_class": None,
+        "icon": "mdi:lightning-bolt",
+    },
+    "mppt.carState": {
+        "name": "Car Charger Enabled",
+        "device_class": None,
+        "icon": "mdi:car",
+    },
+    "pd.beepState": {
+        "name": "Beep Enabled",
+        "device_class": None,
+        "icon": "mdi:volume-high",
+    },
+    "pd.dcOutState": {
+        "name": "DC Output Enabled",
+        "device_class": "power",
+        "icon": "mdi:current-dc",
+    },
+    "pd.carState": {
+        "name": "Car Output Enabled",
+        "device_class": None,
+        "icon": "mdi:car",
+    },
+    "inv.acPassbyAutoEn": {
+        "name": "Bypass AC Auto Start",
+        "device_class": None,
+        "icon": "mdi:power-plug",
+    },
+}
+
+# Delta Pro Switches - controllable settings
+DELTA_PRO_SWITCHES: Final = {
+    "ac_output": {
+        "name": "AC Output",
+        "state_key": "inv.cfgAcEnabled",
+        "cmd_set": 32,
+        "cmd_id": 66,
+        "param_key": "enabled",
+        "icon_on": "mdi:power-socket",
+        "icon_off": "mdi:power-socket-off",
+    },
+    "x_boost": {
+        "name": "X-Boost",
+        "state_key": "inv.cfgAcXboost",
+        "cmd_set": 32,
+        "cmd_id": 66,
+        "param_key": "xboost",
+        "icon_on": "mdi:lightning-bolt",
+        "icon_off": "mdi:lightning-bolt-outline",
+    },
+    "car_charger": {
+        "name": "Car Charger",
+        "state_key": "mppt.carState",
+        "cmd_set": 32,
+        "cmd_id": 81,
+        "param_key": "enabled",
+        "icon_on": "mdi:car",
+        "icon_off": "mdi:car-off",
+    },
+    "beeper": {
+        "name": "Beeper",
+        "state_key": "pd.beepState",
+        "cmd_set": 32,
+        "cmd_id": 38,
+        "param_key": "enabled",
+        "icon_on": "mdi:volume-high",
+        "icon_off": "mdi:volume-off",
+    },
+    "bypass_ac_auto_start": {
+        "name": "Bypass AC Auto Start",
+        "state_key": "inv.acPassbyAutoEn",
+        "cmd_set": 32,
+        "cmd_id": 84,
+        "param_key": "enabled",
+        "icon_on": "mdi:power-plug",
+        "icon_off": "mdi:power-plug-off",
+    },
+}
+
+# Delta Pro Numbers - adjustable values
+DELTA_PRO_NUMBERS: Final = {
+    "max_charge_level": {
+        "name": "Max Charge Level",
+        "state_key": "ems.maxChargeSoc",
+        "cmd_set": 32,
+        "cmd_id": 49,
+        "param_key": "maxChgSoc",
+        "min": 50,
+        "max": 100,
+        "step": 1,
+        "unit": "%",
+        "icon": "mdi:battery-charging-100",
+    },
+    "min_discharge_level": {
+        "name": "Min Discharge Level",
+        "state_key": "ems.minDsgSoc",
+        "cmd_set": 32,
+        "cmd_id": 51,
+        "param_key": "minDsgSoc",
+        "min": 0,
+        "max": 30,
+        "step": 1,
+        "unit": "%",
+        "icon": "mdi:battery-10",
+    },
+    "car_input_current": {
+        "name": "Car Input Current",
+        "state_key": "mppt.cfgDcChgCurrent",
+        "cmd_set": 32,
+        "cmd_id": 71,
+        "param_key": "currMa",
+        "min": 4000,
+        "max": 8000,
+        "step": 1000,
+        "unit": "mA",
+        "icon": "mdi:car-battery",
+    },
+    "screen_brightness": {
+        "name": "Screen Brightness",
+        "state_key": "pd.lcdBrightness",
+        "cmd_set": 32,
+        "cmd_id": 39,
+        "param_key": "lcdBrightness",
+        "min": 0,
+        "max": 100,
+        "step": 10,
+        "unit": "%",
+        "icon": "mdi:brightness-6",
+    },
+    "device_standby_time": {
+        "name": "Device Standby Time",
+        "state_key": "pd.standByMode",
+        "cmd_set": 32,
+        "cmd_id": 33,
+        "param_key": "standByMode",
+        "min": 0,
+        "max": 5999,
+        "step": 30,
+        "unit": "min",
+        "icon": "mdi:timer-sleep",
+    },
+    "screen_timeout": {
+        "name": "Screen Timeout",
+        "state_key": "pd.lcdOffSec",
+        "cmd_set": 32,
+        "cmd_id": 39,
+        "param_key": "lcdTime",
+        "min": 0,
+        "max": 1800,
+        "step": 30,
+        "unit": "s",
+        "icon": "mdi:monitor-off",
+    },
+    "ac_standby_time": {
+        "name": "AC Standby Time",
+        "state_key": "inv.cfgStandbyMin",
+        "cmd_set": 32,
+        "cmd_id": 153,
+        "param_key": "standByMins",
+        "min": 0,
+        "max": 720,
+        "step": 30,
+        "unit": "min",
+        "icon": "mdi:timer",
+    },
+    "ac_charging_power": {
+        "name": "AC Charging Power",
+        "state_key": "inv.cfgSlowChgWatts",
+        "cmd_set": 32,
+        "cmd_id": 69,
+        "param_key": "slowChgPower",
+        "min": 200,
+        "max": 2900,
+        "step": 100,
+        "unit": "W",
+        "icon": "mdi:lightning-bolt",
+    },
+    "generator_auto_start_soc": {
+        "name": "Generator Auto Start SOC",
+        "state_key": "ems.minOpenOilEbSoc",
+        "cmd_set": 32,
+        "cmd_id": 52,
+        "param_key": "openOilSoc",
+        "min": 0,
+        "max": 100,
+        "step": 5,
+        "unit": "%",
+        "icon": "mdi:engine",
+    },
+    "generator_auto_stop_soc": {
+        "name": "Generator Auto Stop SOC",
+        "state_key": "ems.maxCloseOilEbSoc",
+        "cmd_set": 32,
+        "cmd_id": 53,
+        "param_key": "closeOilSoc",
+        "min": 0,
+        "max": 100,
+        "step": 5,
+        "unit": "%",
+        "icon": "mdi:engine-off",
+    },
+}
+
+# Delta Pro Selects - dropdown options
+DELTA_PRO_SELECTS: Final = {
+    "pv_charging_type": {
+        "name": "PV Charging Type",
+        "state_key": "mppt.cfgChgType",
+        "cmd_set": 32,
+        "cmd_id": 82,
+        "param_key": "chgType",
+        "icon": "mdi:solar-power",
+        "options": {
+            "Auto": 0,
+            "MPPT": 1,
+            "Adapter": 2,
+        },
+    },
+    "ac_output_frequency": {
+        "name": "AC Output Frequency",
+        "state_key": "inv.cfgAcOutFreq",
+        "cmd_set": 32,
+        "cmd_id": 66,
+        "param_key": "cfgAcOutFreq",
+        "icon": "mdi:sine-wave",
+        "options": {
+            "50 Hz": 1,
+            "60 Hz": 2,
+        },
+    },
+}
