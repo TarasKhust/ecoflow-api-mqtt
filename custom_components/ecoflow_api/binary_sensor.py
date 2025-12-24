@@ -604,6 +604,7 @@ class EcoFlowBinarySensor(EcoFlowBaseEntity, BinarySensorEntity):
 
         # Set entity attributes from definition
         self._attr_name = sensor_def["name"]
+        self._attr_has_entity_name = True
         self._attr_device_class = sensor_def.get("device_class")
         self._icon_on = sensor_def.get("icon_on", "mdi:check-circle")
         self._icon_off = sensor_def.get("icon_off", "mdi:circle-outline")
@@ -675,6 +676,7 @@ class EcoFlowExtraBatteryBinarySensor(EcoFlowBaseEntity, BinarySensorEntity):
 
         # Set entity attributes
         self._attr_name = f"Extra Battery {battery_number} {sensor_def['name']}"
+        self._attr_has_entity_name = True
         self._attr_device_class = sensor_def.get("device_class")
         self._icon_on = sensor_def.get("icon_on", "mdi:check-circle")
         self._icon_off = sensor_def.get("icon_off", "mdi:circle-outline")

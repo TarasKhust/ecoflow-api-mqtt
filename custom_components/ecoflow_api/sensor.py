@@ -2373,6 +2373,8 @@ class EcoFlowSensor(EcoFlowBaseEntity, SensorEntity):
         self._sensor_config = sensor_config
         self._attr_unique_id = f"{entry.entry_id}_{sensor_id}"
         self._attr_translation_key = sensor_id
+        self._attr_name = sensor_config.get("name", sensor_id)
+        self._attr_has_entity_name = True
 
         # Set sensor attributes from config
         self._attr_native_unit_of_measurement = sensor_config.get("unit")

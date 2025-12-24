@@ -280,6 +280,7 @@ class EcoFlowSelect(EcoFlowBaseEntity, SelectEntity):
         self._select_def = select_def
         self._attr_unique_id = f"{entry.entry_id}_{select_key}"
         self._attr_name = select_def["name"]
+        self._attr_has_entity_name = True
         self._attr_translation_key = select_key
         self._attr_icon = select_def.get("icon")
 
@@ -422,6 +423,7 @@ class EcoFlowDeltaProSelect(EcoFlowBaseEntity, SelectEntity):
         self._select_def = select_def
         self._attr_unique_id = f"{entry.entry_id}_{select_key}"
         self._attr_name = select_def["name"]
+        self._attr_has_entity_name = True
         self._attr_translation_key = select_key
         self._attr_icon = select_def.get("icon")
 
