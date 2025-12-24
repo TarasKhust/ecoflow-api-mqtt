@@ -175,13 +175,45 @@ RIVER_3_SELECT_DEFINITIONS = {
     },
 }
 
+# Select definitions for Delta 3 Plus based on API documentation
+# Uses Delta Pro 3 API format (cmdId: 17, cmdFunc: 254)
+DELTA_3_PLUS_SELECT_DEFINITIONS = {
+    "update_interval": {
+        "name": "Update Interval",
+        "state_key": None,
+        "command_key": None,
+        "icon": "mdi:update",
+        "options": {
+            "5 seconds (Fast)": 5,
+            "10 seconds": 10,
+            "15 seconds (Recommended)": 15,
+            "30 seconds": 30,
+            "60 seconds (Slow)": 60,
+        },
+        "is_local": True,
+    },
+    "ac_charging_mode": {
+        "name": "AC Charging Mode",
+        "state_key": "plugInInfoAcInChgMode",
+        "command_key": "plugInInfoAcInChgMode",
+        "icon": "mdi:lightning-bolt",
+        "options": {
+            "Fast Charging": 0,
+            "Custom Power": 1,
+            "Silent Mode": 2,
+        },
+    },
+}
+
 # Map device types to select definitions
 DEVICE_SELECT_MAP = {
     DEVICE_TYPE_DELTA_PRO_3: DELTA_PRO_3_SELECT_DEFINITIONS,
     DEVICE_TYPE_DELTA_PRO: DELTA_PRO_SELECT_DEFINITIONS,
+    DEVICE_TYPE_DELTA_3_PLUS: DELTA_3_PLUS_SELECT_DEFINITIONS,
     DEVICE_TYPE_RIVER_3: RIVER_3_SELECT_DEFINITIONS,
     "delta_pro_3": DELTA_PRO_3_SELECT_DEFINITIONS,
     "delta_pro": DELTA_PRO_SELECT_DEFINITIONS,
+    "delta_3_plus": DELTA_3_PLUS_SELECT_DEFINITIONS,
     "river_3": RIVER_3_SELECT_DEFINITIONS,
 }
 
