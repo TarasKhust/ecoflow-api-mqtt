@@ -491,10 +491,11 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "state_class": None,
         "icon": "mdi:battery-plus",
     },
-    # Extra Battery 1 (4p81) - decoded from resvInfo
-    "extra_battery_1_soc": {
-        "name": "Extra Battery 1 SOC",
-        "key": "plugInInfo4p81Resv.resvInfo",
+    # Extra Battery (uses first available: 4p82 or 4p81) - decoded from resvInfo
+    "extra_battery_soc": {
+        "name": "Extra Battery SOC",
+        "key": "plugInInfo4p82Resv.resvInfo",
+        "fallback_key": "plugInInfo4p81Resv.resvInfo",
         "unit": PERCENTAGE,
         "device_class": SensorDeviceClass.BATTERY,
         "state_class": SensorStateClass.MEASUREMENT,
@@ -502,9 +503,10 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "resv_index": 0,
         "resv_type": "float",
     },
-    "extra_battery_1_soh": {
-        "name": "Extra Battery 1 SOH",
-        "key": "plugInInfo4p81Resv.resvInfo",
+    "extra_battery_soh": {
+        "name": "Extra Battery SOH",
+        "key": "plugInInfo4p82Resv.resvInfo",
+        "fallback_key": "plugInInfo4p81Resv.resvInfo",
         "unit": PERCENTAGE,
         "device_class": None,
         "state_class": SensorStateClass.MEASUREMENT,
@@ -512,9 +514,10 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "resv_index": 1,
         "resv_type": "float",
     },
-    "extra_battery_1_design_capacity": {
-        "name": "Extra Battery 1 Design Capacity",
-        "key": "plugInInfo4p81Resv.resvInfo",
+    "extra_battery_design_capacity": {
+        "name": "Extra Battery Design Capacity",
+        "key": "plugInInfo4p82Resv.resvInfo",
+        "fallback_key": "plugInInfo4p81Resv.resvInfo",
         "unit": "Ah",
         "device_class": None,
         "state_class": SensorStateClass.MEASUREMENT,
@@ -522,9 +525,10 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "resv_index": 3,
         "resv_type": "mah_to_ah",
     },
-    "extra_battery_1_full_capacity": {
-        "name": "Extra Battery 1 Full Capacity",
-        "key": "plugInInfo4p81Resv.resvInfo",
+    "extra_battery_full_capacity": {
+        "name": "Extra Battery Full Capacity",
+        "key": "plugInInfo4p82Resv.resvInfo",
+        "fallback_key": "plugInInfo4p81Resv.resvInfo",
         "unit": "Ah",
         "device_class": None,
         "state_class": SensorStateClass.MEASUREMENT,
@@ -532,60 +536,10 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "resv_index": 4,
         "resv_type": "mah_to_ah",
     },
-    "extra_battery_1_remain_capacity": {
-        "name": "Extra Battery 1 Remain Capacity",
-        "key": "plugInInfo4p81Resv.resvInfo",
-        "unit": "Ah",
-        "device_class": None,
-        "state_class": SensorStateClass.MEASUREMENT,
-        "icon": "mdi:battery-medium",
-        "resv_index": 5,
-        "resv_type": "mah_to_ah",
-    },
-    # Extra Battery 2 (4p82) - decoded from resvInfo
-    "extra_battery_2_soc": {
-        "name": "Extra Battery 2 SOC",
+    "extra_battery_remain_capacity": {
+        "name": "Extra Battery Remain Capacity",
         "key": "plugInInfo4p82Resv.resvInfo",
-        "unit": PERCENTAGE,
-        "device_class": SensorDeviceClass.BATTERY,
-        "state_class": SensorStateClass.MEASUREMENT,
-        "icon": None,
-        "resv_index": 0,
-        "resv_type": "float",
-    },
-    "extra_battery_2_soh": {
-        "name": "Extra Battery 2 SOH",
-        "key": "plugInInfo4p82Resv.resvInfo",
-        "unit": PERCENTAGE,
-        "device_class": None,
-        "state_class": SensorStateClass.MEASUREMENT,
-        "icon": "mdi:battery-heart",
-        "resv_index": 1,
-        "resv_type": "float",
-    },
-    "extra_battery_2_design_capacity": {
-        "name": "Extra Battery 2 Design Capacity",
-        "key": "plugInInfo4p82Resv.resvInfo",
-        "unit": "Ah",
-        "device_class": None,
-        "state_class": SensorStateClass.MEASUREMENT,
-        "icon": "mdi:battery-high",
-        "resv_index": 3,
-        "resv_type": "mah_to_ah",
-    },
-    "extra_battery_2_full_capacity": {
-        "name": "Extra Battery 2 Full Capacity",
-        "key": "plugInInfo4p82Resv.resvInfo",
-        "unit": "Ah",
-        "device_class": None,
-        "state_class": SensorStateClass.MEASUREMENT,
-        "icon": "mdi:battery-high",
-        "resv_index": 4,
-        "resv_type": "mah_to_ah",
-    },
-    "extra_battery_2_remain_capacity": {
-        "name": "Extra Battery 2 Remain Capacity",
-        "key": "plugInInfo4p82Resv.resvInfo",
+        "fallback_key": "plugInInfo4p81Resv.resvInfo",
         "unit": "Ah",
         "device_class": None,
         "state_class": SensorStateClass.MEASUREMENT,
@@ -2499,6 +2453,14 @@ class EcoFlowSensor(EcoFlowBaseEntity, SensorEntity):
         # Get the API key for this sensor
         api_key = self._sensor_config["key"]
         value = self.coordinator.data.get(api_key)
+
+        # Try fallback key if primary key has no data
+        if value is None or (isinstance(value, list) and all(v == 0 for v in value)):
+            fallback_key = self._sensor_config.get("fallback_key")
+            if fallback_key:
+                value = self.coordinator.data.get(fallback_key)
+                if value is not None:
+                    api_key = fallback_key  # Use fallback key for further processing
 
         if value is None:
             return None
