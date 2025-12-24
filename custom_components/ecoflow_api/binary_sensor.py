@@ -436,6 +436,8 @@ DEVICE_BINARY_SENSOR_MAP = {
     "delta_pro": DELTA_PRO_BINARY_SENSOR_DEFINITIONS,
     "delta_3_plus": DELTA_3_PLUS_BINARY_SENSOR_DEFINITIONS,
     "river_3": RIVER_3_BINARY_SENSOR_DEFINITIONS,
+    "river_3_plus": RIVER_3_BINARY_SENSOR_DEFINITIONS,  # Same API as River 3
+    "River 3 Plus": RIVER_3_BINARY_SENSOR_DEFINITIONS,
 }
 
 # Extra Battery binary sensor definitions

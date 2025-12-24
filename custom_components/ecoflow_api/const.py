@@ -58,6 +58,7 @@ DEVICE_TYPE_RIVER_2: Final = "river_2"
 DEVICE_TYPE_RIVER_2_MAX: Final = "river_2_max"
 DEVICE_TYPE_RIVER_2_PRO: Final = "river_2_pro"
 DEVICE_TYPE_RIVER_3: Final = "river_3"
+DEVICE_TYPE_RIVER_3_PLUS: Final = "river_3_plus"
 DEVICE_TYPE_DELTA_3_PLUS: Final = "delta_3_plus"
 
 DEVICE_TYPES: Final = {
@@ -71,6 +72,7 @@ DEVICE_TYPES: Final = {
     DEVICE_TYPE_RIVER_2_MAX: "River 2 Max",
     DEVICE_TYPE_RIVER_2_PRO: "River 2 Pro",
     DEVICE_TYPE_RIVER_3: "River 3",
+    DEVICE_TYPE_RIVER_3_PLUS: "River 3 Plus",
 }
 
 # Delta Pro 3 Commands (from https://developer-eu.ecoflow.com/us/document/deltaPro3)
