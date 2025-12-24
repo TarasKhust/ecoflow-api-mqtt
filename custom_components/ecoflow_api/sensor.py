@@ -106,7 +106,7 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "key": "cycles",  # MQTT field name
         "unit": "cycles",
         "device_class": None,
-        "state_class": SensorStateClass.TOTAL_INCREASING,
+        "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:sync",
     },
     # ============================================================================
