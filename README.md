@@ -15,7 +15,9 @@ Home Assistant integration for EcoFlow devices using the **official EcoFlow Deve
   - Device control via REST API (reliable commands)
   - Automatic fallback to REST polling if MQTT unavailable
 - ✅ **Official API** - Uses EcoFlow Developer REST API (stable & documented)
-- ✅ **Complete Delta Pro 3 support** - 84 sensors, 13 binary sensors, 9 switches, 13 number controls (+ 3-4 energy sensors, + 2 MQTT sensors in hybrid mode)
+- ✅ **Multi-device support** - Delta Pro 3, Delta Pro, Delta 3 Plus, River 3, River 3 Plus
+- ✅ **Region support** - EU and US API endpoints
+- ✅ **Complete Delta Pro 3 support** - 84 sensors, 13 binary sensors, 9 switches, 13 number controls
 - ✅ **Real device tested** - All features verified with actual Delta Pro 3
 - ✅ **Battery monitoring** - BMS & CMS data, SOC, SOH, temperature, capacity
 - ✅ **Power monitoring** - Input/output, AC, Solar (HV/LV), DC (12V/24V), USB-C, QC USB
@@ -33,6 +35,7 @@ Home Assistant integration for EcoFlow devices using the **official EcoFlow Deve
 [![Open your Home Assistant instance and show the repository.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=TarasKhust&repository=ecoflow-api-mqtt&category=integration)
 
 **Manual Setup:**
+
 1. Open HACS in Home Assistant
 2. Click on "Integrations"
 3. Click the three dots menu → "Custom repositories"
@@ -63,6 +66,7 @@ Home Assistant integration for EcoFlow devices using the **official EcoFlow Deve
    - **Automatic Discovery**: Enter credentials, integration finds your devices
    - **Manual Entry**: Manually enter device serial number and type
 5. Enter your credentials:
+   - **Region**: Select EU (Europe) or US (United States)
    - **Access Key**: Your EcoFlow Developer API access key
    - **Secret Key**: Your EcoFlow Developer API secret key
    - **Device Serial Number**: Your device's serial number (manual mode)
@@ -92,59 +96,59 @@ After setup, you can configure additional options:
 
 ### Sensors
 
-| Entity | Description | Unit |
-|--------|-------------|------|
-| Battery Level | Current battery percentage | % |
-| State of Health | Battery health status | % |
-| Cycles | Charge cycle count | - |
-| Full Capacity | Battery full capacity | Wh |
-| Remaining Capacity | Remaining battery capacity | Wh |
-| Total In Power | Total input power | W |
-| Total Out Power | Total output power | W |
-| AC In Power | AC input power | W |
-| AC Out Power | AC output power | W |
-| Solar In Power | Solar panel input | W |
-| DC Out Power | DC output power | W |
-| Charge Remaining Time | Time to full charge | min |
-| Discharge Remaining Time | Time to empty | min |
-| Battery Temperature | Battery temperature | °C |
-| Battery Voltage | Battery voltage | V |
-| Battery Current | Battery current | A |
-| **Extra Battery 1/2** | All above sensors for extra batteries | - |
+| Entity                   | Description                           | Unit |
+| ------------------------ | ------------------------------------- | ---- |
+| Battery Level            | Current battery percentage            | %    |
+| State of Health          | Battery health status                 | %    |
+| Cycles                   | Charge cycle count                    | -    |
+| Full Capacity            | Battery full capacity                 | Wh   |
+| Remaining Capacity       | Remaining battery capacity            | Wh   |
+| Total In Power           | Total input power                     | W    |
+| Total Out Power          | Total output power                    | W    |
+| AC In Power              | AC input power                        | W    |
+| AC Out Power             | AC output power                       | W    |
+| Solar In Power           | Solar panel input                     | W    |
+| DC Out Power             | DC output power                       | W    |
+| Charge Remaining Time    | Time to full charge                   | min  |
+| Discharge Remaining Time | Time to empty                         | min  |
+| Battery Temperature      | Battery temperature                   | °C   |
+| Battery Voltage          | Battery voltage                       | V    |
+| Battery Current          | Battery current                       | A    |
+| **Extra Battery 1/2**    | All above sensors for extra batteries | -    |
 
 ### Binary Sensors
 
-| Entity | Description |
-|--------|-------------|
-| AC Input Connected | AC input connection status |
-| Solar Input Connected | Solar panel connection status |
-| Charging | Device is charging |
-| Discharging | Device is discharging |
-| AC Output Enabled | AC output is enabled |
-| DC Output Enabled | DC output is enabled |
-| Battery Low | Battery level below 20% |
-| Battery Full | Battery fully charged |
-| Over Temperature | Battery temperature above 45°C |
-| **Extra Battery Connected** | Extra battery connection status | - |
-| **Extra Battery Low/Full** | Extra battery level status | - |
+| Entity                      | Description                     |
+| --------------------------- | ------------------------------- | --- |
+| AC Input Connected          | AC input connection status      |
+| Solar Input Connected       | Solar panel connection status   |
+| Charging                    | Device is charging              |
+| Discharging                 | Device is discharging           |
+| AC Output Enabled           | AC output is enabled            |
+| DC Output Enabled           | DC output is enabled            |
+| Battery Low                 | Battery level below 20%         |
+| Battery Full                | Battery fully charged           |
+| Over Temperature            | Battery temperature above 45°C  |
+| **Extra Battery Connected** | Extra battery connection status | -   |
+| **Extra Battery Low/Full**  | Extra battery level status      | -   |
 
 ### Switches
 
-| Entity | Description |
-|--------|-------------|
-| AC Output | Toggle AC output on/off |
-| DC Output | Toggle DC output on/off |
+| Entity        | Description                 |
+| ------------- | --------------------------- |
+| AC Output     | Toggle AC output on/off     |
+| DC Output     | Toggle DC output on/off     |
 | 12V DC Output | Toggle 12V DC output on/off |
-| Beeper | Toggle beeper on/off |
-| X-Boost | Toggle X-Boost on/off |
+| Beeper        | Toggle beeper on/off        |
+| X-Boost       | Toggle X-Boost on/off       |
 
 ### Numbers (Sliders)
 
-| Entity | Description | Range |
-|--------|-------------|-------|
-| AC Charging Power | Set charging power | 200-3000 W |
-| Max Charge Level | Maximum charge level | 50-100% |
-| Min Discharge Level | Minimum discharge level | 0-30% |
+| Entity              | Description             | Range      |
+| ------------------- | ----------------------- | ---------- |
+| AC Charging Power   | Set charging power      | 200-3000 W |
+| Max Charge Level    | Maximum charge level    | 50-100%    |
+| Min Discharge Level | Minimum discharge level | 0-30%      |
 
 ## 📐 Template Sensors
 
@@ -156,33 +160,33 @@ If you want to display remaining time in a formatted way (e.g., "2h 37m" instead
 # Add to configuration.yaml or as a separate file in configuration/sensors/
 template:
   - sensor:
-    - name: "Delta Pro 3 Remaining Time"
-      unique_id: delta_pro_3_remaining_time
-      state: >
-        {% set in_power = states('sensor.ecoflow_delta_pro_3_total_input_power') | float(0) %}
-        {% set out_power = states('sensor.ecoflow_delta_pro_3_total_output_power') | float(0) %}
-        {% if in_power > 0 and in_power >= out_power %}
-          {% set time_val = states('sensor.ecoflow_delta_pro_3_system_charge_remaining_time') | float(0) %}
-        {% elif out_power > 0 %}
-          {% set time_val = states('sensor.ecoflow_delta_pro_3_system_discharge_remaining_time') | float(0) %}
-        {% else %}
-          {% set time_val = 0 %}
-        {% endif %}
-        {% if time_val > 0 %}
-          {% set hours = (time_val / 60) | int %}
-          {% set mins = (time_val % 60) | int %}
-          {{ hours }}h {{ mins }}m
-        {% else %}
-          -
-        {% endif %}
-      icon: >
-        {% set in_power = states('sensor.ecoflow_delta_pro_3_total_input_power') | float(0) %}
-        {% set out_power = states('sensor.ecoflow_delta_pro_3_total_output_power') | float(0) %}
-        {% if in_power > 0 and in_power >= out_power %}
-          mdi:battery-charging
-        {% else %}
-          mdi:battery-arrow-down
-        {% endif %}
+      - name: "Delta Pro 3 Remaining Time"
+        unique_id: delta_pro_3_remaining_time
+        state: >
+          {% set in_power = states('sensor.ecoflow_delta_pro_3_total_input_power') | float(0) %}
+          {% set out_power = states('sensor.ecoflow_delta_pro_3_total_output_power') | float(0) %}
+          {% if in_power > 0 and in_power >= out_power %}
+            {% set time_val = states('sensor.ecoflow_delta_pro_3_system_charge_remaining_time') | float(0) %}
+          {% elif out_power > 0 %}
+            {% set time_val = states('sensor.ecoflow_delta_pro_3_system_discharge_remaining_time') | float(0) %}
+          {% else %}
+            {% set time_val = 0 %}
+          {% endif %}
+          {% if time_val > 0 %}
+            {% set hours = (time_val / 60) | int %}
+            {% set mins = (time_val % 60) | int %}
+            {{ hours }}h {{ mins }}m
+          {% else %}
+            -
+          {% endif %}
+        icon: >
+          {% set in_power = states('sensor.ecoflow_delta_pro_3_total_input_power') | float(0) %}
+          {% set out_power = states('sensor.ecoflow_delta_pro_3_total_output_power') | float(0) %}
+          {% if in_power > 0 and in_power >= out_power %}
+            mdi:battery-charging
+          {% else %}
+            mdi:battery-arrow-down
+          {% endif %}
 ```
 
 **Important:** The remaining time sensors return values in **minutes** (not hours), so you need to divide by 60 to get hours and use modulo to get remaining minutes.
@@ -233,14 +237,26 @@ mode: single
 
 ## 🌍 Supported Devices
 
-| Device | Status | Notes |
-|--------|--------|-------|
-| Delta Pro 3 | ✅ Full Support | All features |
-| Delta Pro | 🔄 Planned | Coming soon |
-| Delta 2 | 🔄 Planned | Coming soon |
-| Delta 2 Max | 🔄 Planned | Coming soon |
-| River 2 | 🔄 Planned | Coming soon |
-| River 2 Max | 🔄 Planned | Coming soon |
+| Device       | Status          | Notes                            |
+| ------------ | --------------- | -------------------------------- |
+| Delta Pro 3  | ✅ Full Support | All features, real device tested |
+| Delta Pro    | ✅ Full Support | US API verified                  |
+| Delta 3 Plus | ✅ Full Support | All features                     |
+| River 3      | ✅ Full Support | All features                     |
+| River 3 Plus | ✅ Full Support | Same API as River 3              |
+| Delta 2      | 🔄 Planned      | Coming soon                      |
+| Delta 2 Max  | 🔄 Planned      | Coming soon                      |
+| River 2      | 🔄 Planned      | Coming soon                      |
+| River 2 Max  | 🔄 Planned      | Coming soon                      |
+
+### Region Support
+
+The integration supports both **EU** and **US** API endpoints:
+
+- **Europe**: api-e.ecoflow.com
+- **United States**: api.ecoflow.com
+
+Select your region during setup.
 
 ## 🔄 Hybrid Mode (REST API + MQTT)
 
@@ -269,6 +285,7 @@ The integration supports a **hybrid mode** that combines the best of both worlds
 6. Save and restart the integration
 
 The integration will automatically:
+
 - Fetch MQTT credentials (`certificateAccount` and `certificatePassword`) from EcoFlow API
 - Connect to EcoFlow MQTT broker
 - Start receiving real-time updates
@@ -277,6 +294,7 @@ The integration will automatically:
 ### Connection Status
 
 You can monitor the connection mode via the `sensor.ecoflow_delta_pro_3_connection_mode` sensor:
+
 - `hybrid` - Both REST API and MQTT active (optimal)
 - `mqtt_standby` - MQTT connected but not actively used
 - `rest_only` - REST API only (MQTT unavailable or disabled)
@@ -317,5 +335,3 @@ You can support this project by:
 ---
 
 Made with ❤️ in Ukraine 🇺🇦
-
-
