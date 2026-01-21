@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.5.1] - 2026-01-21
+
+### 🗑️ Removed
+
+#### River 3 and River 3 Plus Support Removed
+
+- **River 3** and **River 3 Plus** device support has been removed from the codebase
+- These devices are **not supported** by EcoFlow Developer REST API (returns error 1006)
+- This is a limitation on EcoFlow's side - these devices are not in the official REST API supported devices list
+- All River 3 device definitions, constants, and mappings have been removed
+- Updated error messages to clarify this limitation
+- Updated README.md to reflect current supported devices
+
+### 📝 Documentation
+
+- Updated README.md to remove River 3/River 3 Plus from supported devices list
+- Added clarification about EcoFlow REST API limitations
+
 ## [1.5.0] - 2026-01-21
 
 ### ✨ New Features
