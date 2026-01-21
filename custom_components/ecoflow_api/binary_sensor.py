@@ -18,7 +18,6 @@ from .const import (
     DEVICE_TYPE_DELTA_3_PLUS,
     DEVICE_TYPE_DELTA_PRO,
     DEVICE_TYPE_DELTA_PRO_3,
-    DEVICE_TYPE_RIVER_3,
     DOMAIN,
 )
 from .coordinator import EcoFlowDataCoordinator
@@ -213,104 +212,10 @@ DELTA_PRO_BINARY_SENSOR_DEFINITIONS = {
     },
 }
 
-# Binary sensor definitions for River 3
-RIVER_3_BINARY_SENSOR_DEFINITIONS = {
-    "ac_in_connected": {
-        "name": "AC Input Connected",
-        "key": "acInConnected",
-        "device_class": BinarySensorDeviceClass.PLUG,
-        "icon_on": "mdi:power-plug",
-        "icon_off": "mdi:power-plug-off",
-        "derived": True,
-        "derive_from": "powGetAcIn",
-        "derive_condition": lambda v: v is not None and v > 0,
-    },
-    "solar_connected": {
-        "name": "Solar Input Connected",
-        "key": "solarConnected",
-        "device_class": BinarySensorDeviceClass.PLUG,
-        "icon_on": "mdi:solar-power",
-        "icon_off": "mdi:solar-power-variant-outline",
-        "derived": True,
-        "derive_from": "powGetPv",
-        "derive_condition": lambda v: v is not None and v > 0,
-    },
-    "is_charging": {
-        "name": "Charging",
-        "key": "isCharging",
-        "device_class": BinarySensorDeviceClass.BATTERY_CHARGING,
-        "icon_on": "mdi:battery-charging",
-        "icon_off": "mdi:battery",
-        "derived": True,
-        "derive_from": "powInSumW",
-        "derive_condition": lambda v: v is not None and v > 10,
-    },
-    "is_discharging": {
-        "name": "Discharging",
-        "key": "isDischarging",
-        "device_class": BinarySensorDeviceClass.POWER,
-        "icon_on": "mdi:battery-arrow-down",
-        "icon_off": "mdi:battery",
-        "derived": True,
-        "derive_from": "powOutSumW",
-        "derive_condition": lambda v: v is not None and v > 10,
-    },
-    "ac_out_enabled": {
-        "name": "AC Output Enabled",
-        "key": "cfgAcOutOpen",
-        "device_class": BinarySensorDeviceClass.POWER,
-        "icon_on": "mdi:power-socket",
-        "icon_off": "mdi:power-socket-off",
-        "derived": False,
-    },
-    "dc_out_enabled": {
-        "name": "DC Output Enabled",
-        "key": "cfgDc12vOutOpen",
-        "device_class": BinarySensorDeviceClass.POWER,
-        "icon_on": "mdi:current-dc",
-        "icon_off": "mdi:current-dc",
-        "derived": False,
-    },
-    "battery_low": {
-        "name": "Battery Low",
-        "key": "batteryLow",
-        "device_class": BinarySensorDeviceClass.BATTERY,
-        "icon_on": "mdi:battery-alert",
-        "icon_off": "mdi:battery",
-        "derived": True,
-        "derive_from": "bmsBattSoc",
-        "derive_condition": lambda v: v is not None and v < 20,
-    },
-    "battery_full": {
-        "name": "Battery Full",
-        "key": "batteryFull",
-        "device_class": BinarySensorDeviceClass.BATTERY,
-        "icon_on": "mdi:battery-check",
-        "icon_off": "mdi:battery",
-        "derived": True,
-        "derive_from": "bmsBattSoc",
-        "derive_condition": lambda v: v is not None and v >= 100,
-    },
-    "x_boost_enabled": {
-        "name": "X-Boost Enabled",
-        "key": "xboostEn",
-        "device_class": None,
-        "icon_on": "mdi:lightning-bolt",
-        "icon_off": "mdi:lightning-bolt-outline",
-        "derived": False,
-    },
-    "beeper_enabled": {
-        "name": "Beeper Enabled",
-        "key": "enBeep",
-        "device_class": None,
-        "icon_on": "mdi:volume-high",
-        "icon_off": "mdi:volume-off",
-        "derived": False,
-    },
-}
+# NOTE: River 3 and River 3 Plus are NOT supported by EcoFlow REST API
+# These devices return error 1006. Removed from codebase.
 
 # Binary sensor definitions for Delta 3 Plus
-# Uses same keys as River 3 with additional features
 DELTA_3_PLUS_BINARY_SENSOR_DEFINITIONS = {
     "ac_in_connected": {
         "name": "AC Input Connected",
@@ -431,13 +336,9 @@ DEVICE_BINARY_SENSOR_MAP = {
     DEVICE_TYPE_DELTA_PRO_3: DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS,
     DEVICE_TYPE_DELTA_PRO: DELTA_PRO_BINARY_SENSOR_DEFINITIONS,
     DEVICE_TYPE_DELTA_3_PLUS: DELTA_3_PLUS_BINARY_SENSOR_DEFINITIONS,
-    DEVICE_TYPE_RIVER_3: RIVER_3_BINARY_SENSOR_DEFINITIONS,
     "delta_pro_3": DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS,
     "delta_pro": DELTA_PRO_BINARY_SENSOR_DEFINITIONS,
     "delta_3_plus": DELTA_3_PLUS_BINARY_SENSOR_DEFINITIONS,
-    "river_3": RIVER_3_BINARY_SENSOR_DEFINITIONS,
-    "river_3_plus": RIVER_3_BINARY_SENSOR_DEFINITIONS,  # Same API as River 3
-    "River 3 Plus": RIVER_3_BINARY_SENSOR_DEFINITIONS,
 }
 
 # Extra Battery binary sensor definitions
