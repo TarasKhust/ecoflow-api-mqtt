@@ -22,7 +22,6 @@ from .const import (
     DEVICE_TYPE_DELTA_3_PLUS,
     DEVICE_TYPE_DELTA_PRO,
     DEVICE_TYPE_DELTA_PRO_3,
-    DEVICE_TYPE_RIVER_3,
     DOMAIN,
     OPTS_POWER_STEP,
 )
@@ -336,98 +335,8 @@ DELTA_PRO_NUMBER_DEFINITIONS = {
     },
 }
 
-# Number definitions for River 3 based on API documentation
-# Uses Delta Pro 3 API format (cmdId: 17, cmdFunc: 254)
-RIVER_3_NUMBER_DEFINITIONS = {
-    "max_charge_level": {
-        "name": "Charge Limit",
-        "state_key": "cmsMaxChgSoc",
-        "command_key": "cmsMaxChgSoc",
-        "min": 50,
-        "max": 100,
-        "step": 1,
-        "unit": PERCENTAGE,
-        "icon": "mdi:battery-charging-100",
-        "mode": NumberMode.SLIDER,
-    },
-    "min_discharge_level": {
-        "name": "Discharge Limit",
-        "state_key": "cmsMinDsgSoc",
-        "command_key": "cmsMinDsgSoc",
-        "min": 0,
-        "max": 30,
-        "step": 1,
-        "unit": PERCENTAGE,
-        "icon": "mdi:battery-10",
-        "mode": NumberMode.SLIDER,
-    },
-    "ac_charging_power": {
-        "name": "AC Charging Power",
-        "state_key": "plugInInfoAcInChgPowMax",
-        "command_key": "plugInInfoAcInChgPowMax",
-        "min": 50,
-        "max": 305,
-        "step": 5,
-        "unit": UnitOfPower.WATT,
-        "icon": "mdi:lightning-bolt",
-        "mode": NumberMode.SLIDER,
-    },
-    "device_standby_time": {
-        "name": "Device Standby Time",
-        "state_key": "devStandbyTime",
-        "command_key": "devStandbyTime",
-        "min": 0,
-        "max": 1440,
-        "step": 30,
-        "unit": UnitOfTime.MINUTES,
-        "icon": "mdi:timer-sleep",
-        "mode": NumberMode.BOX,
-    },
-    "screen_timeout": {
-        "name": "Screen Timeout",
-        "state_key": "screenOffTime",
-        "command_key": "screenOffTime",
-        "min": 0,
-        "max": 1800,
-        "step": 30,
-        "unit": UnitOfTime.SECONDS,
-        "icon": "mdi:monitor-off",
-        "mode": NumberMode.BOX,
-    },
-    "ac_standby_time": {
-        "name": "AC Standby Time",
-        "state_key": "acStandbyTime",
-        "command_key": "acStandbyTime",
-        "min": 0,
-        "max": 1440,
-        "step": 30,
-        "unit": UnitOfTime.MINUTES,
-        "icon": "mdi:timer",
-        "mode": NumberMode.BOX,
-    },
-    "backup_reserve_level": {
-        "name": "Backup Reserve Level",
-        "state_key": "energyBackupStartSoc",
-        "command_key": "energyBackupStartSoc",
-        "min": 5,
-        "max": 100,
-        "step": 1,
-        "unit": PERCENTAGE,
-        "icon": "mdi:battery-lock",
-        "mode": NumberMode.SLIDER,
-    },
-    "pv_charging_current": {
-        "name": "PV Charging Current",
-        "state_key": "plugInInfoPvDcAmpMax",
-        "command_key": "plugInInfoPvDcAmpMax",
-        "min": 4,
-        "max": 8,
-        "step": 1,
-        "unit": UnitOfElectricCurrent.AMPERE,
-        "icon": "mdi:solar-power",
-        "mode": NumberMode.BOX,
-    },
-}
+# NOTE: River 3 and River 3 Plus are NOT supported by EcoFlow REST API
+# These devices return error 1006. Removed from codebase.
 
 # Number definitions for Delta 3 Plus based on API documentation
 # Uses Delta Pro 3 API format (cmdId: 17, cmdFunc: 254)
@@ -549,13 +458,9 @@ DEVICE_NUMBER_MAP = {
     DEVICE_TYPE_DELTA_PRO_3: DELTA_PRO_3_NUMBER_DEFINITIONS,
     DEVICE_TYPE_DELTA_PRO: DELTA_PRO_NUMBER_DEFINITIONS,
     DEVICE_TYPE_DELTA_3_PLUS: DELTA_3_PLUS_NUMBER_DEFINITIONS,
-    DEVICE_TYPE_RIVER_3: RIVER_3_NUMBER_DEFINITIONS,
     "delta_pro_3": DELTA_PRO_3_NUMBER_DEFINITIONS,
     "delta_pro": DELTA_PRO_NUMBER_DEFINITIONS,
     "delta_3_plus": DELTA_3_PLUS_NUMBER_DEFINITIONS,
-    "river_3": RIVER_3_NUMBER_DEFINITIONS,
-    "river_3_plus": RIVER_3_NUMBER_DEFINITIONS,  # Same API as River 3
-    "River 3 Plus": RIVER_3_NUMBER_DEFINITIONS,
 }
 
 

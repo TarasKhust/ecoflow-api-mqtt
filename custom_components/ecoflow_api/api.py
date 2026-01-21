@@ -265,6 +265,24 @@ class EcoFlowApiClient:
         code = result.get("code")
         if code not in ("0", 0, "200", 200, None):
             message = result.get("message", "Unknown error")
+            
+            # Special handling for error 1006 - device not allowed
+            if code == 1006 or code == "1006":
+                detailed_message = (
+                    f"API error (code {code}): {message}\n\n"
+                    "This error typically means:\n"
+                    "1. The device is not properly bound to your EcoFlow Developer account\n"
+                    "2. EcoFlow hasn't enabled API access for this device model yet\n"
+                    "3. The device serial number might be incorrect\n\n"
+                    "Troubleshooting steps:\n"
+                                "- Verify the device is bound to your account in the EcoFlow app\n"
+                                "- Check that you're using the correct device serial number\n"
+                                "- Try regenerating your API credentials in the Developer Portal\n"
+                                "- Contact EcoFlow support to enable API access for your device\n"
+                                "- Note: River 3 and River 3 Plus are not supported by EcoFlow REST API (error 1006)"
+                )
+                raise EcoFlowApiError(detailed_message)
+            
             raise EcoFlowApiError(f"API error (code {code}): {message}")
 
         return result.get("data", result)
