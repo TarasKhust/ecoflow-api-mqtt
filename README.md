@@ -242,7 +242,7 @@ mode: single
 | Delta Pro 3  | ✅ Full Support | All features, real device tested |
 | Delta Pro    | ✅ Full Support | US API verified                  |
 | Delta 3 Plus | ✅ Full Support | All features                     |
-| Delta 2      | 🔄 Planned      | Coming soon                      |
+| Delta 2      | ✅ Full Support | Real device tested (v1.6.0+)    |
 | Delta 2 Max  | 🔄 Planned      | Coming soon                      |
 | River 2      | 🔄 Planned      | Coming soon                      |
 | River 2 Max  | 🔄 Planned      | Coming soon                      |
@@ -296,6 +296,31 @@ You can monitor the connection mode via the `sensor.ecoflow_delta_pro_3_connecti
 - `hybrid` - Both REST API and MQTT active (optimal)
 - `mqtt_standby` - MQTT connected but not actively used
 - `rest_only` - REST API only (MQTT unavailable or disabled)
+
+## 🐛 Debug Mode
+
+To enable debug logging for troubleshooting, add the following to your `/homeassistant/configuration.yaml`:
+
+```yaml
+# configuration.yaml
+logger:
+  default: info
+  logs:
+    custom_components.ecoflow_api: debug
+```
+
+After adding this configuration:
+1. Restart Home Assistant
+2. Check logs in **Settings** → **System** → **Logs**
+3. Filter by "ecoflow" to see integration-specific logs
+
+Debug logs include:
+- API request/response details
+- MQTT connection status
+- Sensor value updates
+- Command execution results
+
+> ⚠️ **Note**: Debug mode generates a lot of log data. Disable it after troubleshooting by removing the configuration or changing `debug` to `info`.
 
 ## 📚 Documentation
 
