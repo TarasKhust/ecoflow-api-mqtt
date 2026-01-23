@@ -5,6 +5,62 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.6.0-beta.1] - 2026-01-23
+
+### 🎉 New Features
+
+#### Delta 2 Device Support (Issue #12)
+
+Full support for EcoFlow Delta 2 portable power station using the unique `moduleType`/`operateType` API format.
+
+**Sensors (40+):**
+- 🔋 **Battery** - SOC, SOC (precise), voltage, current, temperature, cycles, design capacity, full capacity, remaining capacity
+- ⚡ **Power** - Total input/output, AC input/output, solar input, USB-A/USB-C outputs, car output
+- 🌡️ **Temperature** - Battery temp, inverter temp, MPPT temp
+- ⚙️ **Settings** - Max charge SOC, min discharge SOC, charging power, standby times, LCD settings
+
+**Switches:**
+- AC Output
+- X-Boost
+- DC/USB Output
+- Car Charger
+- Beeper (Silent Mode)
+
+**Number Controls:**
+- Max Charge Level (50-100%)
+- Min Discharge Level (0-30%)
+- AC Charging Power (100-1200W)
+- DC Charging Current (4000-10000mA)
+- Device Standby Time (0-720 min)
+- AC Standby Time (0-720 min)
+- Car Standby Time (0-720 min)
+- Screen Timeout (0-300 sec)
+- Screen Brightness (0-3)
+
+**Select Controls:**
+- AC Output Frequency (50Hz / 60Hz)
+- Update Interval (5s / 10s / 15s / 30s / 60s)
+
+**Binary Sensors:**
+- AC Charging
+- Solar Charging
+- Discharging
+- DC Output Enabled
+- AC Output Enabled
+
+### 🔧 Technical Details
+
+- Delta 2 uses unique API format: `moduleType` (1=PD, 2=BMS, 5=MPPT) + `operateType`
+- New entity classes: `EcoFlowDelta2Switch`, `EcoFlowDelta2Number`, `EcoFlowDelta2Select`
+- Data keys use flat dot-notation: `pd.wattsInSum`, `bms_bmsStatus.soc`, `mppt.inWatts`, etc.
+- Tested with real Delta 2 device (SN: R331ZEB4ZECD0090)
+
+### ⚠️ Beta Notes
+
+- **Beta release** - Please test and report issues
+- Generator SOC settings (openOilSoc/closeOilSoc) not available in API - removed
+- AC Output Frequency uses `inv.cfgAcOutFreq` state key (returns code 1/2, not Hz)
+
 ## [1.5.1] - 2026-01-21
 
 ### 🗑️ Removed
