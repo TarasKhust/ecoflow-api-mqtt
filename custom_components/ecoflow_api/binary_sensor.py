@@ -15,6 +15,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
+    DEVICE_TYPE_DELTA_2,
     DEVICE_TYPE_DELTA_3_PLUS,
     DEVICE_TYPE_DELTA_PRO,
     DEVICE_TYPE_DELTA_PRO_3,
@@ -331,14 +332,131 @@ DELTA_3_PLUS_BINARY_SENSOR_DEFINITIONS = {
     },
 }
 
+# Binary sensor definitions for Delta 2
+# Uses data keys with prefixes: pd., bms_bmsStatus., bms_emsStatus., inv., mppt.
+DELTA_2_BINARY_SENSOR_DEFINITIONS = {
+    "ac_in_connected": {
+        "name": "AC Input Connected",
+        "key": "acInConnected",
+        "device_class": BinarySensorDeviceClass.PLUG,
+        "icon_on": "mdi:power-plug",
+        "icon_off": "mdi:power-plug-off",
+        "derived": True,
+        "derive_from": "inv.inputWatts",
+        "derive_condition": lambda v: v is not None and v > 0,
+    },
+    "solar_connected": {
+        "name": "Solar Input Connected",
+        "key": "solarConnected",
+        "device_class": BinarySensorDeviceClass.PLUG,
+        "icon_on": "mdi:solar-power",
+        "icon_off": "mdi:solar-power-variant-outline",
+        "derived": True,
+        "derive_from": "mppt.inWatts",
+        "derive_condition": lambda v: v is not None and v > 0,
+    },
+    "is_charging": {
+        "name": "Charging",
+        "key": "isCharging",
+        "device_class": BinarySensorDeviceClass.BATTERY_CHARGING,
+        "icon_on": "mdi:battery-charging",
+        "icon_off": "mdi:battery",
+        "derived": True,
+        "derive_from": "pd.wattsInSum",
+        "derive_condition": lambda v: v is not None and v > 10,
+    },
+    "is_discharging": {
+        "name": "Discharging",
+        "key": "isDischarging",
+        "device_class": BinarySensorDeviceClass.POWER,
+        "icon_on": "mdi:battery-arrow-down",
+        "icon_off": "mdi:battery",
+        "derived": True,
+        "derive_from": "pd.wattsOutSum",
+        "derive_condition": lambda v: v is not None and v > 10,
+    },
+    "ac_out_enabled": {
+        "name": "AC Output Enabled",
+        "key": "mppt.cfgAcEnabled",
+        "device_class": BinarySensorDeviceClass.POWER,
+        "icon_on": "mdi:power-socket",
+        "icon_off": "mdi:power-socket-off",
+        "derived": False,
+    },
+    "dc_out_enabled": {
+        "name": "DC Output Enabled",
+        "key": "pd.dcOutState",
+        "device_class": BinarySensorDeviceClass.POWER,
+        "icon_on": "mdi:current-dc",
+        "icon_off": "mdi:current-dc",
+        "derived": False,
+    },
+    "car_charger_enabled": {
+        "name": "Car Charger Enabled",
+        "key": "mppt.carState",
+        "device_class": BinarySensorDeviceClass.POWER,
+        "icon_on": "mdi:car",
+        "icon_off": "mdi:car-off",
+        "derived": False,
+    },
+    "battery_low": {
+        "name": "Battery Low",
+        "key": "batteryLow",
+        "device_class": BinarySensorDeviceClass.BATTERY,
+        "icon_on": "mdi:battery-alert",
+        "icon_off": "mdi:battery",
+        "derived": True,
+        "derive_from": "bms_bmsStatus.soc",
+        "derive_condition": lambda v: v is not None and v < 20,
+    },
+    "battery_full": {
+        "name": "Battery Full",
+        "key": "batteryFull",
+        "device_class": BinarySensorDeviceClass.BATTERY,
+        "icon_on": "mdi:battery-check",
+        "icon_off": "mdi:battery",
+        "derived": True,
+        "derive_from": "bms_bmsStatus.soc",
+        "derive_condition": lambda v: v is not None and v >= 100,
+    },
+    "x_boost_enabled": {
+        "name": "X-Boost Enabled",
+        "key": "mppt.cfgAcXboost",
+        "device_class": None,
+        "icon_on": "mdi:lightning-bolt",
+        "icon_off": "mdi:lightning-bolt-outline",
+        "derived": False,
+    },
+    "beeper_silent": {
+        "name": "Beeper Silent Mode",
+        "key": "mppt.beepState",
+        "device_class": None,
+        "icon_on": "mdi:volume-off",
+        "icon_off": "mdi:volume-high",
+        "derived": False,
+    },
+    "over_temp": {
+        "name": "Over Temperature",
+        "key": "overTemp",
+        "device_class": BinarySensorDeviceClass.HEAT,
+        "icon_on": "mdi:thermometer-alert",
+        "icon_off": "mdi:thermometer",
+        "derived": True,
+        "derive_from": "bms_bmsStatus.temp",
+        "derive_condition": lambda v: v is not None and v > 45,
+    },
+}
+
 # Map device types to binary sensor definitions
 DEVICE_BINARY_SENSOR_MAP = {
     DEVICE_TYPE_DELTA_PRO_3: DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS,
     DEVICE_TYPE_DELTA_PRO: DELTA_PRO_BINARY_SENSOR_DEFINITIONS,
     DEVICE_TYPE_DELTA_3_PLUS: DELTA_3_PLUS_BINARY_SENSOR_DEFINITIONS,
+    DEVICE_TYPE_DELTA_2: DELTA_2_BINARY_SENSOR_DEFINITIONS,
     "delta_pro_3": DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS,
     "delta_pro": DELTA_PRO_BINARY_SENSOR_DEFINITIONS,
     "delta_3_plus": DELTA_3_PLUS_BINARY_SENSOR_DEFINITIONS,
+    "delta_2": DELTA_2_BINARY_SENSOR_DEFINITIONS,
 }
 
 # Extra Battery binary sensor definitions

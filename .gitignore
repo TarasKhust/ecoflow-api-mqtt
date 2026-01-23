@@ -105,4 +105,10 @@ make_zip.py
 .cursorrules
 shared-rules/.cursor
 .cursor/
-.cursor/
+
+# Claude Code
+.claude/
+
+# Delta 2 API response test files
+delta2_api_response_*.json
+device_availability_results.json

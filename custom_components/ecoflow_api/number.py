@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from typing import Any
 
 from homeassistant.components.number import NumberEntity, NumberMode
@@ -19,6 +20,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
     DEFAULT_POWER_STEP,
+    DEVICE_TYPE_DELTA_2,
     DEVICE_TYPE_DELTA_3_PLUS,
     DEVICE_TYPE_DELTA_PRO,
     DEVICE_TYPE_DELTA_PRO_3,
@@ -453,14 +455,138 @@ DELTA_3_PLUS_NUMBER_DEFINITIONS = {
     },
 }
 
+# Number definitions for Delta 2 based on API documentation
+# Uses unique API format with moduleType and operateType parameters
+DELTA_2_NUMBER_DEFINITIONS = {
+    "max_charge_level": {
+        "name": "Max Charge Level",
+        "state_key": "bms_emsStatus.maxChargeSoc",
+        "module_type": 2,  # BMS
+        "operate_type": "upsConfig",
+        "param_key": "maxChgSoc",
+        "min": 50,
+        "max": 100,
+        "step": 1,
+        "unit": PERCENTAGE,
+        "icon": "mdi:battery-charging-100",
+        "mode": NumberMode.SLIDER,
+    },
+    "min_discharge_level": {
+        "name": "Min Discharge Level",
+        "state_key": "bms_emsStatus.minDsgSoc",
+        "module_type": 2,  # BMS
+        "operate_type": "dsgCfg",
+        "param_key": "minDsgSoc",
+        "min": 0,
+        "max": 30,
+        "step": 1,
+        "unit": PERCENTAGE,
+        "icon": "mdi:battery-10",
+        "mode": NumberMode.SLIDER,
+    },
+    "ac_charging_power": {
+        "name": "AC Charging Power",
+        "state_key": "mppt.cfgChgWatts",
+        "module_type": 5,  # MPPT
+        "operate_type": "acChgCfg",
+        "param_key": "chgWatts",
+        "min": 100,
+        "max": 1200,
+        "step": 100,
+        "unit": UnitOfPower.WATT,
+        "icon": "mdi:lightning-bolt",
+        "mode": NumberMode.SLIDER,
+    },
+    "device_standby_time": {
+        "name": "Device Standby Time",
+        "state_key": "pd.standbyMin",
+        "module_type": 1,  # PD
+        "operate_type": "standbyTime",
+        "param_key": "standbyMin",
+        "min": 0,
+        "max": 720,
+        "step": 30,
+        "unit": UnitOfTime.MINUTES,
+        "icon": "mdi:timer-sleep",
+        "mode": NumberMode.BOX,
+    },
+    "screen_timeout": {
+        "name": "Screen Timeout",
+        "state_key": "pd.lcdOffSec",
+        "module_type": 1,  # PD
+        "operate_type": "lcdCfg",
+        "param_key": "delayOff",
+        "min": 0,
+        "max": 1800,
+        "step": 30,
+        "unit": UnitOfTime.SECONDS,
+        "icon": "mdi:monitor-off",
+        "mode": NumberMode.BOX,
+    },
+    "screen_brightness": {
+        "name": "Screen Brightness",
+        "state_key": "pd.brightLevel",
+        "module_type": 1,  # PD
+        "operate_type": "lcdCfg",
+        "param_key": "brighLevel",
+        "min": 0,
+        "max": 3,
+        "step": 1,
+        "unit": None,  # Level 0-3
+        "icon": "mdi:brightness-6",
+        "mode": NumberMode.SLIDER,
+    },
+    "dc_charging_current": {
+        "name": "DC Charging Current",
+        "state_key": "mppt.dcChgCurrent",
+        "module_type": 5,  # MPPT
+        "operate_type": "dcChgCfg",
+        "param_key": "dcChgCfg",
+        "min": 4000,
+        "max": 10000,
+        "step": 1000,
+        "unit": "mA",
+        "icon": "mdi:current-dc",
+        "mode": NumberMode.SLIDER,
+    },
+    "ac_standby_time": {
+        "name": "AC Standby Time",
+        "state_key": "mppt.acStandbyMins",
+        "module_type": 5,  # MPPT
+        "operate_type": "standbyTime",
+        "param_key": "standbyMins",
+        "min": 0,
+        "max": 720,
+        "step": 30,
+        "unit": UnitOfTime.MINUTES,
+        "icon": "mdi:timer",
+        "mode": NumberMode.BOX,
+    },
+    "car_standby_time": {
+        "name": "Car Charger Standby Time",
+        "state_key": "mppt.carStandbyMin",
+        "module_type": 5,  # MPPT
+        "operate_type": "carStandby",
+        "param_key": "standbyMins",
+        "min": 0,
+        "max": 720,
+        "step": 30,
+        "unit": UnitOfTime.MINUTES,
+        "icon": "mdi:car-clock",
+        "mode": NumberMode.BOX,
+    },
+}
+
 # Map device types to number definitions
 DEVICE_NUMBER_MAP = {
     DEVICE_TYPE_DELTA_PRO_3: DELTA_PRO_3_NUMBER_DEFINITIONS,
     DEVICE_TYPE_DELTA_PRO: DELTA_PRO_NUMBER_DEFINITIONS,
     DEVICE_TYPE_DELTA_3_PLUS: DELTA_3_PLUS_NUMBER_DEFINITIONS,
+    DEVICE_TYPE_DELTA_2: DELTA_2_NUMBER_DEFINITIONS,
     "delta_pro_3": DELTA_PRO_3_NUMBER_DEFINITIONS,
     "delta_pro": DELTA_PRO_NUMBER_DEFINITIONS,
     "delta_3_plus": DELTA_3_PLUS_NUMBER_DEFINITIONS,
+    "delta_2": DELTA_2_NUMBER_DEFINITIONS,
 }
 
 
@@ -480,13 +606,23 @@ async def async_setup_entry(
 
     entities: list[NumberEntity] = []
 
-    # Check if this is a Delta Pro (original) device
+    # Check device type for proper class selection
     is_delta_pro = device_type in (DEVICE_TYPE_DELTA_PRO, "delta_pro")
+    is_delta_2 = device_type in (DEVICE_TYPE_DELTA_2, "delta_2")
 
     for number_key, number_def in number_definitions.items():
         if is_delta_pro:
             entities.append(
                 EcoFlowDeltaProNumber(
+                    coordinator=coordinator,
+                    entry=entry,
+                    number_key=number_key,
+                    number_def=number_def,
+                )
+            )
+        elif is_delta_2:
+            entities.append(
+                EcoFlowDelta2Number(
                     coordinator=coordinator,
                     entry=entry,
                     number_key=number_key,
@@ -673,6 +809,89 @@ class EcoFlowDeltaProNumber(EcoFlowBaseEntity, NumberEntity):
                 "id": cmd_id,
                 param_key: int_value,
             },
+        }
+
+        try:
+            await self.coordinator.api_client.set_device_quota(
+                device_sn=device_sn,
+                cmd_code=payload,
+            )
+            # Wait 2 seconds for device to apply changes, then refresh
+            await asyncio.sleep(2)
+            await self.coordinator.async_request_refresh()
+        except Exception as err:
+            _LOGGER.error(
+                "Failed to set %s to %s: %s", self._number_key, int_value, err
+            )
+            raise
+
+
+class EcoFlowDelta2Number(EcoFlowBaseEntity, NumberEntity):
+    """Representation of an EcoFlow Delta 2 number entity.
+
+    Uses the Delta 2 API format with moduleType and operateType parameters.
+    """
+
+    def __init__(
+        self,
+        coordinator: EcoFlowDataCoordinator,
+        entry: ConfigEntry,
+        number_key: str,
+        number_def: dict[str, Any],
+    ) -> None:
+        """Initialize the number entity."""
+        super().__init__(coordinator, number_key)
+        self._number_key = number_key
+        self._number_def = number_def
+        self._entry = entry
+        self._attr_unique_id = f"{entry.entry_id}_{number_key}"
+        self._attr_name = number_def["name"]
+        self._attr_has_entity_name = True
+        self._attr_translation_key = number_key
+
+        # Set number attributes from config
+        self._attr_native_min_value = number_def["min"]
+        self._attr_native_max_value = number_def["max"]
+        self._attr_native_step = number_def["step"]
+        self._attr_native_unit_of_measurement = number_def.get("unit")
+        self._attr_icon = number_def.get("icon")
+        self._attr_mode = number_def.get("mode", NumberMode.AUTO)
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the current value."""
+        if not self.coordinator.data:
+            return None
+
+        state_key = self._number_def["state_key"]
+        value = self.coordinator.data.get(state_key)
+
+        if value is None:
+            return None
+
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            return None
+
+    async def async_set_native_value(self, value: float) -> None:
+        """Set new value using Delta 2 API format."""
+        device_sn = self.coordinator.device_sn
+        module_type = self._number_def["module_type"]
+        operate_type = self._number_def["operate_type"]
+        param_key = self._number_def["param_key"]
+
+        # Convert to int for API
+        int_value = int(value)
+
+        # Build command payload according to Delta 2 API format
+        payload = {
+            "id": int(time.time() * 1000),
+            "version": "1.0",
+            "sn": device_sn,
+            "moduleType": module_type,
+            "operateType": operate_type,
+            "params": {param_key: int_value},
         }
 
         try:

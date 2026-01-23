@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from typing import Any
 
 from homeassistant.components.switch import SwitchDeviceClass, SwitchEntity
@@ -12,6 +13,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
+    DEVICE_TYPE_DELTA_2,
     DEVICE_TYPE_DELTA_3_PLUS,
     DEVICE_TYPE_DELTA_PRO,
     DEVICE_TYPE_DELTA_PRO_3,
@@ -217,14 +219,82 @@ DELTA_3_PLUS_SWITCH_DEFINITIONS = {
     },
 }
 
+# Switch definitions for Delta 2 based on API documentation
+# Uses unique API format with moduleType and operateType parameters
+DELTA_2_SWITCH_DEFINITIONS = {
+    "ac_output": {
+        "name": "AC Output",
+        "state_key": "mppt.cfgAcEnabled",
+        "module_type": 5,  # MPPT
+        "operate_type": "acOutCfg",
+        "param_key": "enabled",
+        "icon_on": "mdi:power-socket",
+        "icon_off": "mdi:power-socket-off",
+        "device_class": SwitchDeviceClass.OUTLET,
+    },
+    "x_boost": {
+        "name": "X-Boost",
+        "state_key": "mppt.cfgAcXboost",
+        "module_type": 5,  # MPPT
+        "operate_type": "acOutCfg",
+        "param_key": "xboost",
+        "icon_on": "mdi:lightning-bolt",
+        "icon_off": "mdi:lightning-bolt-outline",
+        "device_class": SwitchDeviceClass.SWITCH,
+    },
+    "dc_usb_output": {
+        "name": "DC/USB Output",
+        "state_key": "pd.dcOutState",
+        "module_type": 1,  # PD
+        "operate_type": "dcOutCfg",
+        "param_key": "enabled",
+        "icon_on": "mdi:usb",
+        "icon_off": "mdi:usb-off",
+        "device_class": SwitchDeviceClass.OUTLET,
+    },
+    "car_charger": {
+        "name": "Car Charger",
+        "state_key": "mppt.carState",
+        "module_type": 5,  # MPPT
+        "operate_type": "mpptCar",
+        "param_key": "enabled",
+        "icon_on": "mdi:car",
+        "icon_off": "mdi:car-off",
+        "device_class": SwitchDeviceClass.SWITCH,
+    },
+    "beeper": {
+        "name": "Beeper",
+        "state_key": "mppt.beepState",
+        "module_type": 5,  # MPPT
+        "operate_type": "quietMode",
+        "param_key": "enabled",
+        "inverted": True,  # 0=beeper on (normal), 1=beeper off (silent mode)
+        "icon_on": "mdi:volume-high",
+        "icon_off": "mdi:volume-off",
+        "device_class": SwitchDeviceClass.SWITCH,
+    },
+    "ac_always_on": {
+        "name": "AC Always On",
+        "state_key": "pd.acAutoOutConfig",
+        "module_type": 1,  # PD
+        "operate_type": "acAutoOutConfig",
+        "param_key": "acAutoOutConfig",
+        "icon_on": "mdi:power-plug",
+        "icon_off": "mdi:power-plug-off",
+        "device_class": SwitchDeviceClass.SWITCH,
+    },
+}
+
 # Map device types to switch definitions
 DEVICE_SWITCH_MAP = {
     DEVICE_TYPE_DELTA_PRO_3: DELTA_PRO_3_SWITCH_DEFINITIONS,
     DEVICE_TYPE_DELTA_PRO: DELTA_PRO_SWITCH_DEFINITIONS,
     DEVICE_TYPE_DELTA_3_PLUS: DELTA_3_PLUS_SWITCH_DEFINITIONS,
+    DEVICE_TYPE_DELTA_2: DELTA_2_SWITCH_DEFINITIONS,
     "delta_pro_3": DELTA_PRO_3_SWITCH_DEFINITIONS,
     "delta_pro": DELTA_PRO_SWITCH_DEFINITIONS,
     "delta_3_plus": DELTA_3_PLUS_SWITCH_DEFINITIONS,
+    "delta_2": DELTA_2_SWITCH_DEFINITIONS,
 }
 
 
@@ -244,13 +314,23 @@ async def async_setup_entry(
 
     entities: list[SwitchEntity] = []
 
-    # Check if this is a Delta Pro (original) device
+    # Check device type for proper class selection
     is_delta_pro = device_type in (DEVICE_TYPE_DELTA_PRO, "delta_pro")
+    is_delta_2 = device_type in (DEVICE_TYPE_DELTA_2, "delta_2")
 
     for switch_key, switch_def in switch_definitions.items():
         if is_delta_pro:
             entities.append(
                 EcoFlowDeltaProSwitch(
+                    coordinator=coordinator,
+                    entry=entry,
+                    switch_key=switch_key,
+                    switch_def=switch_def,
+                )
+            )
+        elif is_delta_2:
+            entities.append(
+                EcoFlowDelta2Switch(
                     coordinator=coordinator,
                     entry=entry,
                     switch_key=switch_key,
@@ -436,6 +516,108 @@ class EcoFlowDeltaProSwitch(EcoFlowBaseEntity, SwitchEntity):
                 "id": cmd_id,
                 param_key: state,
             },
+        }
+
+        try:
+            await self.coordinator.api_client.set_device_quota(
+                device_sn=device_sn,
+                cmd_code=payload,
+            )
+            # Wait 2 seconds for device to apply changes, then refresh
+            await asyncio.sleep(2)
+            await self.coordinator.async_request_refresh()
+        except Exception as err:
+            _LOGGER.error("Failed to set %s to %s: %s", self._switch_key, state, err)
+            raise
+
+
+class EcoFlowDelta2Switch(EcoFlowBaseEntity, SwitchEntity):
+    """Representation of an EcoFlow Delta 2 switch.
+
+    Uses the Delta 2 API format with moduleType and operateType parameters.
+    """
+
+    def __init__(
+        self,
+        coordinator: EcoFlowDataCoordinator,
+        entry: ConfigEntry,
+        switch_key: str,
+        switch_def: dict[str, Any],
+    ) -> None:
+        """Initialize the switch."""
+        super().__init__(coordinator, switch_key)
+        self._switch_key = switch_key
+        self._switch_def = switch_def
+        self._attr_unique_id = f"{entry.entry_id}_{switch_key}"
+        self._attr_name = switch_def["name"]
+        self._attr_has_entity_name = True
+        self._attr_translation_key = switch_key
+        self._attr_device_class = switch_def.get("device_class")
+
+    @property
+    def is_on(self) -> bool | None:
+        """Return true if switch is on."""
+        if not self.coordinator.data:
+            return None
+
+        state_key = self._switch_def["state_key"]
+        value = self.coordinator.data.get(state_key)
+
+        if value is None:
+            return None
+
+        # Handle integer values (0/1)
+        if isinstance(value, (int, float)):
+            result = int(value) == 1
+        elif isinstance(value, str):
+            result = value.lower() in ("1", "true", "on")
+        else:
+            result = bool(value)
+
+        # Handle inverted switches (like beeper/quiet mode)
+        if self._switch_def.get("inverted"):
+            return not result
+
+        return result
+
+    @property
+    def icon(self) -> str | None:
+        """Return the icon to use in the frontend."""
+        if self.is_on:
+            return self._switch_def.get("icon_on")
+        return self._switch_def.get("icon_off")
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Turn the switch on."""
+        # For inverted switches, turning ON means sending 0 (e.g., quiet mode off = beeper on)
+        if self._switch_def.get("inverted"):
+            await self._send_command(0)
+        else:
+            await self._send_command(1)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        """Turn the switch off."""
+        # For inverted switches, turning OFF means sending 1 (e.g., quiet mode on = beeper off)
+        if self._switch_def.get("inverted"):
+            await self._send_command(1)
+        else:
+            await self._send_command(0)
+
+    async def _send_command(self, state: int) -> None:
+        """Send command to device using Delta 2 API format."""
+        device_sn = self.coordinator.device_sn
+        module_type = self._switch_def["module_type"]
+        operate_type = self._switch_def["operate_type"]
+        param_key = self._switch_def["param_key"]
+
+        # Build command payload according to Delta 2 API format
+        payload = {
+            "id": int(time.time() * 1000),
+            "version": "1.0",
+            "sn": device_sn,
+            "moduleType": module_type,
+            "operateType": operate_type,
+            "params": {param_key: state},
         }
 
         try:
