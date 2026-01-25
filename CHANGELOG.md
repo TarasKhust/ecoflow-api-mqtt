@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.6.0-beta.1] - 2026-01-23
+## [1.6.0] - 2026-01-25
 
 ### 🎉 New Features
 
@@ -54,12 +54,6 @@ Full support for EcoFlow Delta 2 portable power station using the unique `module
 - New entity classes: `EcoFlowDelta2Switch`, `EcoFlowDelta2Number`, `EcoFlowDelta2Select`
 - Data keys use flat dot-notation: `pd.wattsInSum`, `bms_bmsStatus.soc`, `mppt.inWatts`, etc.
 - Tested with real Delta 2 device (SN: R331ZEB4ZECD0090)
-
-### ⚠️ Beta Notes
-
-- **Beta release** - Please test and report issues
-- Generator SOC settings (openOilSoc/closeOilSoc) not available in API - removed
-- AC Output Frequency uses `inv.cfgAcOutFreq` state key (returns code 1/2, not Hz)
 
 ## [1.5.1] - 2026-01-21
 
