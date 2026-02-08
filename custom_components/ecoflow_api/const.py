@@ -295,6 +295,110 @@ DELTA_PRO_3_SENSORS: Final = {
         "device_class": "temperature",
         "icon": "mdi:thermometer-low",
     },
+    # BMS Detailed Temperature Sensors (from BMS heartbeat)
+    "maxCellTemp": {
+        "name": "BMS Max Cell Temp",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer-high",
+    },
+    "minCellTemp": {
+        "name": "BMS Min Cell Temp",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer-low",
+    },
+    "maxMosTemp": {
+        "name": "BMS Max MOS Temp",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer-high",
+    },
+    "minMosTemp": {
+        "name": "BMS Min MOS Temp",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer-low",
+    },
+    "maxEnvTemp": {
+        "name": "Max Environment Temp",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer-high",
+    },
+    "minEnvTemp": {
+        "name": "Min Environment Temp",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer-low",
+    },
+    "maxCurSensorTemp": {
+        "name": "Max Current Sensor Temp",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer-high",
+    },
+    "minCurSensorTemp": {
+        "name": "Min Current Sensor Temp",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer-low",
+    },
+    "temp": {
+        "name": "BMS Temperature",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer",
+    },
+    # PCS/LLC/Inverter Temperature Sensors
+    "invNtcTemp2": {
+        "name": "Inverter NTC Temp 2",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer",
+    },
+    "invNtcTemp3": {
+        "name": "Inverter NTC Temp 3",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer",
+    },
+    "adsNtcTemp": {
+        "name": "ADS NTC Temperature",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer",
+    },
+    "llcNtcTemp": {
+        "name": "LLC NTC Temperature",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer",
+    },
+    "tempPvH": {
+        "name": "Solar HV Temperature",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:solar-power",
+    },
+    "tempPvL": {
+        "name": "Solar LV Temperature",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:solar-power",
+    },
+    "tempPcsAc": {
+        "name": "PCS AC Temperature",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer",
+    },
+    "tempPcsDc": {
+        "name": "PCS DC Temperature",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer",
+    },
     # Settings
     "acStandbyTime": {
         "name": "AC Standby Time",

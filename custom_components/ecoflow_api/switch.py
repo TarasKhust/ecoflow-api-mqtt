@@ -108,6 +108,22 @@ DELTA_PRO_3_SWITCH_DEFINITIONS = {
         "icon_off": "mdi:weather-night",
         "device_class": SwitchDeviceClass.SWITCH,
     },
+    "ac_hv_always_on": {
+        "name": "AC HV Always On",
+        "state_key": "acHvAlwaysOn",  # bool
+        "command_key": "cfgAcHvAlwaysOn",
+        "icon_on": "mdi:power-plug-battery",
+        "icon_off": "mdi:power-plug-battery-outline",
+        "device_class": SwitchDeviceClass.SWITCH,
+    },
+    "ac_lv_always_on": {
+        "name": "AC LV Always On",
+        "state_key": "acLvAlwaysOn",  # bool
+        "command_key": "cfgAcLvAlwaysOn",
+        "icon_on": "mdi:power-plug-battery",
+        "icon_off": "mdi:power-plug-battery-outline",
+        "device_class": SwitchDeviceClass.SWITCH,
+    },
 }
 
 # Switch definitions for Delta Pro (Original) based on API documentation

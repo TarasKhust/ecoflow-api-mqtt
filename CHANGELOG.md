@@ -47,11 +47,30 @@ Full support for EcoFlow Stream Ultra X (BK61 series) home battery/balcony power
 - STREAM Max, STREAM AC
 - STREAM Ultra (US)
 
+#### Delta Pro 3 Enhancements
+
+**New Controls:**
+- AC HV Always On switch (`cfgAcHvAlwaysOn`)
+- AC LV Always On switch (`cfgAcLvAlwaysOn`)
+- AC Always On Min SOC number (`cfgAcAlwaysOnMinSoc`)
+- Power Off button (`cfgPowerOff`)
+
+**New Temperature Sensors (17 total):**
+- BMS detailed temps: `maxCellTemp`, `minCellTemp`, `maxMosTemp`, `minMosTemp`
+- Environment temps: `maxEnvTemp`, `minEnvTemp`
+- Current sensor temps: `maxCurSensorTemp`, `minCurSensorTemp`
+- BMS Temperature: `temp`
+- Inverter temps: `invNtcTemp2`, `invNtcTemp3`
+- Component temps: `adsNtcTemp`, `llcNtcTemp`
+- Solar temps: `tempPvH`, `tempPvL`
+- PCS temps: `tempPcsAc`, `tempPcsDc`
+
 ### 🔧 Technical Improvements
 
 - New `EcoFlowStreamSwitch`, `EcoFlowStreamNumber`, `EcoFlowStreamSelect` classes
 - Stream API format with `cmdId`, `cmdFunc`, `dirDest`, `dirSrc`, `dest` parameters
 - Proper handling of nested params for operating mode
+- New `Platform.BUTTON` support with `EcoFlowButton` class
 
 ## [1.7.0] - 2026-02-08
 

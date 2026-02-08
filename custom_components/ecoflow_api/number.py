@@ -202,6 +202,17 @@ DELTA_PRO_3_NUMBER_DEFINITIONS = {
         "icon": "mdi:weather-night",
         "mode": NumberMode.BOX,
     },
+    "ac_always_on_min_soc": {
+        "name": "AC Always On Min SOC",
+        "state_key": "acAlwaysOnMinSoc",
+        "command_key": "cfgAcAlwaysOnMinSoc",
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "unit": PERCENTAGE,
+        "icon": "mdi:battery-alert",
+        "mode": NumberMode.SLIDER,
+    },
 }
 
 # Number definitions for Delta Pro (Original) based on API documentation

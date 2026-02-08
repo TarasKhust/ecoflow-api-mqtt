@@ -17,7 +17,7 @@ Home Assistant integration for EcoFlow devices using the **official EcoFlow Deve
 - ✅ **Official API** - Uses EcoFlow Developer REST API (stable & documented)
 - ✅ **Multi-device support** - Delta Pro 3, Delta Pro, Delta 3 Plus
 - ✅ **Region support** - EU and US API endpoints
-- ✅ **Complete Delta Pro 3 support** - 84 sensors, 13 binary sensors, 9 switches, 13 number controls
+- ✅ **Complete Delta Pro 3 support** - 100+ sensors, 13 binary sensors, 12 switches, 16 number controls, Power Off button
 - ✅ **Complete Delta 2 support** - 150+ sensors with value mapping, Extra Battery support
 - ✅ **Real device tested** - All features verified with actual Delta Pro 3
 - ✅ **Battery monitoring** - BMS & CMS data, SOC, SOH, temperature, capacity
