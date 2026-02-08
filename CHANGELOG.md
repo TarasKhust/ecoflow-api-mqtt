@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.2] - 2026-02-08
+
+### 🐛 Bug Fixes
+
+- **Fixed asyncio.CancelledError handling** - Properly handle task cancellation during coordinator shutdown to prevent initialization errors
+- **Fixed Delta Pro 3 temperature sensors** - Added 17 temperature sensors with correct API keys (without `bms` prefix) to match actual API response
+
+### 🔧 Technical
+
+- CancelledError now properly re-raised to allow graceful shutdown (Python 3.8+ compatibility)
+- Temperature sensor keys: `maxCellTemp`, `minCellTemp`, `maxMosTemp`, `minMosTemp`, `maxEnvTemp`, `minEnvTemp`, `maxCurSensorTemp`, `minCurSensorTemp`, `temp`, `invNtcTemp2`, `invNtcTemp3`, `adsNtcTemp`, `llcNtcTemp`, `tempPvH`, `tempPvL`, `tempPcsAc`, `tempPcsDc`
+
+---
+
 ## [1.8.1] - 2026-02-08
 
 ### 🎉 New Features
