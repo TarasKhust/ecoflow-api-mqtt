@@ -5,6 +5,54 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.0] - 2026-02-08
+
+### 🎉 New Features
+
+#### Stream Ultra X Support (Issue #16)
+
+Full support for EcoFlow Stream Ultra X (BK61 series) home battery/balcony power system:
+
+**Sensors:**
+- Battery Level (`cmsBattSoc`)
+- Solar Input Power (`powGetPvSum`)
+- System Load Power (`powGetSysLoad`)
+- Grid Power (`powGetSysGrid`)
+- Grid Connection Power (`gridConnectionPower`) - positive = consuming, negative = feed-in
+- Battery Power (`powGetBpCms`) - positive = charging, negative = discharging
+- Backup Reserve Level, Max/Min Charge Levels
+
+**Switches:**
+- AC1 Output (`relay2Onoff`)
+- AC2 Output (`relay3Onoff`)
+- Feed-in Control (`feedGridMode`)
+
+**Numbers:**
+- Backup Reserve Level (3-95%)
+- Max Charge Level (50-100%)
+- Min Discharge Level (0-30%)
+
+**Select:**
+- Operating Mode (Self-Powered / AI Mode)
+
+**Binary Sensors:**
+- Battery Charging/Discharging
+- Solar Generating
+- Grid Feed-in/Consuming
+- AC1/AC2 Status
+
+**Supported Stream Models:**
+- STREAM Ultra X (BK61)
+- STREAM Ultra, STREAM Pro, STREAM AC Pro
+- STREAM Max, STREAM AC
+- STREAM Ultra (US)
+
+### 🔧 Technical Improvements
+
+- New `EcoFlowStreamSwitch`, `EcoFlowStreamNumber`, `EcoFlowStreamSelect` classes
+- Stream API format with `cmdId`, `cmdFunc`, `dirDest`, `dirSrc`, `dest` parameters
+- Proper handling of nested params for operating mode
+
 ## [1.7.0] - 2026-02-08
 
 ### 🎉 New Features
