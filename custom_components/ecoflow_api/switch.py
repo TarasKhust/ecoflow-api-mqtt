@@ -27,11 +27,16 @@ _LOGGER = logging.getLogger(__name__)
 
 
 # Switch definitions for Delta Pro 3 based on API documentation
+# Delta Pro 3 switch definitions
+# Uses cmdId: 17, cmdFunc: 254 format with boolean values (true/false)
+# Based on EcoFlow Developer API documentation
 DELTA_PRO_3_SWITCH_DEFINITIONS = {
     "ac_hv_out": {
         "name": "AC HV Output",
         "state_key": "flowInfoAcHvOut",  # 0: off, 2: on
         "command_key": "cfgHvAcOutOpen",
+        "value_on": True,
+        "value_off": False,
         "icon_on": "mdi:power-plug",
         "icon_off": "mdi:power-plug-off",
         "device_class": SwitchDeviceClass.OUTLET,
@@ -40,6 +45,8 @@ DELTA_PRO_3_SWITCH_DEFINITIONS = {
         "name": "AC LV Output",
         "state_key": "flowInfoAcLvOut",  # 0: off, 2: on
         "command_key": "cfgLvAcOutOpen",
+        "value_on": True,
+        "value_off": False,
         "icon_on": "mdi:power-plug",
         "icon_off": "mdi:power-plug-off",
         "device_class": SwitchDeviceClass.OUTLET,
@@ -48,6 +55,8 @@ DELTA_PRO_3_SWITCH_DEFINITIONS = {
         "name": "12V DC Output",
         "state_key": "flowInfo12v",  # 0: off, 2: on
         "command_key": "cfgDc12vOutOpen",
+        "value_on": True,
+        "value_off": False,
         "icon_on": "mdi:car-battery",
         "icon_off": "mdi:car-battery",
         "device_class": SwitchDeviceClass.OUTLET,
@@ -56,6 +65,8 @@ DELTA_PRO_3_SWITCH_DEFINITIONS = {
         "name": "X-Boost",
         "state_key": "xboostEn",  # bool
         "command_key": "cfgXboostEn",
+        "value_on": True,
+        "value_off": False,
         "icon_on": "mdi:lightning-bolt",
         "icon_off": "mdi:lightning-bolt-outline",
         "device_class": SwitchDeviceClass.SWITCH,
@@ -64,6 +75,8 @@ DELTA_PRO_3_SWITCH_DEFINITIONS = {
         "name": "Beeper",
         "state_key": "enBeep",  # bool
         "command_key": "cfgBeepEn",
+        "value_on": True,
+        "value_off": False,
         "icon_on": "mdi:volume-high",
         "icon_off": "mdi:volume-off",
         "device_class": SwitchDeviceClass.SWITCH,
@@ -72,6 +85,8 @@ DELTA_PRO_3_SWITCH_DEFINITIONS = {
         "name": "AC Energy Saving",
         "state_key": "acEnergySavingOpen",  # bool
         "command_key": "cfgAcEnergySavingOpen",
+        "value_on": True,
+        "value_off": False,
         "icon_on": "mdi:leaf",
         "icon_off": "mdi:leaf-off",
         "device_class": SwitchDeviceClass.SWITCH,
@@ -80,6 +95,8 @@ DELTA_PRO_3_SWITCH_DEFINITIONS = {
         "name": "Generator Auto Start",
         "state_key": "cmsOilSelfStart",  # bool
         "command_key": "cfgCmsOilSelfStart",
+        "value_on": True,
+        "value_off": False,
         "icon_on": "mdi:engine",
         "icon_off": "mdi:engine-off",
         "device_class": SwitchDeviceClass.SWITCH,
@@ -88,6 +105,8 @@ DELTA_PRO_3_SWITCH_DEFINITIONS = {
         "name": "GFCI",
         "state_key": "llcGFCIFlag",  # bool
         "command_key": "cfgLlcGFCIFlag",
+        "value_on": True,
+        "value_off": False,
         "icon_on": "mdi:shield-check",
         "icon_off": "mdi:shield-off",
         "device_class": SwitchDeviceClass.SWITCH,
@@ -96,6 +115,8 @@ DELTA_PRO_3_SWITCH_DEFINITIONS = {
         "name": "Generator PV Hybrid Mode",
         "state_key": "generatorPvHybridModeOpen",  # bool
         "command_key": "cfgGeneratorPvHybridModeOpen",
+        "value_on": True,
+        "value_off": False,
         "icon_on": "mdi:solar-power",
         "icon_off": "mdi:solar-power",
         "device_class": SwitchDeviceClass.SWITCH,
@@ -104,6 +125,8 @@ DELTA_PRO_3_SWITCH_DEFINITIONS = {
         "name": "Generator Care Mode",
         "state_key": "generatorCareModeOpen",  # bool
         "command_key": "cfgGeneratorCareModeOpen",
+        "value_on": True,
+        "value_off": False,
         "icon_on": "mdi:weather-night",
         "icon_off": "mdi:weather-night",
         "device_class": SwitchDeviceClass.SWITCH,
@@ -460,15 +483,18 @@ class EcoFlowSwitch(EcoFlowBaseEntity, SwitchEntity):
         await self._send_command(False)
 
     async def _send_command(self, state: bool) -> None:
-        """Send command to device via MQTT (preferred) or REST API."""
+        """Send command to device via REST API.
+
+        Delta Pro 3 uses cmdId: 17, cmdFunc: 254 format with boolean values.
+        """
         command_key = self._switch_def["command_key"]
         device_sn = self.coordinator.device_sn
 
-        # Get value mapping if defined, otherwise convert bool to int (API expects 1/0)
+        # Get value from definition - Delta Pro 3 uses boolean (true/false)
         if state:
-            value = self._switch_def.get("value_on", 1)
+            value = self._switch_def.get("value_on", True)
         else:
-            value = self._switch_def.get("value_off", 0)
+            value = self._switch_def.get("value_off", False)
 
         params = {command_key: value}
 
@@ -484,8 +510,9 @@ class EcoFlowSwitch(EcoFlowBaseEntity, SwitchEntity):
             "params": params,
         }
 
+        _LOGGER.debug("Sending switch command: %s", payload)
+
         try:
-            # Send command via REST API
             await self.coordinator.api_client.set_device_quota(
                 device_sn=device_sn,
                 cmd_code=payload,
