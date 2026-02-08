@@ -307,21 +307,21 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
 
     async def _async_wake_device(self) -> None:
         """Wake up device before requesting data.
-        
+
         Some EcoFlow devices go to sleep and don't respond to API requests
         until "woken up" by sending a request. This method sends a wake-up
         request to ensure device is responsive before fetching actual data.
-        
+
         EcoFlow devices often go to sleep when:
         - App is closed
         - No activity for some time
         - Screen is off
-        
+
         When sleeping, devices may:
         - Stop sending MQTT updates for some fields
         - Return stale data via REST API
         - Not update timestamps
-        
+
         Solution: Always wake device before REST polling to ensure fresh data.
         """
         # Always wake device before REST polling
@@ -329,10 +329,14 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         try:
             # Send wake-up request - this wakes the device
             await self.client.get_device_quota(self.device_sn)
-            
+
             # Short delay to allow device to wake up and prepare data
             await asyncio.sleep(1.0)
-                
+
+        except asyncio.CancelledError:
+            # Re-raise cancellation to allow proper shutdown
+            # CancelledError inherits from BaseException in Python 3.8+
+            raise
         except Exception:
             # Don't fail on wake-up errors - device might already be awake
             pass
