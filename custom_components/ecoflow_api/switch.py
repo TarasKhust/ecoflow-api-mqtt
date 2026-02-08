@@ -465,12 +465,11 @@ class EcoFlowSwitch(EcoFlowBaseEntity, SwitchEntity):
         command_key = self._switch_def["command_key"]
         device_sn = self.coordinator.device_sn
 
-        # Use value mapping if defined, otherwise use boolean directly
-        # API accepts boolean true/false for most switches
-        if "value_on" in self._switch_def:
-            value = self._switch_def["value_on"] if state else self._switch_def["value_off"]
+        # Get value mapping if defined, otherwise convert bool to int (API expects 1/0)
+        if state:
+            value = self._switch_def.get("value_on", 1)
         else:
-            value = state
+            value = self._switch_def.get("value_off", 0)
 
         params = {command_key: value}
 
@@ -761,12 +760,12 @@ class EcoFlowStreamSwitch(EcoFlowBaseEntity, SwitchEntity):
 
     async def async_turn_on(self, **kwargs: Any) -> None:
         """Turn the switch on."""
-        value = self._switch_def.get("value_on", True)
+        value = self._switch_def.get("value_on", 1)
         await self._send_command(value)
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         """Turn the switch off."""
-        value = self._switch_def.get("value_off", False)
+        value = self._switch_def.get("value_off", 0)
         await self._send_command(value)
 
     async def _send_command(self, state: bool | int) -> None:
