@@ -58,6 +58,7 @@ DEVICE_TYPE_RIVER_2: Final = "river_2"
 DEVICE_TYPE_RIVER_2_MAX: Final = "river_2_max"
 DEVICE_TYPE_RIVER_2_PRO: Final = "river_2_pro"
 DEVICE_TYPE_DELTA_3_PLUS: Final = "delta_3_plus"
+DEVICE_TYPE_STREAM_ULTRA_X: Final = "stream_ultra_x"
 
 DEVICE_TYPES: Final = {
     DEVICE_TYPE_DELTA_PRO_3: "Delta Pro 3",
@@ -69,6 +70,7 @@ DEVICE_TYPES: Final = {
     DEVICE_TYPE_RIVER_2: "River 2",
     DEVICE_TYPE_RIVER_2_MAX: "River 2 Max",
     DEVICE_TYPE_RIVER_2_PRO: "River 2 Pro",
+    DEVICE_TYPE_STREAM_ULTRA_X: "Stream Ultra X",
 }
 
 # Delta Pro 3 Commands (from https://developer-eu.ecoflow.com/us/document/deltaPro3)
@@ -1678,4 +1680,220 @@ DELTA_PRO_SELECTS: Final = {
             "60 Hz": 2,
         },
     },
+}
+
+# ============================================================================
+# STREAM ULTRA X - API Definitions
+# Based on EcoFlow Developer API documentation for STREAM system (BKW)
+# Supported devices: STREAM Ultra, STREAM Pro, STREAM AC Pro, STREAM Ultra X,
+#                   STREAM Ultra (US), STREAM Max, STREAM AC
+# ============================================================================
+
+# Stream Ultra X Sensors - based on GetAllQuotaResponse
+STREAM_ULTRA_X_SENSORS: Final = {
+    # ============================================================================
+    # Power Flow
+    # ============================================================================
+    "cmsBattSoc": {
+        "name": "Battery Level",
+        "unit": "%",
+        "device_class": "battery",
+        "icon": "mdi:battery",
+    },
+    "powGetPvSum": {
+        "name": "Solar Input Power",
+        "unit": "W",
+        "device_class": "power",
+        "icon": "mdi:solar-power",
+    },
+    "powGetSysLoad": {
+        "name": "System Load Power",
+        "unit": "W",
+        "device_class": "power",
+        "icon": "mdi:home-lightning-bolt",
+    },
+    "powGetSysGrid": {
+        "name": "Grid Power",
+        "unit": "W",
+        "device_class": "power",
+        "icon": "mdi:transmission-tower",
+    },
+    "gridConnectionPower": {
+        "name": "Grid Connection Power",
+        "unit": "W",
+        "device_class": "power",
+        "icon": "mdi:transmission-tower",
+        # Note: Positive = consuming from grid, Negative = feeding to grid
+    },
+    "powGetBpCms": {
+        "name": "Battery Power",
+        "unit": "W",
+        "device_class": "power",
+        "icon": "mdi:battery-sync",
+        # Note: Positive = charging, Negative = discharging
+    },
+    # ============================================================================
+    # Battery Settings
+    # ============================================================================
+    "cmsMaxChgSoc": {
+        "name": "Max Charge Level",
+        "unit": "%",
+        "device_class": "battery",
+        "icon": "mdi:battery-charging-100",
+    },
+    "cmsMinDsgSoc": {
+        "name": "Min Discharge Level",
+        "unit": "%",
+        "device_class": "battery",
+        "icon": "mdi:battery-low",
+    },
+    "backupReverseSoc": {
+        "name": "Backup Reserve Level",
+        "unit": "%",
+        "device_class": "battery",
+        "icon": "mdi:battery-heart",
+    },
+    # ============================================================================
+    # System Status
+    # ============================================================================
+    "feedGridMode": {
+        "name": "Feed-in Control",
+        "unit": None,
+        "device_class": "enum",
+        "icon": "mdi:transmission-tower-export",
+        "options": ["off", "on"],
+        "value_map": {1: "off", 2: "on"},
+    },
+    "quota_cloud_ts": {
+        "name": "Last Update",
+        "unit": None,
+        "device_class": "timestamp",
+        "icon": "mdi:clock-outline",
+    },
+}
+
+# Stream Ultra X Binary Sensors
+STREAM_ULTRA_X_BINARY_SENSORS: Final = {
+    "relay2Onoff": {
+        "name": "AC1 Switch",
+        "device_class": "power",
+        "icon": "mdi:power-socket",
+    },
+    "relay3Onoff": {
+        "name": "AC2 Switch",
+        "device_class": "power",
+        "icon": "mdi:power-socket",
+    },
+    "energyStrategyOperateMode.operateSelfPoweredOpen": {
+        "name": "Self-Powered Mode",
+        "device_class": None,
+        "icon": "mdi:home-battery",
+    },
+    "energyStrategyOperateMode.operateIntelligentScheduleModeOpen": {
+        "name": "AI Mode",
+        "device_class": None,
+        "icon": "mdi:robot",
+    },
+}
+
+# Stream Ultra X Switches - controllable settings
+# Note: Uses cmdId=17, cmdFunc=254, dirDest=1, dirSrc=1, dest=2 format
+STREAM_ULTRA_X_SWITCHES: Final = {
+    "ac1_switch": {
+        "name": "AC1 Output",
+        "state_key": "relay2Onoff",
+        "cmd_id": 17,
+        "cmd_func": 254,
+        "param_key": "cfgRelay2Onoff",
+        "icon_on": "mdi:power-socket",
+        "icon_off": "mdi:power-socket-off",
+    },
+    "ac2_switch": {
+        "name": "AC2 Output",
+        "state_key": "relay3Onoff",
+        "cmd_id": 17,
+        "cmd_func": 254,
+        "param_key": "cfgRelay3Onoff",
+        "icon_on": "mdi:power-socket",
+        "icon_off": "mdi:power-socket-off",
+    },
+    "feed_in_control": {
+        "name": "Feed-in Control",
+        "state_key": "feedGridMode",
+        "cmd_id": 17,
+        "cmd_func": 254,
+        "param_key": "cfgFeedGridMode",
+        "icon_on": "mdi:transmission-tower-export",
+        "icon_off": "mdi:transmission-tower-off",
+        # Note: Uses 1=off, 2=on instead of true/false
+        "value_on": 2,
+        "value_off": 1,
+    },
+}
+
+# Stream Ultra X Numbers - adjustable values
+STREAM_ULTRA_X_NUMBERS: Final = {
+    "backup_reserve_level": {
+        "name": "Backup Reserve Level",
+        "state_key": "backupReverseSoc",
+        "cmd_id": 17,
+        "cmd_func": 254,
+        "param_key": "cfgBackupReverseSoc",
+        "min": 3,
+        "max": 95,
+        "step": 1,
+        "unit": "%",
+        "icon": "mdi:battery-heart",
+    },
+    "max_charge_level": {
+        "name": "Max Charge Level",
+        "state_key": "cmsMaxChgSoc",
+        "cmd_id": 17,
+        "cmd_func": 254,
+        "param_key": "cfgMaxChgSoc",
+        "min": 50,
+        "max": 100,
+        "step": 1,
+        "unit": "%",
+        "icon": "mdi:battery-charging-100",
+    },
+    "min_discharge_level": {
+        "name": "Min Discharge Level",
+        "state_key": "cmsMinDsgSoc",
+        "cmd_id": 17,
+        "cmd_func": 254,
+        "param_key": "cfgMinDsgSoc",
+        "min": 0,
+        "max": 30,
+        "step": 1,
+        "unit": "%",
+        "icon": "mdi:battery-low",
+    },
+}
+
+# Stream Ultra X Selects - dropdown options
+STREAM_ULTRA_X_SELECTS: Final = {
+    "operating_mode": {
+        "name": "Operating Mode",
+        "state_key": "energyStrategyOperateMode",
+        "cmd_id": 17,
+        "cmd_func": 254,
+        "param_key": "cfgEnergyStrategyOperateMode",
+        "icon": "mdi:cog",
+        "options": {
+            "Self-Powered": {"operateSelfPoweredOpen": True},
+            "AI Mode": {"operateIntelligentScheduleModeOpen": True},
+        },
+    },
+}
+
+# Stream command format - different from Delta devices
+# Uses: cmdId, cmdFunc, dirDest, dirSrc, dest, needAck format
+STREAM_COMMAND_BASE: Final = {
+    "cmdId": 17,
+    "cmdFunc": 254,
+    "dirDest": 1,
+    "dirSrc": 1,
+    "dest": 2,
+    "needAck": True,
 }

@@ -238,15 +238,33 @@ mode: single
 
 ## 🌍 Supported Devices
 
-| Device       | Status          | Notes                            |
-| ------------ | --------------- | -------------------------------- |
-| Delta Pro 3  | ✅ Full Support | All features, real device tested |
-| Delta Pro    | ✅ Full Support | US API verified                  |
-| Delta 3 Plus | ✅ Full Support | All features                     |
-| Delta 2      | ✅ Full Support | 150+ sensors, Extra Battery, real device tested |
-| Delta 2 Max  | 🔄 Planned      | Coming soon                      |
-| River 2      | 🔄 Planned      | Coming soon                      |
-| River 2 Max  | 🔄 Planned      | Coming soon                      |
+| Device          | Status          | Notes                            |
+| --------------- | --------------- | -------------------------------- |
+| Delta Pro 3     | ✅ Full Support | All features, real device tested |
+| Delta Pro       | ✅ Full Support | US API verified                  |
+| Delta 3 Plus    | ✅ Full Support | All features                     |
+| Delta 2         | ✅ Full Support | 150+ sensors, Extra Battery, real device tested |
+| Stream Ultra X  | ✅ Full Support | Home battery system (Issue #16)  |
+| Delta 2 Max     | 🔄 Planned      | Coming soon                      |
+| River 2         | 🔄 Planned      | Coming soon                      |
+| River 2 Max     | 🔄 Planned      | Coming soon                      |
+
+### Stream Ultra X
+
+Stream Ultra X (BK61 series) is a home battery/balcony power system with grid connection support.
+
+| Feature | Details |
+| ------- | ------- |
+| **Sensors** | Battery level, solar power, grid power, system load, backup reserve |
+| **Controls** | AC1/AC2 switches, feed-in control, operating mode (Self-Powered/AI Mode) |
+| **Numbers** | Backup reserve level (3-95%), charge/discharge limits |
+| **Binary** | Battery charging/discharging, solar generating, grid feed-in/consuming |
+
+**Supported Stream Models:**
+- STREAM Ultra X (BK61)
+- STREAM Ultra, STREAM Pro, STREAM AC Pro
+- STREAM Max, STREAM AC
+- STREAM Ultra (US)
 
 ### Delta 2 Sensors
 

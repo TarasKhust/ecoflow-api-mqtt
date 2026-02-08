@@ -19,6 +19,7 @@ from .const import (
     DEVICE_TYPE_DELTA_3_PLUS,
     DEVICE_TYPE_DELTA_PRO,
     DEVICE_TYPE_DELTA_PRO_3,
+    DEVICE_TYPE_STREAM_ULTRA_X,
     DOMAIN,
 )
 from .coordinator import EcoFlowDataCoordinator
@@ -447,16 +448,99 @@ DELTA_2_BINARY_SENSOR_DEFINITIONS = {
     },
 }
 
+# ============================================================================
+# STREAM ULTRA X Binary Sensor Definitions
+# ============================================================================
+
+STREAM_ULTRA_X_BINARY_SENSOR_DEFINITIONS = {
+    "ac1_switch": {
+        "name": "AC1 Switch",
+        "key": "relay2Onoff",
+        "device_class": BinarySensorDeviceClass.POWER,
+        "icon_on": "mdi:power-socket",
+        "icon_off": "mdi:power-socket-off",
+    },
+    "ac2_switch": {
+        "name": "AC2 Switch",
+        "key": "relay3Onoff",
+        "device_class": BinarySensorDeviceClass.POWER,
+        "icon_on": "mdi:power-socket",
+        "icon_off": "mdi:power-socket-off",
+    },
+    "self_powered_mode": {
+        "name": "Self-Powered Mode",
+        "key": "energyStrategyOperateMode.operateSelfPoweredOpen",
+        "device_class": None,
+        "icon_on": "mdi:home-battery",
+        "icon_off": "mdi:home-battery-outline",
+    },
+    "ai_mode": {
+        "name": "AI Mode",
+        "key": "energyStrategyOperateMode.operateIntelligentScheduleModeOpen",
+        "device_class": None,
+        "icon_on": "mdi:robot",
+        "icon_off": "mdi:robot-outline",
+    },
+    "battery_charging": {
+        "name": "Battery Charging",
+        "key": "powGetBpCms",
+        "device_class": BinarySensorDeviceClass.BATTERY_CHARGING,
+        "icon_on": "mdi:battery-charging",
+        "icon_off": "mdi:battery",
+        "derived": True,
+        "derive_condition": lambda v: v is not None and v > 10,
+    },
+    "battery_discharging": {
+        "name": "Battery Discharging",
+        "key": "powGetBpCms",
+        "device_class": None,
+        "icon_on": "mdi:battery-arrow-down",
+        "icon_off": "mdi:battery",
+        "derived": True,
+        "derive_condition": lambda v: v is not None and v < -10,
+    },
+    "solar_generating": {
+        "name": "Solar Generating",
+        "key": "powGetPvSum",
+        "device_class": None,
+        "icon_on": "mdi:solar-power",
+        "icon_off": "mdi:solar-power-variant-outline",
+        "derived": True,
+        "derive_condition": lambda v: v is not None and v > 10,
+    },
+    "grid_feed_in": {
+        "name": "Grid Feed-in",
+        "key": "gridConnectionPower",
+        "device_class": None,
+        "icon_on": "mdi:transmission-tower-export",
+        "icon_off": "mdi:transmission-tower",
+        "derived": True,
+        "derive_condition": lambda v: v is not None and v < -10,
+    },
+    "grid_consuming": {
+        "name": "Grid Consuming",
+        "key": "gridConnectionPower",
+        "device_class": None,
+        "icon_on": "mdi:transmission-tower-import",
+        "icon_off": "mdi:transmission-tower",
+        "derived": True,
+        "derive_condition": lambda v: v is not None and v > 10,
+    },
+}
+
+
 # Map device types to binary sensor definitions
 DEVICE_BINARY_SENSOR_MAP = {
     DEVICE_TYPE_DELTA_PRO_3: DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS,
     DEVICE_TYPE_DELTA_PRO: DELTA_PRO_BINARY_SENSOR_DEFINITIONS,
     DEVICE_TYPE_DELTA_3_PLUS: DELTA_3_PLUS_BINARY_SENSOR_DEFINITIONS,
     DEVICE_TYPE_DELTA_2: DELTA_2_BINARY_SENSOR_DEFINITIONS,
+    DEVICE_TYPE_STREAM_ULTRA_X: STREAM_ULTRA_X_BINARY_SENSOR_DEFINITIONS,
     "delta_pro_3": DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS,
     "delta_pro": DELTA_PRO_BINARY_SENSOR_DEFINITIONS,
     "delta_3_plus": DELTA_3_PLUS_BINARY_SENSOR_DEFINITIONS,
     "delta_2": DELTA_2_BINARY_SENSOR_DEFINITIONS,
+    "stream_ultra_x": STREAM_ULTRA_X_BINARY_SENSOR_DEFINITIONS,
 }
 
 # Extra Battery binary sensor definitions

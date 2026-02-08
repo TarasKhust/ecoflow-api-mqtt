@@ -31,7 +31,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.util import dt as dt_util
 
-from .const import DEVICE_TYPE_DELTA_2, DOMAIN
+from .const import DEVICE_TYPE_DELTA_2, DEVICE_TYPE_STREAM_ULTRA_X, DOMAIN
 from .coordinator import EcoFlowDataCoordinator
 from .entity import EcoFlowBaseEntity
 from .hybrid_coordinator import EcoFlowHybridCoordinator
@@ -3253,6 +3253,112 @@ DELTA_2_SENSOR_DEFINITIONS = {
 }
 
 
+# ============================================================================
+# STREAM ULTRA X - Sensor Definitions
+# Based on EcoFlow Developer API documentation for STREAM system (BKW)
+# ============================================================================
+
+STREAM_ULTRA_X_SENSOR_DEFINITIONS = {
+    # ============================================================================
+    # BATTERY
+    # ============================================================================
+    "battery_level": {
+        "name": "Battery Level",
+        "key": "cmsBattSoc",
+        "unit": PERCENTAGE,
+        "device_class": SensorDeviceClass.BATTERY,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:battery",
+    },
+    "backup_reserve_level": {
+        "name": "Backup Reserve Level",
+        "key": "backupReverseSoc",
+        "unit": PERCENTAGE,
+        "device_class": SensorDeviceClass.BATTERY,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:battery-heart",
+    },
+    "max_charge_level": {
+        "name": "Max Charge Level",
+        "key": "cmsMaxChgSoc",
+        "unit": PERCENTAGE,
+        "device_class": SensorDeviceClass.BATTERY,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:battery-charging-100",
+    },
+    "min_discharge_level": {
+        "name": "Min Discharge Level",
+        "key": "cmsMinDsgSoc",
+        "unit": PERCENTAGE,
+        "device_class": SensorDeviceClass.BATTERY,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:battery-low",
+    },
+    # ============================================================================
+    # POWER - Real-time Power Flow
+    # ============================================================================
+    "solar_power": {
+        "name": "Solar Input Power",
+        "key": "powGetPvSum",
+        "unit": UnitOfPower.WATT,
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:solar-power",
+    },
+    "system_load_power": {
+        "name": "System Load Power",
+        "key": "powGetSysLoad",
+        "unit": UnitOfPower.WATT,
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:home-lightning-bolt",
+    },
+    "grid_power": {
+        "name": "Grid Power",
+        "key": "powGetSysGrid",
+        "unit": UnitOfPower.WATT,
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:transmission-tower",
+    },
+    "grid_connection_power": {
+        "name": "Grid Connection Power",
+        "key": "gridConnectionPower",
+        "unit": UnitOfPower.WATT,
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:transmission-tower",
+        # Positive = consuming from grid, Negative = feeding to grid
+    },
+    "battery_power": {
+        "name": "Battery Power",
+        "key": "powGetBpCms",
+        "unit": UnitOfPower.WATT,
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:battery-sync",
+        # Positive = charging, Negative = discharging
+    },
+    # ============================================================================
+    # SYSTEM STATUS
+    # ============================================================================
+    "feed_in_mode": {
+        "name": "Feed-in Control",
+        "key": "feedGridMode",
+        "device_class": SensorDeviceClass.ENUM,
+        "icon": "mdi:transmission-tower-export",
+        "options": ["off", "on"],
+        "value_map": {1: "off", 2: "on"},
+    },
+    "last_update": {
+        "name": "Last Update",
+        "key": "quota_cloud_ts",
+        "device_class": SensorDeviceClass.TIMESTAMP,
+        "icon": "mdi:clock-outline",
+    },
+}
+
+
 # Map device types to their sensor definitions
 DEVICE_SENSOR_MAP = {
     "DELTA Pro 3": DELTA_PRO_3_SENSOR_DEFINITIONS,
@@ -3263,6 +3369,8 @@ DEVICE_SENSOR_MAP = {
     "delta_pro": DELTA_PRO_SENSOR_DEFINITIONS,
     "delta_3_plus": DELTA_3_PLUS_SENSOR_DEFINITIONS,
     DEVICE_TYPE_DELTA_2: DELTA_2_SENSOR_DEFINITIONS,
+    DEVICE_TYPE_STREAM_ULTRA_X: STREAM_ULTRA_X_SENSOR_DEFINITIONS,
+    "Stream Ultra X": STREAM_ULTRA_X_SENSOR_DEFINITIONS,
 }
 
 

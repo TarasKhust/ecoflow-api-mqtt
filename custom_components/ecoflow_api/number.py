@@ -24,6 +24,7 @@ from .const import (
     DEVICE_TYPE_DELTA_3_PLUS,
     DEVICE_TYPE_DELTA_PRO,
     DEVICE_TYPE_DELTA_PRO_3,
+    DEVICE_TYPE_STREAM_ULTRA_X,
     DOMAIN,
     OPTS_POWER_STEP,
 )
@@ -577,16 +578,60 @@ DELTA_2_NUMBER_DEFINITIONS = {
     },
 }
 
+# ============================================================================
+# STREAM ULTRA X - Number Definitions
+# Based on EcoFlow Developer API documentation for STREAM system
+# ============================================================================
+
+STREAM_ULTRA_X_NUMBER_DEFINITIONS = {
+    "backup_reserve_level": {
+        "name": "Backup Reserve Level",
+        "state_key": "backupReverseSoc",
+        "param_key": "cfgBackupReverseSoc",
+        "min": 3,
+        "max": 95,
+        "step": 1,
+        "unit": PERCENTAGE,
+        "icon": "mdi:battery-heart",
+        "mode": NumberMode.SLIDER,
+    },
+    "max_charge_level": {
+        "name": "Max Charge Level",
+        "state_key": "cmsMaxChgSoc",
+        "param_key": "cfgMaxChgSoc",
+        "min": 50,
+        "max": 100,
+        "step": 1,
+        "unit": PERCENTAGE,
+        "icon": "mdi:battery-charging-100",
+        "mode": NumberMode.SLIDER,
+    },
+    "min_discharge_level": {
+        "name": "Min Discharge Level",
+        "state_key": "cmsMinDsgSoc",
+        "param_key": "cfgMinDsgSoc",
+        "min": 0,
+        "max": 30,
+        "step": 1,
+        "unit": PERCENTAGE,
+        "icon": "mdi:battery-low",
+        "mode": NumberMode.SLIDER,
+    },
+}
+
+
 # Map device types to number definitions
 DEVICE_NUMBER_MAP = {
     DEVICE_TYPE_DELTA_PRO_3: DELTA_PRO_3_NUMBER_DEFINITIONS,
     DEVICE_TYPE_DELTA_PRO: DELTA_PRO_NUMBER_DEFINITIONS,
     DEVICE_TYPE_DELTA_3_PLUS: DELTA_3_PLUS_NUMBER_DEFINITIONS,
     DEVICE_TYPE_DELTA_2: DELTA_2_NUMBER_DEFINITIONS,
+    DEVICE_TYPE_STREAM_ULTRA_X: STREAM_ULTRA_X_NUMBER_DEFINITIONS,
     "delta_pro_3": DELTA_PRO_3_NUMBER_DEFINITIONS,
     "delta_pro": DELTA_PRO_NUMBER_DEFINITIONS,
     "delta_3_plus": DELTA_3_PLUS_NUMBER_DEFINITIONS,
     "delta_2": DELTA_2_NUMBER_DEFINITIONS,
+    "stream_ultra_x": STREAM_ULTRA_X_NUMBER_DEFINITIONS,
 }
 
 
@@ -609,6 +654,7 @@ async def async_setup_entry(
     # Check device type for proper class selection
     is_delta_pro = device_type in (DEVICE_TYPE_DELTA_PRO, "delta_pro")
     is_delta_2 = device_type in (DEVICE_TYPE_DELTA_2, "delta_2")
+    is_stream = device_type in (DEVICE_TYPE_STREAM_ULTRA_X, "stream_ultra_x")
 
     for number_key, number_def in number_definitions.items():
         if is_delta_pro:
@@ -623,6 +669,15 @@ async def async_setup_entry(
         elif is_delta_2:
             entities.append(
                 EcoFlowDelta2Number(
+                    coordinator=coordinator,
+                    entry=entry,
+                    number_key=number_key,
+                    number_def=number_def,
+                )
+            )
+        elif is_stream:
+            entities.append(
+                EcoFlowStreamNumber(
                     coordinator=coordinator,
                     entry=entry,
                     number_key=number_key,
@@ -891,6 +946,91 @@ class EcoFlowDelta2Number(EcoFlowBaseEntity, NumberEntity):
             "sn": device_sn,
             "moduleType": module_type,
             "operateType": operate_type,
+            "params": {param_key: int_value},
+        }
+
+        try:
+            await self.coordinator.api_client.set_device_quota(
+                device_sn=device_sn,
+                cmd_code=payload,
+            )
+            # Wait 2 seconds for device to apply changes, then refresh
+            await asyncio.sleep(2)
+            await self.coordinator.async_request_refresh()
+        except Exception as err:
+            _LOGGER.error(
+                "Failed to set %s to %s: %s", self._number_key, int_value, err
+            )
+            raise
+
+
+class EcoFlowStreamNumber(EcoFlowBaseEntity, NumberEntity):
+    """Representation of an EcoFlow Stream number entity.
+
+    Uses the Stream API format with cmdId, cmdFunc, dirDest, dirSrc, dest parameters.
+    Supported devices: STREAM Ultra, STREAM Pro, STREAM AC Pro, STREAM Ultra X,
+                      STREAM Ultra (US), STREAM Max
+    """
+
+    def __init__(
+        self,
+        coordinator: EcoFlowDataCoordinator,
+        entry: ConfigEntry,
+        number_key: str,
+        number_def: dict[str, Any],
+    ) -> None:
+        """Initialize the number entity."""
+        super().__init__(coordinator, number_key)
+        self._number_key = number_key
+        self._number_def = number_def
+        self._entry = entry
+        self._attr_unique_id = f"{entry.entry_id}_{number_key}"
+        self._attr_name = number_def["name"]
+        self._attr_has_entity_name = True
+        self._attr_translation_key = number_key
+
+        # Set number attributes from config
+        self._attr_native_min_value = number_def["min"]
+        self._attr_native_max_value = number_def["max"]
+        self._attr_native_step = number_def["step"]
+        self._attr_native_unit_of_measurement = number_def.get("unit")
+        self._attr_icon = number_def.get("icon")
+        self._attr_mode = number_def.get("mode", NumberMode.AUTO)
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the current value."""
+        if not self.coordinator.data:
+            return None
+
+        state_key = self._number_def["state_key"]
+        value = self.coordinator.data.get(state_key)
+
+        if value is None:
+            return None
+
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            return None
+
+    async def async_set_native_value(self, value: float) -> None:
+        """Set new value using Stream API format."""
+        device_sn = self.coordinator.device_sn
+        param_key = self._number_def["param_key"]
+
+        # Convert to int for API
+        int_value = int(value)
+
+        # Build command payload according to Stream API format
+        payload = {
+            "sn": device_sn,
+            "cmdId": 17,
+            "cmdFunc": 254,
+            "dirDest": 1,
+            "dirSrc": 1,
+            "dest": 2,
+            "needAck": True,
             "params": {param_key: int_value},
         }
 

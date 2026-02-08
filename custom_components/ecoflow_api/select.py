@@ -17,6 +17,7 @@ from .const import (
     DEVICE_TYPE_DELTA_3_PLUS,
     DEVICE_TYPE_DELTA_PRO,
     DEVICE_TYPE_DELTA_PRO_3,
+    DEVICE_TYPE_STREAM_ULTRA_X,
     DOMAIN,
 )
 from .coordinator import EcoFlowDataCoordinator
@@ -223,16 +224,36 @@ DELTA_2_SELECT_DEFINITIONS = {
     },
 }
 
+# ============================================================================
+# STREAM ULTRA X - Select Definitions
+# Based on EcoFlow Developer API documentation for STREAM system
+# ============================================================================
+
+STREAM_ULTRA_X_SELECT_DEFINITIONS = {
+    "operating_mode": {
+        "name": "Operating Mode",
+        "icon": "mdi:cog",
+        "options": {
+            "Self-Powered": "self_powered",
+            "AI Mode": "ai_mode",
+        },
+        # Stream uses nested params: cfgEnergyStrategyOperateMode
+    },
+}
+
+
 # Map device types to select definitions
 DEVICE_SELECT_MAP = {
     DEVICE_TYPE_DELTA_PRO_3: DELTA_PRO_3_SELECT_DEFINITIONS,
     DEVICE_TYPE_DELTA_PRO: DELTA_PRO_SELECT_DEFINITIONS,
     DEVICE_TYPE_DELTA_3_PLUS: DELTA_3_PLUS_SELECT_DEFINITIONS,
     DEVICE_TYPE_DELTA_2: DELTA_2_SELECT_DEFINITIONS,
+    DEVICE_TYPE_STREAM_ULTRA_X: STREAM_ULTRA_X_SELECT_DEFINITIONS,
     "delta_pro_3": DELTA_PRO_3_SELECT_DEFINITIONS,
     "delta_pro": DELTA_PRO_SELECT_DEFINITIONS,
     "delta_3_plus": DELTA_3_PLUS_SELECT_DEFINITIONS,
     "delta_2": DELTA_2_SELECT_DEFINITIONS,
+    "stream_ultra_x": STREAM_ULTRA_X_SELECT_DEFINITIONS,
 }
 
 
@@ -255,6 +276,7 @@ async def async_setup_entry(
     # Check device type for proper class selection
     is_delta_pro = device_type in (DEVICE_TYPE_DELTA_PRO, "delta_pro")
     is_delta_2 = device_type in (DEVICE_TYPE_DELTA_2, "delta_2")
+    is_stream = device_type in (DEVICE_TYPE_STREAM_ULTRA_X, "stream_ultra_x")
 
     for select_key, select_def in select_definitions.items():
         if is_delta_pro and not select_def.get("is_local"):
@@ -269,6 +291,15 @@ async def async_setup_entry(
         elif is_delta_2 and not select_def.get("is_local"):
             entities.append(
                 EcoFlowDelta2Select(
+                    coordinator=coordinator,
+                    entry=entry,
+                    select_key=select_key,
+                    select_def=select_def,
+                )
+            )
+        elif is_stream and not select_def.get("is_local"):
+            entities.append(
+                EcoFlowStreamSelect(
                     coordinator=coordinator,
                     entry=entry,
                     select_key=select_key,
@@ -576,6 +607,108 @@ class EcoFlowDelta2Select(EcoFlowBaseEntity, SelectEntity):
             "moduleType": module_type,
             "operateType": operate_type,
             "params": {param_key: value},
+        }
+
+        try:
+            await self.coordinator.api_client.set_device_quota(
+                device_sn=device_sn,
+                cmd_code=payload,
+            )
+            # Wait 2 seconds for device to apply changes, then refresh
+            await asyncio.sleep(2)
+            await self.coordinator.async_request_refresh()
+        except Exception as err:
+            _LOGGER.error("Failed to set %s to %s: %s", self._select_key, option, err)
+            raise
+
+
+class EcoFlowStreamSelect(EcoFlowBaseEntity, SelectEntity):
+    """Representation of an EcoFlow Stream select entity.
+
+    Uses the Stream API format with cmdId, cmdFunc, dirDest, dirSrc, dest parameters.
+    Supported devices: STREAM Ultra, STREAM Pro, STREAM AC Pro, STREAM Ultra X,
+                      STREAM Ultra (US), STREAM Max
+    """
+
+    def __init__(
+        self,
+        coordinator: EcoFlowDataCoordinator,
+        entry: ConfigEntry,
+        select_key: str,
+        select_def: dict[str, Any],
+    ) -> None:
+        """Initialize the select entity."""
+        super().__init__(coordinator, select_key)
+        self._select_key = select_key
+        self._select_def = select_def
+        self._attr_unique_id = f"{entry.entry_id}_{select_key}"
+        self._attr_name = select_def["name"]
+        self._attr_has_entity_name = True
+        self._attr_translation_key = select_key
+        self._attr_icon = select_def.get("icon")
+
+        # Set options from config
+        self._options_map = select_def["options"]
+        self._attr_options = list(self._options_map.keys())
+
+        # Create reverse map for value to option
+        self._value_to_option = {v: k for k, v in self._options_map.items()}
+
+    @property
+    def current_option(self) -> str | None:
+        """Return the current selected option."""
+        if not self.coordinator.data:
+            return None
+
+        # Special handling for operating mode
+        if self._select_key == "operating_mode":
+            if self.coordinator.data.get(
+                "energyStrategyOperateMode.operateSelfPoweredOpen", False
+            ):
+                return "Self-Powered"
+            elif self.coordinator.data.get(
+                "energyStrategyOperateMode.operateIntelligentScheduleModeOpen", False
+            ):
+                return "AI Mode"
+            return None
+
+        return None
+
+    async def async_select_option(self, option: str) -> None:
+        """Change the selected option using Stream API format."""
+        if option not in self._options_map:
+            _LOGGER.error("Invalid option %s for %s", option, self._select_key)
+            return
+
+        device_sn = self.coordinator.device_sn
+
+        # Build command payload according to Stream API format
+        if self._select_key == "operating_mode":
+            # Operating mode uses nested params
+            if option == "Self-Powered":
+                params = {
+                    "cfgEnergyStrategyOperateMode": {
+                        "operateSelfPoweredOpen": True,
+                    }
+                }
+            else:  # AI Mode
+                params = {
+                    "cfgEnergyStrategyOperateMode": {
+                        "operateIntelligentScheduleModeOpen": True,
+                    }
+                }
+        else:
+            params = {}
+
+        payload = {
+            "sn": device_sn,
+            "cmdId": 17,
+            "cmdFunc": 254,
+            "dirDest": 1,
+            "dirSrc": 1,
+            "dest": 2,
+            "needAck": True,
+            "params": params,
         }
 
         try:

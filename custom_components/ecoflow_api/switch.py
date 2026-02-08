@@ -17,6 +17,7 @@ from .const import (
     DEVICE_TYPE_DELTA_3_PLUS,
     DEVICE_TYPE_DELTA_PRO,
     DEVICE_TYPE_DELTA_PRO_3,
+    DEVICE_TYPE_STREAM_ULTRA_X,
     DOMAIN,
 )
 from .coordinator import EcoFlowDataCoordinator
@@ -285,16 +286,55 @@ DELTA_2_SWITCH_DEFINITIONS = {
     },
 }
 
+# ============================================================================
+# STREAM ULTRA X - Switch Definitions
+# Based on EcoFlow Developer API documentation for STREAM system
+# Uses cmdId=17, cmdFunc=254, dirDest=1, dirSrc=1, dest=2 format
+# ============================================================================
+
+STREAM_ULTRA_X_SWITCH_DEFINITIONS = {
+    "ac1_output": {
+        "name": "AC1 Output",
+        "state_key": "relay2Onoff",
+        "param_key": "cfgRelay2Onoff",
+        "icon_on": "mdi:power-socket",
+        "icon_off": "mdi:power-socket-off",
+        "device_class": SwitchDeviceClass.OUTLET,
+    },
+    "ac2_output": {
+        "name": "AC2 Output",
+        "state_key": "relay3Onoff",
+        "param_key": "cfgRelay3Onoff",
+        "icon_on": "mdi:power-socket",
+        "icon_off": "mdi:power-socket-off",
+        "device_class": SwitchDeviceClass.OUTLET,
+    },
+    "feed_in_control": {
+        "name": "Feed-in Control",
+        "state_key": "feedGridMode",
+        "param_key": "cfgFeedGridMode",
+        "icon_on": "mdi:transmission-tower-export",
+        "icon_off": "mdi:transmission-tower-off",
+        "device_class": SwitchDeviceClass.SWITCH,
+        # Note: Uses 1=off, 2=on instead of true/false
+        "value_on": 2,
+        "value_off": 1,
+    },
+}
+
+
 # Map device types to switch definitions
 DEVICE_SWITCH_MAP = {
     DEVICE_TYPE_DELTA_PRO_3: DELTA_PRO_3_SWITCH_DEFINITIONS,
     DEVICE_TYPE_DELTA_PRO: DELTA_PRO_SWITCH_DEFINITIONS,
     DEVICE_TYPE_DELTA_3_PLUS: DELTA_3_PLUS_SWITCH_DEFINITIONS,
     DEVICE_TYPE_DELTA_2: DELTA_2_SWITCH_DEFINITIONS,
+    DEVICE_TYPE_STREAM_ULTRA_X: STREAM_ULTRA_X_SWITCH_DEFINITIONS,
     "delta_pro_3": DELTA_PRO_3_SWITCH_DEFINITIONS,
     "delta_pro": DELTA_PRO_SWITCH_DEFINITIONS,
     "delta_3_plus": DELTA_3_PLUS_SWITCH_DEFINITIONS,
     "delta_2": DELTA_2_SWITCH_DEFINITIONS,
+    "stream_ultra_x": STREAM_ULTRA_X_SWITCH_DEFINITIONS,
 }
 
 
@@ -317,6 +357,7 @@ async def async_setup_entry(
     # Check device type for proper class selection
     is_delta_pro = device_type in (DEVICE_TYPE_DELTA_PRO, "delta_pro")
     is_delta_2 = device_type in (DEVICE_TYPE_DELTA_2, "delta_2")
+    is_stream = device_type in (DEVICE_TYPE_STREAM_ULTRA_X, "stream_ultra_x")
 
     for switch_key, switch_def in switch_definitions.items():
         if is_delta_pro:
@@ -331,6 +372,15 @@ async def async_setup_entry(
         elif is_delta_2:
             entities.append(
                 EcoFlowDelta2Switch(
+                    coordinator=coordinator,
+                    entry=entry,
+                    switch_key=switch_key,
+                    switch_def=switch_def,
+                )
+            )
+        elif is_stream:
+            entities.append(
+                EcoFlowStreamSwitch(
                     coordinator=coordinator,
                     entry=entry,
                     switch_key=switch_key,
@@ -617,6 +667,105 @@ class EcoFlowDelta2Switch(EcoFlowBaseEntity, SwitchEntity):
             "sn": device_sn,
             "moduleType": module_type,
             "operateType": operate_type,
+            "params": {param_key: state},
+        }
+
+        try:
+            await self.coordinator.api_client.set_device_quota(
+                device_sn=device_sn,
+                cmd_code=payload,
+            )
+            # Wait 2 seconds for device to apply changes, then refresh
+            await asyncio.sleep(2)
+            await self.coordinator.async_request_refresh()
+        except Exception as err:
+            _LOGGER.error("Failed to set %s to %s: %s", self._switch_key, state, err)
+            raise
+
+
+class EcoFlowStreamSwitch(EcoFlowBaseEntity, SwitchEntity):
+    """Representation of an EcoFlow Stream switch.
+
+    Uses the Stream API format with cmdId, cmdFunc, dirDest, dirSrc, dest parameters.
+    Supported devices: STREAM Ultra, STREAM Pro, STREAM AC Pro, STREAM Ultra X,
+                      STREAM Ultra (US), STREAM Max
+    """
+
+    def __init__(
+        self,
+        coordinator: EcoFlowDataCoordinator,
+        entry: ConfigEntry,
+        switch_key: str,
+        switch_def: dict[str, Any],
+    ) -> None:
+        """Initialize the switch."""
+        super().__init__(coordinator, switch_key)
+        self._switch_key = switch_key
+        self._switch_def = switch_def
+        self._attr_unique_id = f"{entry.entry_id}_{switch_key}"
+        self._attr_name = switch_def["name"]
+        self._attr_has_entity_name = True
+        self._attr_translation_key = switch_key
+        self._attr_device_class = switch_def.get("device_class")
+
+    @property
+    def is_on(self) -> bool | None:
+        """Return true if switch is on."""
+        if not self.coordinator.data:
+            return None
+
+        state_key = self._switch_def["state_key"]
+        value = self.coordinator.data.get(state_key)
+
+        if value is None:
+            return None
+
+        # Handle special feed-in control (1=off, 2=on)
+        if "value_on" in self._switch_def:
+            return value == self._switch_def["value_on"]
+
+        # Handle boolean values
+        if isinstance(value, bool):
+            return value
+        # Handle integer values (0/1)
+        if isinstance(value, (int, float)):
+            return int(value) == 1
+        if isinstance(value, str):
+            return value.lower() in ("1", "true", "on")
+
+        return bool(value)
+
+    @property
+    def icon(self) -> str | None:
+        """Return the icon to use in the frontend."""
+        if self.is_on:
+            return self._switch_def.get("icon_on")
+        return self._switch_def.get("icon_off")
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Turn the switch on."""
+        value = self._switch_def.get("value_on", True)
+        await self._send_command(value)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        """Turn the switch off."""
+        value = self._switch_def.get("value_off", False)
+        await self._send_command(value)
+
+    async def _send_command(self, state: bool | int) -> None:
+        """Send command to device using Stream API format."""
+        device_sn = self.coordinator.device_sn
+        param_key = self._switch_def["param_key"]
+
+        # Build command payload according to Stream API format
+        payload = {
+            "sn": device_sn,
+            "cmdId": 17,
+            "cmdFunc": 254,
+            "dirDest": 1,
+            "dirSrc": 1,
+            "dest": 2,
+            "needAck": True,
             "params": {param_key: state},
         }
 
