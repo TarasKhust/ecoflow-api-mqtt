@@ -478,8 +478,13 @@ class EcoFlowSwitch(EcoFlowBaseEntity, SwitchEntity):
         command_key = self._switch_def["command_key"]
         device_sn = self.coordinator.device_sn
 
-        # Standard handling for all switches
-        params = {command_key: state}
+        # Get value mapping if defined, otherwise convert bool to int (API expects 1/0)
+        if state:
+            value = self._switch_def.get("value_on", 1)
+        else:
+            value = self._switch_def.get("value_off", 0)
+
+        params = {command_key: value}
 
         # Build command payload according to Delta Pro 3 API format
         payload = {
