@@ -17,6 +17,7 @@ from .const import (
 )
 from .coordinator import EcoFlowDataCoordinator
 from .entity import EcoFlowBaseEntity
+from .hybrid_coordinator import EcoFlowHybridCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -106,7 +107,7 @@ class EcoFlowButton(EcoFlowBaseEntity, ButtonEntity):
         self._attr_device_class = button_def.get("device_class")
 
     async def async_press(self) -> None:
-        """Handle the button press."""
+        """Handle the button press via MQTT (preferred) or REST API."""
         command_key = self._button_def["command_key"]
         device_sn = self.coordinator.device_sn
 
@@ -123,10 +124,17 @@ class EcoFlowButton(EcoFlowBaseEntity, ButtonEntity):
         }
 
         try:
-            await self.coordinator.api_client.set_device_quota(
-                device_sn=device_sn,
-                cmd_code=payload,
-            )
+            # Use hybrid coordinator's send_command method (MQTT preferred, REST fallback)
+            if isinstance(self.coordinator, EcoFlowHybridCoordinator):
+                success = await self.coordinator.async_send_command(payload)
+                if not success:
+                    raise Exception("Command failed via both MQTT and REST API")
+            else:
+                # Fallback to REST API for non-hybrid coordinators
+                await self.coordinator.api_client.set_device_quota(
+                    device_sn=device_sn,
+                    cmd_code=payload,
+                )
             _LOGGER.info("Power off command sent to device %s", device_sn)
         except Exception as err:
             _LOGGER.error("Failed to send power off command: %s", err)

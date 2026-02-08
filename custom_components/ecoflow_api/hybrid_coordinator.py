@@ -184,12 +184,45 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         if self._rest_update_timer:
             self._rest_update_timer.cancel()
             self._rest_update_timer = None
-            
+
         # Disconnect MQTT
         if self._mqtt_client:
             await self._mqtt_client.async_disconnect()
             self._mqtt_client = None
-    
+
+    async def async_send_command(self, command: dict) -> bool:
+        """Send command to device via MQTT (preferred) or REST API (fallback).
+
+        Args:
+            command: Command payload with params
+
+        Returns:
+            True if command sent successfully, False otherwise
+        """
+        # Try MQTT first (faster, real-time)
+        if self._mqtt_connected and self._mqtt_client:
+            try:
+                success = await self._mqtt_client.async_publish_command(command)
+                if success:
+                    _LOGGER.debug("Command sent via MQTT: %s", command.get("params", {}))
+                    return True
+                else:
+                    _LOGGER.warning("MQTT publish failed, falling back to REST API")
+            except Exception as err:
+                _LOGGER.warning("MQTT command error: %s, falling back to REST API", err)
+
+        # Fallback to REST API
+        try:
+            await self.client.set_device_quota(
+                device_sn=self.device_sn,
+                cmd_code=command,
+            )
+            _LOGGER.debug("Command sent via REST API: %s", command.get("params", {}))
+            return True
+        except Exception as err:
+            _LOGGER.error("Failed to send command via REST API: %s", err)
+            return False
+
     def _schedule_rest_update(self) -> None:
         """Schedule next REST update.
         

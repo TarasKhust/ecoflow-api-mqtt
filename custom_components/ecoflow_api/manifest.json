@@ -9,5 +9,5 @@
   "iot_class": "cloud_push",
   "issue_tracker": "https://github.com/TarasKhust/ecoflow-api-mqtt/issues",
   "requirements": ["aiohttp>=3.8.0", "paho-mqtt>=1.6.1"],
-  "version": "1.8.4"
+  "version": "1.8.5"
 }
