@@ -5,11 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.4] - 2026-02-08
+
+### 🐛 Bug Fixes
+
+- **Reverted switch value type** - EcoFlow API accepts boolean `true`/`false` values (not integers) for switch commands
+- **Removed unsupported controls** - Removed AC HV Always On, AC LV Always On switches and AC Always On Min SOC number as they have no documented SET commands in EcoFlow API (read-only fields)
+
+---
+
 ## [1.8.3] - 2026-02-08
 
 ### 🐛 Bug Fixes
 
-- **Fixed Delta Pro 3 switch commands** - API expects `1`/`0` integer values instead of `true`/`false` booleans. Fixed AC HV Always On, AC LV Always On and other switches.
+- **Fixed Delta Pro 3 switch commands** - (Reverted in 1.8.4)
 
 ---
 

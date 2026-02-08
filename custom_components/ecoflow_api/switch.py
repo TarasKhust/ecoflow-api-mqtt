@@ -108,22 +108,8 @@ DELTA_PRO_3_SWITCH_DEFINITIONS = {
         "icon_off": "mdi:weather-night",
         "device_class": SwitchDeviceClass.SWITCH,
     },
-    "ac_hv_always_on": {
-        "name": "AC HV Always On",
-        "state_key": "acHvAlwaysOn",  # bool
-        "command_key": "cfgAcHvAlwaysOn",
-        "icon_on": "mdi:power-plug-battery",
-        "icon_off": "mdi:power-plug-battery-outline",
-        "device_class": SwitchDeviceClass.SWITCH,
-    },
-    "ac_lv_always_on": {
-        "name": "AC LV Always On",
-        "state_key": "acLvAlwaysOn",  # bool
-        "command_key": "cfgAcLvAlwaysOn",
-        "icon_on": "mdi:power-plug-battery",
-        "icon_off": "mdi:power-plug-battery-outline",
-        "device_class": SwitchDeviceClass.SWITCH,
-    },
+    # Note: AC Always On (acHvAlwaysOn, acLvAlwaysOn) are read-only fields
+    # No documented SET command available in EcoFlow API
 }
 
 # Switch definitions for Delta Pro (Original) based on API documentation
@@ -478,11 +464,12 @@ class EcoFlowSwitch(EcoFlowBaseEntity, SwitchEntity):
         command_key = self._switch_def["command_key"]
         device_sn = self.coordinator.device_sn
 
-        # Get value mapping if defined, otherwise convert bool to int (API expects 1/0)
-        if state:
-            value = self._switch_def.get("value_on", 1)
+        # Use value mapping if defined, otherwise use boolean directly
+        # API accepts boolean true/false for most switches
+        if "value_on" in self._switch_def:
+            value = self._switch_def["value_on"] if state else self._switch_def["value_off"]
         else:
-            value = self._switch_def.get("value_off", 0)
+            value = state
 
         params = {command_key: value}
 
