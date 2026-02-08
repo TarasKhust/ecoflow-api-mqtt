@@ -18,6 +18,7 @@ Home Assistant integration for EcoFlow devices using the **official EcoFlow Deve
 - ✅ **Multi-device support** - Delta Pro 3, Delta Pro, Delta 3 Plus
 - ✅ **Region support** - EU and US API endpoints
 - ✅ **Complete Delta Pro 3 support** - 84 sensors, 13 binary sensors, 9 switches, 13 number controls
+- ✅ **Complete Delta 2 support** - 150+ sensors with value mapping, Extra Battery support
 - ✅ **Real device tested** - All features verified with actual Delta Pro 3
 - ✅ **Battery monitoring** - BMS & CMS data, SOC, SOH, temperature, capacity
 - ✅ **Power monitoring** - Input/output, AC, Solar (HV/LV), DC (12V/24V), USB-C, QC USB
@@ -242,10 +243,29 @@ mode: single
 | Delta Pro 3  | ✅ Full Support | All features, real device tested |
 | Delta Pro    | ✅ Full Support | US API verified                  |
 | Delta 3 Plus | ✅ Full Support | All features                     |
-| Delta 2      | ✅ Full Support | Real device tested (v1.6.0+)    |
+| Delta 2      | ✅ Full Support | 150+ sensors, Extra Battery, real device tested |
 | Delta 2 Max  | 🔄 Planned      | Coming soon                      |
 | River 2      | 🔄 Planned      | Coming soon                      |
 | River 2 Max  | 🔄 Planned      | Coming soon                      |
+
+### Delta 2 Sensors
+
+Delta 2 has extensive sensor support with human-readable value mapping:
+
+| Category | Sensors | Examples |
+| -------- | ------- | -------- |
+| **BMS** | 35+ | Battery level, voltage, current, temperature, cycles, SOH, MOS temps, accumulated energy |
+| **EMS** | 15+ | Charge/discharge state, fan level, UPS mode, warning state, parallel voltage |
+| **PD** | 30+ | Port status, DC/AC/Car output state, cumulative energy (AC/DC/Solar), usage time |
+| **INV** | 20+ | AC charging power, DC input, fan state, X-Boost, work mode, charger type |
+| **MPPT** | 25+ | Solar input, charge type/state, car charger, DC24V state, beep mode |
+| **Extra Battery** | 8 | Connected status, SOC, power for up to 2 extra batteries |
+
+**Value Mapping Examples:**
+- Port Status: `null`, `extra_battery`, `smart_generator`, `cc`, `pr`, `sp_bc`
+- Charge Type: `adapter`, `mppt_solar`, `ac`, `gas`, `wind`
+- Fan Level: `off`, `level_1`, `level_2`, `level_3`
+- States: `charging`/`not_charging`, `on`/`off`, `normal`/`silent`
 
 ### Region Support
 
