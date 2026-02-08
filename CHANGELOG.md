@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.7.0] - 2026-02-08
+
+### 🎉 New Features
+
+#### Extended Delta 2 Sensors with Value Mapping
+
+Added ~80 additional sensors for comprehensive Delta 2 monitoring:
+
+**ENUM Value Mapping:**
+Sensors now display human-readable text instead of raw numbers:
+- `pd.ext4p8Port`: "none" / "extra_battery" / "smart_generator"
+- `pd.chgDsgState`: "idle" / "discharging" / "charging"
+- `inv.fanState`: "off" / "low" / "medium" / "high"
+- `mppt.chgType`: "null" / "adapter" / "solar" / "car" / "generator"
+- `mppt.chgState`: "off" / "charging" / "full" / "paused"
+- And 30+ more ENUM sensors
+
+**Extra Battery Support:**
+- Extra Battery 1 & 2 connection status via `bms_kitInfo.watts`
+- Battery level (SOC) for each connected extra battery
+- Power output for each extra battery
+
+**New Sensor Categories:**
+- **BMS** - cycles, SOH, temperatures, voltages, capacities
+- **EMS** - charge/discharge state, fan level, parallel voltages
+- **PD** - USB/Type-C power, car power, system settings
+- **INV** - AC frequencies, voltages, temperatures
+- **MPPT** - solar charging, DC output, standby settings
+
+### 🔧 Technical Improvements
+
+- Generic `value_map` handling for ENUM device class sensors
+- Array parsing for `bms_kitInfo.watts` with `kit_index` and `kit_field` support
+- Proper handling of unavailable extra batteries (returns None)
+
 ## [1.6.0] - 2026-01-25
 
 ### 🎉 New Features
