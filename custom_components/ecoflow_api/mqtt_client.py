@@ -43,22 +43,25 @@ class EcoFlowMQTTClient:
         password: str,
         device_sn: str,
         on_message_callback: Callable[[dict[str, Any]], None] | None = None,
+        on_status_callback: Callable[[bool], None] | None = None,
         certificate_account: str | None = None,
     ) -> None:
         """Initialize MQTT client.
-        
+
         Args:
             username: EcoFlow account username/email (for MQTT authentication)
             password: EcoFlow account password (for MQTT authentication)
             device_sn: Device serial number
             on_message_callback: Callback function for received messages
+            on_status_callback: Callback function for connection status changes (True=connected)
             certificate_account: Certificate account/user_id for topics (if None, uses username)
         """
         self.username = username
         self.password = password
         self.device_sn = device_sn
         self.on_message_callback = on_message_callback
-        
+        self.on_status_callback = on_status_callback
+
         self._client: mqtt.Client | None = None
         self._connected = False
         self._reconnect_task: asyncio.Task | None = None
@@ -179,7 +182,7 @@ class EcoFlowMQTTClient:
         rc: int,
     ) -> None:
         """Handle MQTT connection."""
-        # MQTT return codes: 0=success, 1=protocol version, 2=client ID, 3=server unavailable, 
+        # MQTT return codes: 0=success, 1=protocol version, 2=client ID, 3=server unavailable,
         # 4=bad credentials, 5=not authorized
         error_messages = {
             0: "Connection successful",
@@ -189,38 +192,43 @@ class EcoFlowMQTTClient:
             4: "Bad username or password",
             5: "Not authorized - check credentials",
         }
-        
+
         if rc == 0:
             self._connected = True
-            _LOGGER.info("MQTT connected for device %s", self.device_sn)
-            
+            is_reconnect = flags.get("session present", False)
+            _LOGGER.info(
+                "✅ MQTT %s for device %s (certificateAccount=%s)",
+                "reconnected" if is_reconnect else "connected",
+                self.device_sn[-4:],
+                self._certificate_account[:20] + "..." if len(self._certificate_account) > 20 else self._certificate_account,
+            )
+
             # Subscribe to topics
             client.subscribe(self._quota_topic, qos=1)
             client.subscribe(self._status_topic, qos=1)
             client.subscribe(self._set_reply_topic, qos=1)
+            _LOGGER.debug("Subscribed to MQTT topics: %s, %s, %s", self._quota_topic, self._status_topic, self._set_reply_topic)
+
+            # Notify status callback
+            if self.on_status_callback:
+                self.on_status_callback(True)
         else:
             self._connected = False
             error_msg = error_messages.get(rc, f"Unknown error (code {rc})")
             _LOGGER.error(
                 "❌ MQTT connection failed for device %s: %s (code %d)",
-                self.device_sn,
+                self.device_sn[-4:],
                 error_msg,
                 rc
             )
             _LOGGER.error(
-                "MQTT Authentication Troubleshooting:\n"
-                "1. Username should be EcoFlow account EMAIL (not access_key)\n"
-                "2. Password should be EcoFlow account PASSWORD\n"
-                "3. Verify credentials in Options (gear icon next to integration)\n"
-                "4. certificateAccount in topics might need to be user_id (not email)\n"
-                "   Current certificateAccount: %s (from %s)\n"
-                "   Topics: quota=%s, status=%s, set_reply=%s\n"
-                "5. If certificateAccount is wrong, you may need to get user_id from API",
+                "MQTT Troubleshooting:\n"
+                "1. certificateAccount from API: %s\n"
+                "2. Check if this is a user_id or email - should be a numeric ID\n"
+                "3. Topics: quota=%s\n"
+                "4. If error persists, try disabling and re-enabling MQTT in Options",
                 self._certificate_account,
-                "username" if not hasattr(self, '_certificate_account') or self._certificate_account == self.username else "custom",
                 self._quota_topic,
-                self._status_topic,
-                self._set_reply_topic
             )
 
     def _on_disconnect(
@@ -231,15 +239,28 @@ class EcoFlowMQTTClient:
     ) -> None:
         """Handle MQTT disconnection."""
         self._connected = False
-        
+
+        # MQTT disconnect reason codes
+        disconnect_reasons = {
+            0: "Normal disconnection",
+            1: "Unexpected disconnection",
+            5: "Not authorized",
+            7: "Keep-alive timeout",
+        }
+        reason = disconnect_reasons.get(rc, f"Unknown (code {rc})")
+
         if rc != 0:
             _LOGGER.warning(
-                "Unexpected MQTT disconnection (code %d) for device %s. Will auto-reconnect.",
-                rc,
-                self.device_sn
+                "⚠️ MQTT disconnected for device %s: %s. Paho will auto-reconnect.",
+                self.device_sn[-4:],
+                reason
             )
         else:
-            _LOGGER.info("Disconnected from MQTT broker for device %s", self.device_sn)
+            _LOGGER.info("Disconnected from MQTT broker for device %s", self.device_sn[-4:])
+
+        # Notify status callback
+        if self.on_status_callback:
+            self.on_status_callback(False)
 
     def _on_message(
         self,

@@ -95,12 +95,19 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             certificate_password = mqtt_creds.get("certificatePassword")
 
             if certificate_account and certificate_password:
-                _LOGGER.info("Successfully obtained MQTT credentials from API")
+                _LOGGER.info(
+                    "Successfully obtained MQTT credentials from API: account=%s (type=%s)",
+                    certificate_account,
+                    type(certificate_account).__name__,
+                )
                 mqtt_username = certificate_account
                 mqtt_password = certificate_password
             else:
                 _LOGGER.warning(
-                    "Failed to get MQTT credentials from API, using manual credentials if provided"
+                    "Failed to get MQTT credentials from API (account=%s, password=%s), "
+                    "using manual credentials if provided",
+                    certificate_account,
+                    "set" if certificate_password else "not set",
                 )
         except Exception as err:
             _LOGGER.error(

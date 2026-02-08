@@ -79,6 +79,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         self._mqtt_data: dict[str, Any] = {}
         self._mqtt_connected = False
         self._use_mqtt = False
+        self._mqtt_reconnect_count = 0
         
         # Track last REST update time for interval verification
         self._last_rest_update: float | None = None
@@ -150,6 +151,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                 password=self.mqtt_password,
                 device_sn=self.device_sn,
                 on_message_callback=self._handle_mqtt_message,
+                on_status_callback=self._handle_mqtt_status,
                 certificate_account=self.certificate_account,
             )
             
@@ -257,9 +259,32 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             self._schedule_rest_update()
 
 
+    def _handle_mqtt_status(self, connected: bool) -> None:
+        """Handle MQTT connection status change.
+
+        Args:
+            connected: True if connected, False if disconnected
+        """
+        was_connected = self._mqtt_connected
+        self._mqtt_connected = connected
+
+        if connected and not was_connected:
+            self._mqtt_reconnect_count += 1
+            if self._mqtt_reconnect_count > 1:
+                _LOGGER.info(
+                    "🔄 MQTT reconnected for device %s (reconnect #%d)",
+                    self.device_sn[-4:],
+                    self._mqtt_reconnect_count - 1,
+                )
+        elif not connected and was_connected:
+            _LOGGER.warning(
+                "⚠️ MQTT disconnected for device %s, commands will use REST API fallback",
+                self.device_sn[-4:],
+            )
+
     def _handle_mqtt_message(self, payload: dict[str, Any]) -> None:
         """Handle MQTT message from device.
-        
+
         Args:
             payload: MQTT message payload (already extracted from quota topic params)
         """

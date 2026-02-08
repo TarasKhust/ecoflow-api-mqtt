@@ -299,10 +299,20 @@ class EcoFlowApiClient:
             }
         """
         result = await self._request("GET", "/iot-open/sign/certification")
+
+        # Log full response for debugging (mask password)
+        cert_account = result.get("certificateAccount", "N/A")
+        cert_password = result.get("certificatePassword", "")
+        masked_password = f"{cert_password[:4]}...{cert_password[-4:]}" if len(cert_password) > 8 else "***"
+
         _LOGGER.info(
-            "Received MQTT credentials: certificateAccount=%s",
-            result.get("certificateAccount", "N/A"),
+            "MQTT credentials from API: url=%s, port=%s, certificateAccount=%s, password=%s",
+            result.get("url", "N/A"),
+            result.get("port", "N/A"),
+            cert_account,
+            masked_password,
         )
+
         return result
 
     async def get_device_list(self) -> list[dict[str, Any]]:
