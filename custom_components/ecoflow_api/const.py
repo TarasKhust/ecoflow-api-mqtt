@@ -805,23 +805,11 @@ DELTA_PRO_3_SENSORS: Final = {
         "device_class": None,
         "icon": "mdi:power-plug",
     },
-    "acLvAlwaysOn": {
-        "name": "AC LV Always On",
-        "unit": None,
-        "device_class": None,
-        "icon": "mdi:power-socket",
-    },
     "energyBackupStartSoc": {
         "name": "Energy Backup Start SOC",
         "unit": "%",
         "device_class": "battery",
         "icon": "mdi:backup-restore",
-    },
-    "acHvAlwaysOn": {
-        "name": "AC HV Always On",
-        "unit": None,
-        "device_class": None,
-        "icon": "mdi:power-socket",
     },
     "acAlwaysOnMiniSoc": {
         "name": "AC Always On Minimum SOC",
