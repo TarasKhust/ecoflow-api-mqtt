@@ -30,7 +30,6 @@ from .const import (
 )
 from .coordinator import EcoFlowDataCoordinator
 from .entity import EcoFlowBaseEntity
-from .hybrid_coordinator import EcoFlowHybridCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -787,20 +786,14 @@ class EcoFlowNumber(EcoFlowBaseEntity, NumberEntity):
         }
 
         try:
-            # Use hybrid coordinator's send_command method (MQTT preferred, REST fallback)
-            if isinstance(self.coordinator, EcoFlowHybridCoordinator):
-                success = await self.coordinator.async_send_command(payload)
-                if not success:
-                    raise Exception("Command failed via both MQTT and REST API")
-            else:
-                # Fallback to REST API for non-hybrid coordinators
-                await self.coordinator.api_client.set_device_quota(
-                    device_sn=device_sn,
-                    cmd_code=payload,
-                )
+            # Send command via REST API
+            await self.coordinator.api_client.set_device_quota(
+                device_sn=device_sn,
+                cmd_code=payload,
+            )
 
             # Wait for device to apply changes, then refresh
-            await asyncio.sleep(1)
+            await asyncio.sleep(2)
             await self.coordinator.async_request_refresh()
         except Exception as err:
             _LOGGER.error(
