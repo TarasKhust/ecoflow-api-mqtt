@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.8.3] - 2026-02-08
+
+### 🐛 Bug Fixes
+
+- **Fixed Delta Pro 3 switch commands** - API expects `1`/`0` integer values instead of `true`/`false` booleans. Fixed AC HV Always On, AC LV Always On and other switches.
+
+---
+
 ## [1.8.2] - 2026-02-08
 
 ### 🐛 Bug Fixes
