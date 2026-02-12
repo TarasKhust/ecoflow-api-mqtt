@@ -644,6 +644,9 @@ class EcoFlowNumber(EcoFlowBaseEntity, NumberEntity):
         command_key = self._number_def["command_key"]
         device_sn = self.coordinator.config_entry.data["device_sn"]
 
+        # Clamp value to min/max limits
+        value = max(self._number_def["min"], min(self._number_def["max"], value))
+
         # Convert to int for API
         int_value = int(value)
 
