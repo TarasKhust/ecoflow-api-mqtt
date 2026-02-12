@@ -16,7 +16,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
     DEVICE_TYPE_DELTA_2,
-    DEVICE_TYPE_DELTA_3_PLUS,
     DEVICE_TYPE_DELTA_PRO,
     DEVICE_TYPE_DELTA_PRO_3,
     DEVICE_TYPE_STREAM_ULTRA_X,
@@ -217,121 +216,8 @@ DELTA_PRO_BINARY_SENSOR_DEFINITIONS = {
 # NOTE: River 3 and River 3 Plus are NOT supported by EcoFlow REST API
 # These devices return error 1006. Removed from codebase.
 
-# Binary sensor definitions for Delta 3 Plus
-DELTA_3_PLUS_BINARY_SENSOR_DEFINITIONS = {
-    "ac_in_connected": {
-        "name": "AC Input Connected",
-        "key": "plugInInfoAcInFlag",
-        "device_class": BinarySensorDeviceClass.PLUG,
-        "icon_on": "mdi:power-plug",
-        "icon_off": "mdi:power-plug-off",
-        "derived": False,
-    },
-    "solar_connected": {
-        "name": "Solar Input Connected (PV1)",
-        "key": "plugInInfoPvFlag",
-        "device_class": BinarySensorDeviceClass.PLUG,
-        "icon_on": "mdi:solar-power",
-        "icon_off": "mdi:solar-power-variant-outline",
-        "derived": False,
-    },
-    "solar2_connected": {
-        "name": "Solar Input Connected (PV2)",
-        "key": "plugInInfoPv2Flag",
-        "device_class": BinarySensorDeviceClass.PLUG,
-        "icon_on": "mdi:solar-power",
-        "icon_off": "mdi:solar-power-variant-outline",
-        "derived": False,
-    },
-    "is_charging": {
-        "name": "Charging",
-        "key": "isCharging",
-        "device_class": BinarySensorDeviceClass.BATTERY_CHARGING,
-        "icon_on": "mdi:battery-charging",
-        "icon_off": "mdi:battery",
-        "derived": True,
-        "derive_from": "powInSumW",
-        "derive_condition": lambda v: v is not None and v > 10,
-    },
-    "is_discharging": {
-        "name": "Discharging",
-        "key": "isDischarging",
-        "device_class": BinarySensorDeviceClass.POWER,
-        "icon_on": "mdi:battery-arrow-down",
-        "icon_off": "mdi:battery",
-        "derived": True,
-        "derive_from": "powOutSumW",
-        "derive_condition": lambda v: v is not None and v > 10,
-    },
-    "ac_out_enabled": {
-        "name": "AC Output Enabled",
-        "key": "cfgAcOutOpen",
-        "device_class": BinarySensorDeviceClass.POWER,
-        "icon_on": "mdi:power-socket",
-        "icon_off": "mdi:power-socket-off",
-        "derived": False,
-    },
-    "dc_out_enabled": {
-        "name": "DC Output Enabled",
-        "key": "cfgDc12vOutOpen",
-        "device_class": BinarySensorDeviceClass.POWER,
-        "icon_on": "mdi:current-dc",
-        "icon_off": "mdi:current-dc",
-        "derived": False,
-    },
-    "usb_out_enabled": {
-        "name": "USB Output Enabled",
-        "key": "cfgUsbOpen",
-        "device_class": BinarySensorDeviceClass.POWER,
-        "icon_on": "mdi:usb",
-        "icon_off": "mdi:usb-off",
-        "derived": False,
-    },
-    "battery_low": {
-        "name": "Battery Low",
-        "key": "batteryLow",
-        "device_class": BinarySensorDeviceClass.BATTERY,
-        "icon_on": "mdi:battery-alert",
-        "icon_off": "mdi:battery",
-        "derived": True,
-        "derive_from": "bmsBattSoc",
-        "derive_condition": lambda v: v is not None and v < 20,
-    },
-    "battery_full": {
-        "name": "Battery Full",
-        "key": "batteryFull",
-        "device_class": BinarySensorDeviceClass.BATTERY,
-        "icon_on": "mdi:battery-check",
-        "icon_off": "mdi:battery",
-        "derived": True,
-        "derive_from": "bmsBattSoc",
-        "derive_condition": lambda v: v is not None and v >= 100,
-    },
-    "x_boost_enabled": {
-        "name": "X-Boost Enabled",
-        "key": "xboostEn",
-        "device_class": None,
-        "icon_on": "mdi:lightning-bolt",
-        "icon_off": "mdi:lightning-bolt-outline",
-        "derived": False,
-    },
-    "beeper_enabled": {
-        "name": "Beeper Enabled",
-        "key": "enBeep",
-        "device_class": None,
-        "icon_on": "mdi:volume-high",
-        "icon_off": "mdi:volume-off",
-        "derived": False,
-    },
-    "backup_reserve_enabled": {
-        "name": "Backup Reserve Enabled",
-        "key": "energyBackupEn",
-        "device_class": None,
-        "icon_on": "mdi:battery-lock",
-        "icon_off": "mdi:battery-lock-open",
-        "derived": False,
-    },
-}
+# NOTE: Delta 3 Plus is NOT supported by EcoFlow REST API
+# Device returns error 1006. Removed from codebase.
 
 # Binary sensor definitions for Delta 2
 # Uses data keys with prefixes: pd., bms_bmsStatus., bms_emsStatus., inv., mppt.
@@ -533,12 +419,10 @@ STREAM_ULTRA_X_BINARY_SENSOR_DEFINITIONS = {
 DEVICE_BINARY_SENSOR_MAP = {
     DEVICE_TYPE_DELTA_PRO_3: DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS,
     DEVICE_TYPE_DELTA_PRO: DELTA_PRO_BINARY_SENSOR_DEFINITIONS,
-    DEVICE_TYPE_DELTA_3_PLUS: DELTA_3_PLUS_BINARY_SENSOR_DEFINITIONS,
     DEVICE_TYPE_DELTA_2: DELTA_2_BINARY_SENSOR_DEFINITIONS,
     DEVICE_TYPE_STREAM_ULTRA_X: STREAM_ULTRA_X_BINARY_SENSOR_DEFINITIONS,
     "delta_pro_3": DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS,
     "delta_pro": DELTA_PRO_BINARY_SENSOR_DEFINITIONS,
-    "delta_3_plus": DELTA_3_PLUS_BINARY_SENSOR_DEFINITIONS,
     "delta_2": DELTA_2_BINARY_SENSOR_DEFINITIONS,
     "stream_ultra_x": STREAM_ULTRA_X_BINARY_SENSOR_DEFINITIONS,
 }

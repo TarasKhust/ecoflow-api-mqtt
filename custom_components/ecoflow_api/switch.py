@@ -14,7 +14,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
     DEVICE_TYPE_DELTA_2,
-    DEVICE_TYPE_DELTA_3_PLUS,
     DEVICE_TYPE_DELTA_PRO,
     DEVICE_TYPE_DELTA_PRO_3,
     DEVICE_TYPE_STREAM_ULTRA_X,
@@ -190,58 +189,8 @@ DELTA_PRO_SWITCH_DEFINITIONS = {
 # NOTE: River 3 and River 3 Plus are NOT supported by EcoFlow REST API
 # These devices return error 1006. Removed from codebase.
 
-# Switch definitions for Delta 3 Plus based on API documentation
-# Uses Delta Pro 3 API format (cmdId: 17, cmdFunc: 254)
-DELTA_3_PLUS_SWITCH_DEFINITIONS = {
-    "ac_output": {
-        "name": "AC Output",
-        "state_key": "cfgAcOutOpen",
-        "command_key": "cfgAcOutOpen",
-        "icon_on": "mdi:power-socket",
-        "icon_off": "mdi:power-socket-off",
-        "device_class": SwitchDeviceClass.OUTLET,
-    },
-    "dc_12v_output": {
-        "name": "12V DC Output",
-        "state_key": "cfgDc12vOutOpen",
-        "command_key": "cfgDc12vOutOpen",
-        "icon_on": "mdi:car-battery",
-        "icon_off": "mdi:car-battery",
-        "device_class": SwitchDeviceClass.OUTLET,
-    },
-    "usb_output": {
-        "name": "USB Output",
-        "state_key": "cfgUsbOpen",
-        "command_key": "cfgUsbOpen",
-        "icon_on": "mdi:usb",
-        "icon_off": "mdi:usb-off",
-        "device_class": SwitchDeviceClass.OUTLET,
-    },
-    "x_boost": {
-        "name": "X-Boost",
-        "state_key": "xboostEn",
-        "command_key": "xboostEn",
-        "icon_on": "mdi:lightning-bolt",
-        "icon_off": "mdi:lightning-bolt-outline",
-        "device_class": SwitchDeviceClass.SWITCH,
-    },
-    "beeper": {
-        "name": "Beeper",
-        "state_key": "enBeep",
-        "command_key": "enBeep",
-        "icon_on": "mdi:volume-high",
-        "icon_off": "mdi:volume-off",
-        "device_class": SwitchDeviceClass.SWITCH,
-    },
-    "smart_generator_auto": {
-        "name": "Smart Generator Auto Start",
-        "state_key": "cmsOilSelfStart",
-        "command_key": "cmsOilSelfStart",
-        "icon_on": "mdi:engine",
-        "icon_off": "mdi:engine-off",
-        "device_class": SwitchDeviceClass.SWITCH,
-    },
-}
+# NOTE: Delta 3 Plus is NOT supported by EcoFlow REST API
+# Device returns error 1006. Removed from codebase.
 
 # Switch definitions for Delta 2 based on API documentation
 # Uses unique API format with moduleType and operateType parameters
@@ -350,12 +299,10 @@ STREAM_ULTRA_X_SWITCH_DEFINITIONS = {
 DEVICE_SWITCH_MAP = {
     DEVICE_TYPE_DELTA_PRO_3: DELTA_PRO_3_SWITCH_DEFINITIONS,
     DEVICE_TYPE_DELTA_PRO: DELTA_PRO_SWITCH_DEFINITIONS,
-    DEVICE_TYPE_DELTA_3_PLUS: DELTA_3_PLUS_SWITCH_DEFINITIONS,
     DEVICE_TYPE_DELTA_2: DELTA_2_SWITCH_DEFINITIONS,
     DEVICE_TYPE_STREAM_ULTRA_X: STREAM_ULTRA_X_SWITCH_DEFINITIONS,
     "delta_pro_3": DELTA_PRO_3_SWITCH_DEFINITIONS,
     "delta_pro": DELTA_PRO_SWITCH_DEFINITIONS,
-    "delta_3_plus": DELTA_3_PLUS_SWITCH_DEFINITIONS,
     "delta_2": DELTA_2_SWITCH_DEFINITIONS,
     "stream_ultra_x": STREAM_ULTRA_X_SWITCH_DEFINITIONS,
 }

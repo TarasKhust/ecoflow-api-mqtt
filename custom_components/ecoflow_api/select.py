@@ -14,7 +14,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
     DEVICE_TYPE_DELTA_2,
-    DEVICE_TYPE_DELTA_3_PLUS,
     DEVICE_TYPE_DELTA_PRO,
     DEVICE_TYPE_DELTA_PRO_3,
     DEVICE_TYPE_STREAM_ULTRA_X,
@@ -151,35 +150,8 @@ DELTA_PRO_SELECT_DEFINITIONS = {
 # NOTE: River 3 and River 3 Plus are NOT supported by EcoFlow REST API
 # These devices return error 1006. Removed from codebase.
 
-# Select definitions for Delta 3 Plus based on API documentation
-# Uses Delta Pro 3 API format (cmdId: 17, cmdFunc: 254)
-DELTA_3_PLUS_SELECT_DEFINITIONS = {
-    "update_interval": {
-        "name": "Update Interval",
-        "state_key": None,
-        "command_key": None,
-        "icon": "mdi:update",
-        "options": {
-            "5 seconds (Fast)": 5,
-            "10 seconds": 10,
-            "15 seconds (Recommended)": 15,
-            "30 seconds": 30,
-            "60 seconds (Slow)": 60,
-        },
-        "is_local": True,
-    },
-    "ac_charging_mode": {
-        "name": "AC Charging Mode",
-        "state_key": "plugInInfoAcInChgMode",
-        "command_key": "plugInInfoAcInChgMode",
-        "icon": "mdi:lightning-bolt",
-        "options": {
-            "Fast Charging": 0,
-            "Custom Power": 1,
-            "Silent Mode": 2,
-        },
-    },
-}
+# NOTE: Delta 3 Plus is NOT supported by EcoFlow REST API
+# Device returns error 1006. Removed from codebase.
 
 # Select definitions for Delta 2 based on API documentation
 # Uses unique API format with moduleType and operateType parameters
@@ -246,12 +218,10 @@ STREAM_ULTRA_X_SELECT_DEFINITIONS = {
 DEVICE_SELECT_MAP = {
     DEVICE_TYPE_DELTA_PRO_3: DELTA_PRO_3_SELECT_DEFINITIONS,
     DEVICE_TYPE_DELTA_PRO: DELTA_PRO_SELECT_DEFINITIONS,
-    DEVICE_TYPE_DELTA_3_PLUS: DELTA_3_PLUS_SELECT_DEFINITIONS,
     DEVICE_TYPE_DELTA_2: DELTA_2_SELECT_DEFINITIONS,
     DEVICE_TYPE_STREAM_ULTRA_X: STREAM_ULTRA_X_SELECT_DEFINITIONS,
     "delta_pro_3": DELTA_PRO_3_SELECT_DEFINITIONS,
     "delta_pro": DELTA_PRO_SELECT_DEFINITIONS,
-    "delta_3_plus": DELTA_3_PLUS_SELECT_DEFINITIONS,
     "delta_2": DELTA_2_SELECT_DEFINITIONS,
     "stream_ultra_x": STREAM_ULTRA_X_SELECT_DEFINITIONS,
 }

@@ -21,7 +21,6 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import (
     DEFAULT_POWER_STEP,
     DEVICE_TYPE_DELTA_2,
-    DEVICE_TYPE_DELTA_3_PLUS,
     DEVICE_TYPE_DELTA_PRO,
     DEVICE_TYPE_DELTA_PRO_3,
     DEVICE_TYPE_STREAM_ULTRA_X,
@@ -343,120 +342,8 @@ DELTA_PRO_NUMBER_DEFINITIONS = {
 # NOTE: River 3 and River 3 Plus are NOT supported by EcoFlow REST API
 # These devices return error 1006. Removed from codebase.
 
-# Number definitions for Delta 3 Plus based on API documentation
-# Uses Delta Pro 3 API format (cmdId: 17, cmdFunc: 254)
-DELTA_3_PLUS_NUMBER_DEFINITIONS = {
-    "max_charge_level": {
-        "name": "Charge Limit",
-        "state_key": "cmsMaxChgSoc",
-        "command_key": "cmsMaxChgSoc",
-        "min": 50,
-        "max": 100,
-        "step": 1,
-        "unit": PERCENTAGE,
-        "icon": "mdi:battery-charging-100",
-        "mode": NumberMode.SLIDER,
-    },
-    "min_discharge_level": {
-        "name": "Discharge Limit",
-        "state_key": "cmsMinDsgSoc",
-        "command_key": "cmsMinDsgSoc",
-        "min": 0,
-        "max": 30,
-        "step": 1,
-        "unit": PERCENTAGE,
-        "icon": "mdi:battery-10",
-        "mode": NumberMode.SLIDER,
-    },
-    "ac_charging_power": {
-        "name": "AC Charging Power",
-        "state_key": "plugInInfoAcInChgPowMax",
-        "command_key": "plugInInfoAcInChgPowMax",
-        "min": 100,
-        "max": 1500,
-        "step": 100,
-        "unit": UnitOfPower.WATT,
-        "icon": "mdi:lightning-bolt",
-        "mode": NumberMode.SLIDER,
-    },
-    "device_standby_time": {
-        "name": "Device Standby Time",
-        "state_key": "devStandbyTime",
-        "command_key": "devStandbyTime",
-        "min": 0,
-        "max": 1440,
-        "step": 30,
-        "unit": UnitOfTime.MINUTES,
-        "icon": "mdi:timer-sleep",
-        "mode": NumberMode.BOX,
-    },
-    "screen_timeout": {
-        "name": "Screen Timeout",
-        "state_key": "screenOffTime",
-        "command_key": "screenOffTime",
-        "min": 0,
-        "max": 1800,
-        "step": 30,
-        "unit": UnitOfTime.SECONDS,
-        "icon": "mdi:monitor-off",
-        "mode": NumberMode.BOX,
-    },
-    "ac_standby_time": {
-        "name": "AC Standby Time",
-        "state_key": "acStandbyTime",
-        "command_key": "acStandbyTime",
-        "min": 0,
-        "max": 1440,
-        "step": 30,
-        "unit": UnitOfTime.MINUTES,
-        "icon": "mdi:timer",
-        "mode": NumberMode.BOX,
-    },
-    "dc_standby_time": {
-        "name": "DC Standby Time",
-        "state_key": "dcStandbyTime",
-        "command_key": "dcStandbyTime",
-        "min": 0,
-        "max": 1440,
-        "step": 30,
-        "unit": UnitOfTime.MINUTES,
-        "icon": "mdi:timer",
-        "mode": NumberMode.BOX,
-    },
-    "lcd_brightness": {
-        "name": "LCD Brightness",
-        "state_key": "lcdLight",
-        "command_key": "lcdLight",
-        "min": 0,
-        "max": 100,
-        "step": 10,
-        "unit": PERCENTAGE,
-        "icon": "mdi:brightness-6",
-        "mode": NumberMode.SLIDER,
-    },
-    "generator_start_soc": {
-        "name": "Generator Start SOC",
-        "state_key": "cmsOilOnSoc",
-        "command_key": "cmsOilOnSoc",
-        "min": 10,
-        "max": 30,
-        "step": 5,
-        "unit": PERCENTAGE,
-        "icon": "mdi:engine",
-        "mode": NumberMode.SLIDER,
-    },
-    "generator_stop_soc": {
-        "name": "Generator Stop SOC",
-        "state_key": "cmsOilOffSoc",
-        "command_key": "cmsOilOffSoc",
-        "min": 50,
-        "max": 100,
-        "step": 5,
-        "unit": PERCENTAGE,
-        "icon": "mdi:engine-off",
-        "mode": NumberMode.SLIDER,
-    },
-}
+# NOTE: Delta 3 Plus is NOT supported by EcoFlow REST API
+# Device returns error 1006. Removed from codebase.
 
 # Number definitions for Delta 2 based on API documentation
 # Uses unique API format with moduleType and operateType parameters
@@ -626,12 +513,10 @@ STREAM_ULTRA_X_NUMBER_DEFINITIONS = {
 DEVICE_NUMBER_MAP = {
     DEVICE_TYPE_DELTA_PRO_3: DELTA_PRO_3_NUMBER_DEFINITIONS,
     DEVICE_TYPE_DELTA_PRO: DELTA_PRO_NUMBER_DEFINITIONS,
-    DEVICE_TYPE_DELTA_3_PLUS: DELTA_3_PLUS_NUMBER_DEFINITIONS,
     DEVICE_TYPE_DELTA_2: DELTA_2_NUMBER_DEFINITIONS,
     DEVICE_TYPE_STREAM_ULTRA_X: STREAM_ULTRA_X_NUMBER_DEFINITIONS,
     "delta_pro_3": DELTA_PRO_3_NUMBER_DEFINITIONS,
     "delta_pro": DELTA_PRO_NUMBER_DEFINITIONS,
-    "delta_3_plus": DELTA_3_PLUS_NUMBER_DEFINITIONS,
     "delta_2": DELTA_2_NUMBER_DEFINITIONS,
     "stream_ultra_x": STREAM_ULTRA_X_NUMBER_DEFINITIONS,
 }

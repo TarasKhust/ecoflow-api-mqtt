@@ -57,13 +57,11 @@ DEVICE_TYPE_DELTA_MAX: Final = "delta_max"
 DEVICE_TYPE_RIVER_2: Final = "river_2"
 DEVICE_TYPE_RIVER_2_MAX: Final = "river_2_max"
 DEVICE_TYPE_RIVER_2_PRO: Final = "river_2_pro"
-DEVICE_TYPE_DELTA_3_PLUS: Final = "delta_3_plus"
 DEVICE_TYPE_STREAM_ULTRA_X: Final = "stream_ultra_x"
 
 DEVICE_TYPES: Final = {
     DEVICE_TYPE_DELTA_PRO_3: "Delta Pro 3",
     DEVICE_TYPE_DELTA_PRO: "Delta Pro",
-    DEVICE_TYPE_DELTA_3_PLUS: "Delta 3 Plus",
     DEVICE_TYPE_DELTA_2: "Delta 2",
     DEVICE_TYPE_DELTA_2_MAX: "Delta 2 Max",
     DEVICE_TYPE_DELTA_MAX: "Delta Max",

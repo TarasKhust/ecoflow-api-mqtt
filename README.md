@@ -15,7 +15,7 @@ Home Assistant integration for EcoFlow devices using the **official EcoFlow Deve
   - Device control via REST API (reliable commands)
   - Automatic fallback to REST polling if MQTT unavailable
 - ✅ **Official API** - Uses EcoFlow Developer REST API (stable & documented)
-- ✅ **Multi-device support** - Delta Pro 3, Delta Pro, Delta 3 Plus
+- ✅ **Multi-device support** - Delta Pro 3, Delta Pro, Delta 2, Stream Ultra X
 - ✅ **Region support** - EU and US API endpoints
 - ✅ **Complete Delta Pro 3 support** - 100+ sensors, 13 binary sensors, 12 switches, 16 number controls, Power Off button
 - ✅ **Complete Delta 2 support** - 150+ sensors with value mapping, Extra Battery support
@@ -242,7 +242,6 @@ mode: single
 | --------------- | --------------- | -------------------------------- |
 | Delta Pro 3     | ✅ Full Support | All features, real device tested |
 | Delta Pro       | ✅ Full Support | US API verified                  |
-| Delta 3 Plus    | ✅ Full Support | All features                     |
 | Delta 2         | ✅ Full Support | 150+ sensors, Extra Battery, real device tested |
 | Stream Ultra X  | ✅ Full Support | Home battery system (Issue #16)  |
 | Delta 2 Max     | 🔄 Planned      | Coming soon                      |
