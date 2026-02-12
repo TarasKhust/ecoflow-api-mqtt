@@ -940,8 +940,8 @@ DELTA_PRO_3_NUMBERS: Final = {
     "plugInInfoAcInChgPowMax": {
         "name": "AC Charging Power",
         "unit": "W",
-        "min": 200,
-        "max": 3000,
+        "min": 400,
+        "max": 2900,
         "step": 100,
         "icon": "mdi:lightning-bolt",
         "command": "WN511_SET_AC_CHARGE_SPEED",

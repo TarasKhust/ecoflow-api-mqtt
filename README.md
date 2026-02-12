@@ -147,7 +147,7 @@ After setup, you can configure additional options:
 
 | Entity              | Description             | Range      |
 | ------------------- | ----------------------- | ---------- |
-| AC Charging Power   | Set charging power      | 200-3000 W |
+| AC Charging Power   | Set charging power      | 400-2900 W |
 | Max Charge Level    | Maximum charge level    | 50-100%    |
 | Min Discharge Level | Minimum discharge level | 0-30%      |
 

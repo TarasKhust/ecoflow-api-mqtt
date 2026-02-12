@@ -61,7 +61,7 @@ DELTA_PRO_3_NUMBER_DEFINITIONS = {
         "name": "AC Charging Power",
         "state_key": "plugInInfoAcInChgPowMax",
         "command_key": "cfgPlugInInfoAcInChgPowMax",
-        "min": 200,
+        "min": 400,
         "max": 2900,
         "step": 100,
         "unit": UnitOfPower.WATT,

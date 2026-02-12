@@ -198,7 +198,7 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         """Set AC charging power.
         
         Args:
-            power: Charging power in watts (200-3000)
+            power: Charging power in watts (400-2900)
         """
         try:
             _LOGGER.info("Setting AC charging power to %dW for %s", power, self.device_sn)

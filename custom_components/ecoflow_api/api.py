@@ -396,7 +396,7 @@ class EcoFlowApiClient:
 
         Args:
             device_sn: Device serial number
-            power: Charging power in watts (200-3000)
+            power: Charging power in watts (400-2900)
             pause: Whether to pause charging
 
         Returns:
@@ -409,7 +409,7 @@ class EcoFlowApiClient:
             CMD_DELTA_PRO_3_SET_AC_CHARGE_SPEED,
             {
                 "chgPauseFlag": 1 if pause else 0,
-                "acChgPower": max(200, min(3000, power)),
+                "acChgPower": max(400, min(2900, power)),
             },
         )
 
