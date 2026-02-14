@@ -3439,11 +3439,25 @@ class EcoFlowSensor(EcoFlowBaseEntity, SensorEntity):
         api_key = self._sensor_config["key"]
         value = self.coordinator.data.get(api_key)
 
+        # Handle nested object fallback for dotted keys (e.g., "plugInInfo4p81Resv.resvInfo")
+        # The EcoFlow API/MQTT may return data as nested objects instead of flat dotted keys
+        if value is None and "." in api_key:
+            parts = api_key.split(".", 1)
+            parent = self.coordinator.data.get(parts[0])
+            if isinstance(parent, dict):
+                value = parent.get(parts[1])
+
         # Try fallback key if primary key has no data
         if value is None or (isinstance(value, list) and all(v == 0 for v in value)):
             fallback_key = self._sensor_config.get("fallback_key")
             if fallback_key:
                 value = self.coordinator.data.get(fallback_key)
+                # Also try nested fallback for dotted fallback keys
+                if value is None and "." in fallback_key:
+                    parts = fallback_key.split(".", 1)
+                    parent = self.coordinator.data.get(parts[0])
+                    if isinstance(parent, dict):
+                        value = parent.get(parts[1])
                 if value is not None:
                     api_key = fallback_key  # Use fallback key for further processing
 
