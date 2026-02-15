@@ -172,6 +172,15 @@ class EcoFlowMQTTClient:
             if "version" not in mqtt_command:
                 mqtt_command["version"] = "1.0"
 
+            # Delta Pro (original) MQTT format requires operateType and timestamp
+            # Detect by checking for cmdSet inside params (Delta Pro format)
+            params = mqtt_command.get("params", {})
+            if isinstance(params, dict) and "cmdSet" in params:
+                if "operateType" not in mqtt_command:
+                    mqtt_command["operateType"] = "TCP"
+                if "timestamp" not in mqtt_command:
+                    mqtt_command["timestamp"] = int(time.time() * 1000)
+
             payload = json.dumps(mqtt_command)
             _LOGGER.info(
                 "MQTT publish to %s: %s",
@@ -306,14 +315,17 @@ class EcoFlowMQTTClient:
                     _LOGGER.info("Device %s status: %s", self.device_sn, "online" if status == 1 else "offline")
                     
             elif msg.topic == self._set_reply_topic:
-                # Set reply: Delta Pro 3 format: {"data": {"configOk": true, ...}, "id": 123}
-                #            Smart Plug format: {"data": {"ack": 0}, "id": 123}
+                # Set reply formats by device type:
+                #   Delta Pro 3:    {"data": {"configOk": true, ...}, "id": 123}
+                #   Delta 2/Plug:   {"data": {"ack": 0}, "id": 123}
+                #   Delta Pro Ultra: {"data": {"result": 0}, "id": 123}
                 reply_data = payload.get("data", {})
                 config_ok = reply_data.get("configOk")
                 ack = reply_data.get("ack")
+                result = reply_data.get("result")
                 reply_id = payload.get("id")
 
-                if config_ok is True or ack == 0:
+                if config_ok is True or ack == 0 or result == 0:
                     _LOGGER.info("Command reply OK for %s (id=%s): %s", self.device_sn[-4:], reply_id, reply_data)
                 else:
                     _LOGGER.warning("Command reply for %s (id=%s): %s", self.device_sn[-4:], reply_id, payload)
