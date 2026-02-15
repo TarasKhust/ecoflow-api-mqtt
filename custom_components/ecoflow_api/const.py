@@ -58,6 +58,7 @@ DEVICE_TYPE_RIVER_2: Final = "river_2"
 DEVICE_TYPE_RIVER_2_MAX: Final = "river_2_max"
 DEVICE_TYPE_RIVER_2_PRO: Final = "river_2_pro"
 DEVICE_TYPE_STREAM_ULTRA_X: Final = "stream_ultra_x"
+DEVICE_TYPE_SMART_PLUG: Final = "smart_plug"
 
 DEVICE_TYPES: Final = {
     DEVICE_TYPE_DELTA_PRO_3: "Delta Pro 3",
@@ -69,6 +70,7 @@ DEVICE_TYPES: Final = {
     DEVICE_TYPE_RIVER_2_MAX: "River 2 Max",
     DEVICE_TYPE_RIVER_2_PRO: "River 2 Pro",
     DEVICE_TYPE_STREAM_ULTRA_X: "Stream Ultra X",
+    DEVICE_TYPE_SMART_PLUG: "Smart Plug S401",
 }
 
 # Delta Pro 3 Commands (from https://developer-eu.ecoflow.com/us/document/deltaPro3)

@@ -16,6 +16,7 @@ from .const import (
     DEVICE_TYPE_DELTA_2,
     DEVICE_TYPE_DELTA_PRO,
     DEVICE_TYPE_DELTA_PRO_3,
+    DEVICE_TYPE_SMART_PLUG,
     DEVICE_TYPE_STREAM_ULTRA_X,
     DOMAIN,
 )
@@ -295,16 +296,36 @@ STREAM_ULTRA_X_SWITCH_DEFINITIONS = {
 }
 
 
+# Smart Plug S401 Switch Definitions
+# Uses cmdCode format instead of cmdId/cmdFunc
+SMART_PLUG_SWITCH_DEFINITIONS = {
+    "outlet": {
+        "name": "Outlet",
+        "state_key": "2_1.switchSta",  # boolean: false=off, true=on
+        "cmd_code": "WN511_SOCKET_SET_PLUG_SWITCH_MESSAGE",
+        "param_key": "plugSwitch",  # 0=off, 1=on
+        "value_on": 1,
+        "value_off": 0,
+        "icon_on": "mdi:power-plug",
+        "icon_off": "mdi:power-plug-off",
+        "device_class": SwitchDeviceClass.OUTLET,
+    },
+}
+
+
 # Map device types to switch definitions
 DEVICE_SWITCH_MAP = {
     DEVICE_TYPE_DELTA_PRO_3: DELTA_PRO_3_SWITCH_DEFINITIONS,
     DEVICE_TYPE_DELTA_PRO: DELTA_PRO_SWITCH_DEFINITIONS,
     DEVICE_TYPE_DELTA_2: DELTA_2_SWITCH_DEFINITIONS,
     DEVICE_TYPE_STREAM_ULTRA_X: STREAM_ULTRA_X_SWITCH_DEFINITIONS,
+    DEVICE_TYPE_SMART_PLUG: SMART_PLUG_SWITCH_DEFINITIONS,
     "delta_pro_3": DELTA_PRO_3_SWITCH_DEFINITIONS,
     "delta_pro": DELTA_PRO_SWITCH_DEFINITIONS,
     "delta_2": DELTA_2_SWITCH_DEFINITIONS,
     "stream_ultra_x": STREAM_ULTRA_X_SWITCH_DEFINITIONS,
+    "smart_plug": SMART_PLUG_SWITCH_DEFINITIONS,
+    "Smart Plug S401": SMART_PLUG_SWITCH_DEFINITIONS,
 }
 
 
@@ -328,9 +349,19 @@ async def async_setup_entry(
     is_delta_pro = device_type in (DEVICE_TYPE_DELTA_PRO, "delta_pro")
     is_delta_2 = device_type in (DEVICE_TYPE_DELTA_2, "delta_2")
     is_stream = device_type in (DEVICE_TYPE_STREAM_ULTRA_X, "stream_ultra_x")
+    is_smart_plug = device_type in (DEVICE_TYPE_SMART_PLUG, "smart_plug", "Smart Plug S401")
 
     for switch_key, switch_def in switch_definitions.items():
-        if is_delta_pro:
+        if is_smart_plug:
+            entities.append(
+                EcoFlowSmartPlugSwitch(
+                    coordinator=coordinator,
+                    entry=entry,
+                    switch_key=switch_key,
+                    switch_def=switch_def,
+                )
+            )
+        elif is_delta_pro:
             entities.append(
                 EcoFlowDeltaProSwitch(
                     coordinator=coordinator,
@@ -749,6 +780,97 @@ class EcoFlowStreamSwitch(EcoFlowBaseEntity, SwitchEntity):
             "needAck": True,
             "params": {param_key: state},
         }
+
+        try:
+            await self.coordinator.api_client.set_device_quota(
+                device_sn=device_sn,
+                cmd_code=payload,
+            )
+            # Wait 2 seconds for device to apply changes, then refresh
+            await asyncio.sleep(2)
+            await self.coordinator.async_request_refresh()
+        except Exception as err:
+            _LOGGER.error("Failed to set %s to %s: %s", self._switch_key, state, err)
+            raise
+
+class EcoFlowSmartPlugSwitch(EcoFlowBaseEntity, SwitchEntity):
+    """Representation of an EcoFlow Smart Plug switch.
+
+    Uses the Smart Plug API format with cmdCode parameter.
+    Command format: {"sn": "DEVICE_SN", "cmdCode": "WN511_SOCKET_SET_PLUG_SWITCH_MESSAGE", "params": {"plugSwitch": 0/1}}
+    """
+
+    def __init__(
+        self,
+        coordinator: EcoFlowDataCoordinator,
+        entry: ConfigEntry,
+        switch_key: str,
+        switch_def: dict[str, Any],
+    ) -> None:
+        """Initialize the switch."""
+        super().__init__(coordinator, switch_key)
+        self._switch_key = switch_key
+        self._switch_def = switch_def
+        self._attr_unique_id = f"{entry.entry_id}_{switch_key}"
+        self._attr_name = switch_def["name"]
+        self._attr_has_entity_name = True
+        self._attr_translation_key = switch_key
+        self._attr_device_class = switch_def.get("device_class")
+
+    @property
+    def is_on(self) -> bool | None:
+        """Return true if switch is on."""
+        if not self.coordinator.data:
+            return None
+
+        state_key = self._switch_def["state_key"]
+        value = self.coordinator.data.get(state_key)
+
+        if value is None:
+            return None
+
+        # Smart Plug returns boolean for switchSta
+        return bool(value)
+
+    @property
+    def icon(self) -> str | None:
+        """Return the icon to use in the frontend."""
+        if self.is_on:
+            return self._switch_def.get("icon_on")
+        return self._switch_def.get("icon_off")
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Turn the switch on."""
+        await self._send_command(True)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        """Turn the switch off."""
+        await self._send_command(False)
+
+    async def _send_command(self, state: bool) -> None:
+        """Send command to Smart Plug via REST API.
+
+        Smart Plug uses cmdCode format:
+        {"sn": "DEVICE_SN", "cmdCode": "WN511_SOCKET_SET_PLUG_SWITCH_MESSAGE", "params": {"plugSwitch": 0/1}}
+        """
+        device_sn = self.coordinator.device_sn
+        cmd_code = self._switch_def["cmd_code"]
+        param_key = self._switch_def["param_key"]
+
+        # Get value from definition (0=off, 1=on for Smart Plug)
+        if state:
+            value = self._switch_def.get("value_on", 1)
+        else:
+            value = self._switch_def.get("value_off", 0)
+
+        # Build command payload according to Smart Plug API format
+        payload = {
+            "sn": device_sn,
+            "cmdCode": cmd_code,
+            "params": {param_key: value},
+        }
+
+        _LOGGER.debug("Sending Smart Plug switch command: %s", payload)
 
         try:
             await self.coordinator.api_client.set_device_quota(

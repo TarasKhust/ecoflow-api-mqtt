@@ -23,6 +23,7 @@ from .const import (
     DEVICE_TYPE_DELTA_2,
     DEVICE_TYPE_DELTA_PRO,
     DEVICE_TYPE_DELTA_PRO_3,
+    DEVICE_TYPE_SMART_PLUG,
     DEVICE_TYPE_STREAM_ULTRA_X,
     DOMAIN,
     OPTS_POWER_STEP,
@@ -509,6 +510,27 @@ STREAM_ULTRA_X_NUMBER_DEFINITIONS = {
 }
 
 
+# Smart Plug S401 Number Definitions
+# Uses cmdCode format
+SMART_PLUG_NUMBER_DEFINITIONS = {
+    "led_brightness": {
+        "name": "LED Brightness",
+        "state_key": "2_1.brightness",
+        "cmd_code": "WN511_SOCKET_SET_BRIGHTNESS_PACK",
+        "param_key": "brightness",
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "unit": PERCENTAGE,
+        "icon": "mdi:brightness-6",
+        "mode": NumberMode.SLIDER,
+        # Convert between API (0-1023) and UI (0-100%)
+        "value_map_to_ui": lambda x: round((x / 1023) * 100) if x is not None else None,
+        "value_map_from_ui": lambda x: round((x / 100) * 1023) if x is not None else None,
+    },
+}
+
+
 # Map device types to number definitions
 DEVICE_NUMBER_MAP = {
     DEVICE_TYPE_DELTA_PRO_3: DELTA_PRO_3_NUMBER_DEFINITIONS,
@@ -519,6 +541,8 @@ DEVICE_NUMBER_MAP = {
     "delta_pro": DELTA_PRO_NUMBER_DEFINITIONS,
     "delta_2": DELTA_2_NUMBER_DEFINITIONS,
     "stream_ultra_x": STREAM_ULTRA_X_NUMBER_DEFINITIONS,
+    "smart_plug": SMART_PLUG_NUMBER_DEFINITIONS,
+    "Smart Plug S401": SMART_PLUG_NUMBER_DEFINITIONS,
 }
 
 
@@ -542,6 +566,7 @@ async def async_setup_entry(
     is_delta_pro = device_type in (DEVICE_TYPE_DELTA_PRO, "delta_pro")
     is_delta_2 = device_type in (DEVICE_TYPE_DELTA_2, "delta_2")
     is_stream = device_type in (DEVICE_TYPE_STREAM_ULTRA_X, "stream_ultra_x")
+    is_smart_plug = device_type in (DEVICE_TYPE_SMART_PLUG, "smart_plug", "Smart Plug S401")
 
     for number_key, number_def in number_definitions.items():
         if is_delta_pro:
@@ -565,6 +590,15 @@ async def async_setup_entry(
         elif is_stream:
             entities.append(
                 EcoFlowStreamNumber(
+                    coordinator=coordinator,
+                    entry=entry,
+                    number_key=number_key,
+                    number_def=number_def,
+                )
+            )
+        elif is_smart_plug:
+            entities.append(
+                EcoFlowSmartPlugNumber(
                     coordinator=coordinator,
                     entry=entry,
                     number_key=number_key,
@@ -938,4 +972,87 @@ class EcoFlowStreamNumber(EcoFlowBaseEntity, NumberEntity):
             _LOGGER.error(
                 "Failed to set %s to %s: %s", self._number_key, int_value, err
             )
+            raise
+
+
+class EcoFlowSmartPlugNumber(EcoFlowBaseEntity, NumberEntity):
+    """Representation of an EcoFlow Smart Plug number entity.
+
+    Uses the Smart Plug API format with cmdCode parameter.
+    Command format: {"sn": "DEVICE_SN", "cmdCode": "WN511_SOCKET_SET_BRIGHTNESS_PACK", "params": {"brightness": 0-1023}}
+    """
+
+    def __init__(
+        self,
+        coordinator: EcoFlowDataCoordinator,
+        entry: ConfigEntry,
+        number_key: str,
+        number_def: dict[str, Any],
+    ) -> None:
+        """Initialize the number entity."""
+        super().__init__(coordinator, number_key)
+        self._number_key = number_key
+        self._number_def = number_def
+        self._entry = entry
+        self._attr_unique_id = f"{entry.entry_id}_{number_key}"
+        self._attr_name = number_def["name"]
+        self._attr_has_entity_name = True
+        self._attr_translation_key = number_key
+
+        # Set number properties
+        self._attr_native_min_value = number_def["min"]
+        self._attr_native_max_value = number_def["max"]
+        self._attr_native_step = number_def["step"]
+        self._attr_native_unit_of_measurement = number_def.get("unit")
+        self._attr_mode = number_def.get("mode", NumberMode.AUTO)
+        self._attr_icon = number_def.get("icon")
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the current value."""
+        if not self.coordinator.data:
+            return None
+
+        state_key = self._number_def["state_key"]
+        value = self.coordinator.data.get(state_key)
+
+        if value is None:
+            return None
+
+        # Convert from API value (0-1023) to UI value (0-100%)
+        if "value_map_to_ui" in self._number_def:
+            value = self._number_def["value_map_to_ui"](value)
+
+        return float(value) if value is not None else None
+
+    async def async_set_native_value(self, value: float) -> None:
+        """Set the value via API."""
+        device_sn = self.coordinator.device_sn
+        cmd_code = self._number_def["cmd_code"]
+        param_key = self._number_def["param_key"]
+
+        # Convert from UI value (0-100%) to API value (0-1023)
+        api_value = value
+        if "value_map_from_ui" in self._number_def:
+            api_value = self._number_def["value_map_from_ui"](value)
+
+        # Build command payload according to Smart Plug API format
+        payload = {
+            "sn": device_sn,
+            "cmdCode": cmd_code,
+            "params": {param_key: int(api_value)},
+        }
+
+        _LOGGER.debug("Sending Smart Plug number command: %s", payload)
+
+        try:
+            await self.coordinator.api_client.set_device_quota(
+                device_sn=device_sn,
+                cmd_code=payload,
+            )
+            # Wait 2 seconds for device to apply changes, then refresh
+            await asyncio.sleep(2)
+            await self.coordinator.async_request_refresh()
+        except Exception as err:
+            _LOGGER.error("Failed to set %s to %s: %s", self._number_key, value, err)
             raise

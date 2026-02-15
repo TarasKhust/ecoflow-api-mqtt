@@ -31,7 +31,12 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.util import dt as dt_util
 
-from .const import DEVICE_TYPE_DELTA_2, DEVICE_TYPE_STREAM_ULTRA_X, DOMAIN
+from .const import (
+    DEVICE_TYPE_DELTA_2,
+    DEVICE_TYPE_SMART_PLUG,
+    DEVICE_TYPE_STREAM_ULTRA_X,
+    DOMAIN,
+)
 from .coordinator import EcoFlowDataCoordinator
 from .entity import EcoFlowBaseEntity
 from .hybrid_coordinator import EcoFlowHybridCoordinator
@@ -3120,6 +3125,111 @@ STREAM_ULTRA_X_SENSOR_DEFINITIONS = {
 }
 
 
+# ============================================================================
+# Smart Plug S401 Sensor Definitions
+# Based on EcoFlow API documentation for Smart Plug
+# Field prefix: 2_1. (heartbeat data)
+# ============================================================================
+SMART_PLUG_SENSOR_DEFINITIONS = {
+    # ============================================================================
+    # POWER MONITORING
+    # ============================================================================
+    "power": {
+        "name": "Power",
+        "key": "2_1.watts",
+        "unit": UnitOfPower.WATT,
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": None,
+        "value_map": lambda x: x / 10 if x is not None else None,  # API returns 0.1W units
+    },
+    "voltage": {
+        "name": "Voltage",
+        "key": "2_1.volt",
+        "unit": UnitOfElectricPotential.VOLT,
+        "device_class": SensorDeviceClass.VOLTAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": None,
+    },
+    "current": {
+        "name": "Current",
+        "key": "2_1.current",
+        "unit": UnitOfElectricCurrent.AMPERE,
+        "device_class": SensorDeviceClass.CURRENT,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": None,
+        "value_map": lambda x: x / 1000 if x is not None else None,  # API returns mA
+    },
+    # ============================================================================
+    # DEVICE STATUS
+    # ============================================================================
+    "temperature": {
+        "name": "Temperature",
+        "key": "2_1.temp",
+        "unit": UnitOfTemperature.CELSIUS,
+        "device_class": SensorDeviceClass.TEMPERATURE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": None,
+    },
+    "frequency": {
+        "name": "Frequency",
+        "key": "2_1.freq",
+        "unit": UnitOfFrequency.HERTZ,
+        "device_class": SensorDeviceClass.FREQUENCY,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": None,
+    },
+    "led_brightness": {
+        "name": "LED Brightness",
+        "key": "2_1.brightness",
+        "unit": None,
+        "device_class": None,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:brightness-6",
+        "value_map": lambda x: round((x / 1023) * 100) if x is not None else None,  # Convert 0-1023 to 0-100%
+    },
+    "max_current": {
+        "name": "Maximum Current",
+        "key": "2_1.maxCur",
+        "unit": UnitOfElectricCurrent.AMPERE,
+        "device_class": SensorDeviceClass.CURRENT,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:current-ac",
+        "value_map": lambda x: x / 10 if x is not None else None,  # API returns 0.1A units
+    },
+    # ============================================================================
+    # DIAGNOSTICS
+    # ============================================================================
+    "error_code": {
+        "name": "Error Code",
+        "key": "2_1.errCode",
+        "unit": None,
+        "device_class": None,
+        "state_class": None,
+        "icon": "mdi:alert-circle",
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "warning_code": {
+        "name": "Warning Code",
+        "key": "2_1.warnCode",
+        "unit": None,
+        "device_class": None,
+        "state_class": None,
+        "icon": "mdi:alert",
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "last_update": {
+        "name": "Last Update",
+        "key": "2_1.updateTime",
+        "unit": None,
+        "device_class": SensorDeviceClass.TIMESTAMP,
+        "state_class": None,
+        "icon": "mdi:clock-outline",
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+}
+
+
 # Map device types to their sensor definitions
 DEVICE_SENSOR_MAP = {
     "DELTA Pro 3": DELTA_PRO_3_SENSOR_DEFINITIONS,
@@ -3130,6 +3240,9 @@ DEVICE_SENSOR_MAP = {
     DEVICE_TYPE_DELTA_2: DELTA_2_SENSOR_DEFINITIONS,
     DEVICE_TYPE_STREAM_ULTRA_X: STREAM_ULTRA_X_SENSOR_DEFINITIONS,
     "Stream Ultra X": STREAM_ULTRA_X_SENSOR_DEFINITIONS,
+    DEVICE_TYPE_SMART_PLUG: SMART_PLUG_SENSOR_DEFINITIONS,
+    "Smart Plug S401": SMART_PLUG_SENSOR_DEFINITIONS,
+    "smart_plug": SMART_PLUG_SENSOR_DEFINITIONS,
 }
 
 
