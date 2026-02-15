@@ -3,59 +3,38 @@
     "step": {
       "user": {
         "title": "Налаштування EcoFlow API",
-        "description": "Налаштуйте ваш пристрій EcoFlow, обравши тип облікових даних"
+        "description": "Оберіть спосіб налаштування вашого пристрою EcoFlow",
+        "menu_options": {
+          "auto_discovery": "Автоматичне виявлення (Рекомендовано)",
+          "manual_entry": "Ручне введення (Ввести всі дані)"
+        }
       },
       "auto_discovery": {
-        "title": "Оберіть тип облікових даних",
-        "description": "Оберіть, які облікові дані ви хочете використовувати:\n\n**MQTT (Звичайний акаунт)** - Використовуйте email та пароль з додатку EcoFlow. Рекомендовано для більшості користувачів. Потрібно ввести серійний номер вручну.\n\n**Developer API ключі** - Використовуйте API ключі з [EcoFlow Developer Portal](https://developer-eu.ecoflow.com/). Автоматичне виявлення пристроїв.\n\n**Обидва** - Поєднайте MQTT та API ключі для повної функціональності з автоматичним виявленням.",
-        "menu_options": {
-          "credentials_mqtt": "MQTT (Email + Пароль) - Звичайний акаунт",
-          "credentials_api": "Developer API ключі - Автовиявлення",
-          "credentials_both": "Обидва MQTT + API - Повна функціональність"
-        }
-      },
-      "credentials_mqtt": {
-        "title": "MQTT (Звичайний акаунт)",
-        "description": "Введіть облікові дані вашого акаунту EcoFlow (email та пароль з додатку EcoFlow).\n\n✅ **Більшість користувачів обирають цей варіант**\n⚠️ **Примітка:** Потрібно ввести серійний номер пристрою вручну",
+        "title": "Налаштування EcoFlow API",
+        "description": "Введіть ваші облікові дані EcoFlow Developer API.\n\nОтримайте API ключі тут: [EcoFlow Developer Portal]({api_docs})\n\n**Перед початком:**\n1. Зареєструйтесь на EcoFlow Developer Portal\n2. Створіть додаток і отримайте API ключі\n3. Прив'яжіть ваш пристрій до Developer акаунту",
         "data": {
-          "mqtt_username": "Email адреса",
-          "mqtt_password": "Пароль"
-        },
-        "data_description": {
-          "mqtt_username": "Email вашого акаунту EcoFlow (для входу в додаток EcoFlow)",
-          "mqtt_password": "Пароль вашого акаунту EcoFlow"
-        }
-      },
-      "credentials_api": {
-        "title": "Developer API ключі",
-        "description": "Введіть облікові дані Developer API з [EcoFlow Developer Portal](https://developer-eu.ecoflow.com/).\n\n✅ **Автоматичне виявлення пристроїв**\n⚠️ **Потрібно:** Developer акаунт з API ключами",
-        "data": {
-          "region": "Регіон",
           "access_key": "Ключ доступу",
           "secret_key": "Секретний ключ"
         },
         "data_description": {
-          "region": "Оберіть регіон EcoFlow API (EU для Європи, US для США)",
-          "access_key": "Ключ доступу Developer API з EcoFlow Developer Portal",
-          "secret_key": "Секретний ключ Developer API з EcoFlow Developer Portal"
+          "access_key": "Ваш ключ доступу EcoFlow Developer API",
+          "secret_key": "Ваш секретний ключ EcoFlow Developer API"
         }
       },
-      "credentials_both": {
-        "title": "Обидва MQTT + API ключі",
-        "description": "Введіть облікові дані MQTT та Developer API ключі для повної функціональності.\n\n✅ **Найкращий варіант:** Автоматичне виявлення + оновлення в реальному часі\n⚠️ **Потрібно:** Звичайний акаунт + Developer API ключі",
+      "manual_entry": {
+        "title": "Ручне налаштування пристрою",
+        "description": "Введіть всі дані пристрою вручну.\n\nОтримайте API ключі тут: [EcoFlow Developer Portal]({api_docs})\n\n**Необхідна інформація:**\n1. API ключ доступу та секретний ключ\n2. Серійний номер пристрою (на наклейці або в додатку)\n3. Тип пристрою",
         "data": {
-          "region": "Регіон",
-          "mqtt_username": "Email адреса",
-          "mqtt_password": "Пароль",
           "access_key": "Ключ доступу",
-          "secret_key": "Секретний ключ"
+          "secret_key": "Секретний ключ",
+          "device_sn": "Серійний номер пристрою",
+          "device_type": "Тип пристрою"
         },
         "data_description": {
-          "region": "Оберіть регіон EcoFlow API (EU для Європи, US для США)",
-          "mqtt_username": "Email вашого акаунту EcoFlow (для оновлень в реальному часі)",
-          "mqtt_password": "Пароль вашого акаунту EcoFlow",
-          "access_key": "Ключ доступу Developer API (для виявлення пристроїв)",
-          "secret_key": "Секретний ключ Developer API"
+          "access_key": "Ваш ключ доступу EcoFlow Developer API",
+          "secret_key": "Ваш секретний ключ EcoFlow Developer API",
+          "device_sn": "Серійний номер вашого пристрою EcoFlow",
+          "device_type": "Виберіть модель пристрою"
         }
       },
       "select_device": {
@@ -95,7 +74,6 @@
       "cannot_connect": "Не вдалося підключитися до EcoFlow API. Перевірте підключення до інтернету.",
       "invalid_auth": "Недійсні облікові дані. Перевірте ключ доступу та секретний ключ.",
       "invalid_device": "Пристрій не знайдено або недоступний. Перевірте:\n1. Серійний номер правильний\n2. Пристрій онлайн\n3. Пристрій прив'язаний до вашого Developer акаунту на https://developer-eu.ecoflow.com/",
-      "no_credentials": "Вкажіть хоча б один набір облікових даних:\n• MQTT (email + пароль) - рекомендовано для більшості\n• Developer API ключі (access_key + secret_key)\n• Обидва (для повної функціональності)",
       "unknown": "Виникла неочікувана помилка. Перегляньте журнали для деталей."
     },
     "abort": {
@@ -110,272 +88,160 @@
         "description": "Налаштуйте інтервал оновлення для опитування даних датчиків.\n\n**Примітка:** Менші інтервали забезпечують швидші оновлення, але можуть збільшити використання API.",
         "data": {
           "update_interval": "Інтервал оновлення",
-          "mqtt_enabled": "Увімкнути MQTT (оновлення в реальному часі)",
-          "mqtt_username": "MQTT ім'я користувача",
-          "mqtt_password": "MQTT пароль",
           "diagnostic_mode": "Діагностичний режим"
         },
         "data_description": {
           "update_interval": "Як часто оновлювати дані датчиків з EcoFlow API",
-          "mqtt_enabled": "Увімкнути оновлення в реальному часі через MQTT",
-          "diagnostic_mode": "Увімкнути діагностичний режим для усунення несправностей"
+          "diagnostic_mode": "Увімкнути діагностичний режим для збору необроблених даних для діагностики (збільшує використання пам'яті)"
         }
       }
     }
   },
   "entity": {
     "sensor": {
-      "bms_batt_soc": {
+      "soc": {
         "name": "Рівень заряду батареї"
       },
-      "bms_batt_soh": {
+      "soh": {
         "name": "Стан здоров'я батареї"
       },
-      "bms_design_cap": {
-        "name": "Проектна ємність батареї"
+      "cycles": {
+        "name": "Цикли заряду"
       },
-      "bms_chg_rem_time": {
-        "name": "Час до повного заряду"
+      "full_cap": {
+        "name": "Повна ємність"
       },
-      "bms_dsg_rem_time": {
-        "name": "Час до розряду"
+      "remain_cap": {
+        "name": "Залишкова ємність"
       },
-      "bms_chg_dsg_state": {
-        "name": "Стан заряду/розряду"
-      },
-      "bms_err_code": {
-        "name": "Код помилки BMS"
-      },
-      "cms_batt_soc": {
-        "name": "Рівень заряду системи"
-      },
-      "cms_batt_soh": {
-        "name": "Стан здоров'я системи"
-      },
-      "cms_batt_full_energy": {
-        "name": "Повна енергія системи"
-      },
-      "cms_batt_pow_in_max": {
-        "name": "Макс. вхідна потужність"
-      },
-      "cms_batt_pow_out_max": {
-        "name": "Макс. вихідна потужність"
-      },
-      "cms_bms_run_state": {
-        "name": "Стан роботи BMS"
-      },
-      "cms_chg_dsg_state": {
-        "name": "Стан заряду/розряду системи"
-      },
-      "cms_chg_rem_time": {
-        "name": "Час заряду системи"
-      },
-      "cms_dsg_rem_time": {
-        "name": "Час розряду системи"
-      },
-      "cms_max_chg_soc": {
-        "name": "Макс. рівень заряду"
-      },
-      "cms_min_dsg_soc": {
-        "name": "Мін. рівень розряду"
-      },
-      "bms_max_cell_temp": {
-        "name": "Макс. температура комірки"
-      },
-      "bms_min_cell_temp": {
-        "name": "Мін. температура комірки"
-      },
-      "bms_max_mos_temp": {
-        "name": "Макс. температура MOS"
-      },
-      "bms_min_mos_temp": {
-        "name": "Мін. температура MOS"
-      },
-      "pow_in_sum_w": {
+      "watts_in_sum": {
         "name": "Загальна вхідна потужність"
       },
-      "pow_get_ac_in": {
-        "name": "Вхідна потужність AC"
-      },
-      "pow_get_pv_h": {
-        "name": "Потужність сонячної панелі HV"
-      },
-      "pow_get_pv_l": {
-        "name": "Потужність сонячної панелі LV"
-      },
-      "pow_get_5p8": {
-        "name": "Потужність 5.8V"
-      },
-      "pow_get_4p81": {
-        "name": "Потужність порту 4.8V 1"
-      },
-      "pow_get_4p82": {
-        "name": "Потужність порту 4.8V 2"
-      },
-      "pow_out_sum_w": {
+      "watts_out_sum": {
         "name": "Загальна вихідна потужність"
       },
-      "pow_get_ac_hv_out": {
+      "ac_in_power": {
+        "name": "Вхідна потужність AC"
+      },
+      "ac_out_power": {
+        "name": "Вихідна потужність AC"
+      },
+      "ac_hv_out_power": {
         "name": "Вихідна потужність AC HV"
       },
-      "pow_get_ac_lv_out": {
+      "ac_lv_out_power": {
         "name": "Вихідна потужність AC LV"
       },
-      "pow_get_ac_lv_tt30_out": {
-        "name": "Вихідна потужність AC LV TT30"
+      "solar_in_power": {
+        "name": "Потужність сонячної панелі"
       },
-      "pow_get_12v": {
+      "solar_hv_in_power": {
+        "name": "Потужність сонячної панелі HV"
+      },
+      "solar_lv_in_power": {
+        "name": "Потужність сонячної панелі LV"
+      },
+      "dc_out_power": {
+        "name": "Вихідна потужність DC"
+      },
+      "dc12v_out_power": {
         "name": "Вихідна потужність 12V DC"
       },
-      "pow_get_24v": {
+      "dc24v_out_power": {
         "name": "Вихідна потужність 24V DC"
       },
-      "pow_get_qcusb1": {
-        "name": "Потужність QC USB 1"
+      "usb1_out_power": {
+        "name": "Потужність USB 1"
       },
-      "pow_get_qcusb2": {
-        "name": "Потужність QC USB 2"
+      "usb2_out_power": {
+        "name": "Потужність USB 2"
       },
-      "pow_get_typec1": {
+      "type_c1_out_power": {
         "name": "Потужність Type-C 1"
       },
-      "pow_get_typec2": {
+      "type_c2_out_power": {
         "name": "Потужність Type-C 2"
       },
-      "ac_out_freq": {
-        "name": "Частота AC виходу"
+      "chg_remain_time": {
+        "name": "Час до повного заряду"
       },
-      "plug_in_info_ac_in_feq": {
-        "name": "Частота AC входу"
+      "dsg_remain_time": {
+        "name": "Час до розряду"
       },
-      "plug_in_info_ac_in_chg_pow_max": {
-        "name": "Макс. потужність заряду AC"
+      "bms_temp": {
+        "name": "Температура батареї"
       },
-      "plug_in_info_ac_in_chg_hal_pow_max": {
-        "name": "Макс. апаратна потужність заряду AC"
+      "min_cell_temp": {
+        "name": "Мін. температура комірки"
       },
-      "plug_in_info_ac_out_dsg_pow_max": {
-        "name": "Макс. потужність розряду AC"
+      "max_cell_temp": {
+        "name": "Макс. температура комірки"
       },
-      "plug_in_info_pv_h_chg_amp_max": {
-        "name": "Макс. струм заряду сонячної HV"
+      "bms_vol": {
+        "name": "Напруга батареї"
       },
-      "plug_in_info_pv_h_dc_amp_max": {
-        "name": "Макс. DC струм сонячної HV"
+      "min_cell_vol": {
+        "name": "Мін. напруга комірки"
       },
-      "plug_in_info_pv_h_chg_vol_max": {
-        "name": "Макс. напруга заряду сонячної HV"
+      "max_cell_vol": {
+        "name": "Макс. напруга комірки"
       },
-      "plug_in_info_pv_l_chg_amp_max": {
-        "name": "Макс. струм заряду сонячної LV"
+      "ac_in_vol": {
+        "name": "Вхідна напруга AC"
       },
-      "plug_in_info_pv_l_dc_amp_max": {
-        "name": "Макс. DC струм сонячної LV"
+      "bms_cur": {
+        "name": "Струм батареї"
       },
-      "plug_in_info_pv_l_chg_vol_max": {
-        "name": "Макс. напруга заряду сонячної LV"
+      "chg_energy": {
+        "name": "Загальна енергія заряду"
       },
-      "plug_in_info_dcp2_sn": {
-        "name": "Серійний номер додаткової батареї 2"
+      "dsg_energy": {
+        "name": "Загальна енергія розряду"
       },
-      "plug_in_info_dcp_sn": {
-        "name": "Серійний номер додаткової батареї"
+      "ac_chg_power": {
+        "name": "Налаштування потужності заряду AC"
       },
-      "flow_info_ac_hv_out": {
-        "name": "Стан потоку AC HV"
+      "max_chg_soc": {
+        "name": "Налаштування макс. рівня заряду"
       },
-      "flow_info_ac_lv_out": {
-        "name": "Стан потоку AC LV"
+      "min_dsg_soc": {
+        "name": "Налаштування мін. рівня розряду"
       },
-      "flow_info_ac_in": {
-        "name": "Стан потоку AC входу"
+      "extra_battery_1_soc": {
+        "name": "Додаткова батарея 1 - Рівень заряду"
       },
-      "flow_info_pv_h": {
-        "name": "Стан потоку сонячної HV"
+      "extra_battery_1_soh": {
+        "name": "Додаткова батарея 1 - Стан здоров'я"
       },
-      "flow_info_pv_l": {
-        "name": "Стан потоку сонячної LV"
+      "extra_battery_1_cycles": {
+        "name": "Додаткова батарея 1 - Цикли"
       },
-      "flow_info_12v": {
-        "name": "Стан потоку 12V DC"
+      "extra_battery_1_temp": {
+        "name": "Додаткова батарея 1 - Температура"
       },
-      "flow_info_24v": {
-        "name": "Стан потоку 24V DC"
+      "extra_battery_1_vol": {
+        "name": "Додаткова батарея 1 - Напруга"
       },
-      "flow_info_qcusb1": {
-        "name": "Стан потоку QC USB 1"
+      "extra_battery_1_cur": {
+        "name": "Додаткова батарея 1 - Струм"
       },
-      "flow_info_qcusb2": {
-        "name": "Стан потоку QC USB 2"
+      "extra_battery_2_soc": {
+        "name": "Додаткова батарея 2 - Рівень заряду"
       },
-      "flow_info_typec1": {
-        "name": "Стан потоку Type-C 1"
+      "extra_battery_2_soh": {
+        "name": "Додаткова батарея 2 - Стан здоров'я"
       },
-      "flow_info_typec2": {
-        "name": "Стан потоку Type-C 2"
+      "extra_battery_2_cycles": {
+        "name": "Додаткова батарея 2 - Цикли"
       },
-      "ac_standby_time": {
-        "name": "Час очікування AC"
+      "extra_battery_2_temp": {
+        "name": "Додаткова батарея 2 - Температура"
       },
-      "dc_standby_time": {
-        "name": "Час очікування DC"
+      "extra_battery_2_vol": {
+        "name": "Додаткова батарея 2 - Напруга"
       },
-      "ble_standby_time": {
-        "name": "Час очікування Bluetooth"
-      },
-      "screen_off_time": {
-        "name": "Час вимкнення екрану"
-      },
-      "lcd_light": {
-        "name": "Яскравість LCD"
-      },
-      "backup_reverse_soc": {
-        "name": "Резервний SOC"
-      },
-      "cms_oil_on_soc": {
-        "name": "SOC запуску генератора"
-      },
-      "cms_oil_off_soc": {
-        "name": "SOC зупинки генератора"
-      },
-      "generator_care_mode_start_time": {
-        "name": "Час запуску режиму генератора"
-      },
-      "generator_pv_hybrid_mode_soc_max": {
-        "name": "Макс. SOC гібридного режиму"
-      },
-      "errcode": {
-        "name": "Код помилки"
-      },
-      "mppt_err_code": {
-        "name": "Код помилки MPPT"
-      },
-      "dev_sleep_state": {
-        "name": "Стан сну пристрою"
-      },
-      "dev_standby_time": {
-        "name": "Час очікування пристрою"
-      },
-      "llc_hv_lv_flag": {
-        "name": "Прапорець LLC HV/LV"
-      },
-      "pcs_fan_level": {
-        "name": "Рівень вентилятора PCS"
-      },
-      "multi_bp_chg_dsg_mode": {
-        "name": "Режим мульти-батареї"
-      },
-      "utc_timezone": {
-        "name": "Зміщення UTC"
-      },
-      "utc_timezone_id": {
-        "name": "ID часового поясу"
-      },
-      "quota_cloud_ts": {
-        "name": "Мітка часу хмари"
-      },
-      "quota_device_ts": {
-        "name": "Мітка часу пристрою"
+      "extra_battery_2_cur": {
+        "name": "Додаткова батарея 2 - Струм"
       }
     },
     "binary_sensor": {
@@ -405,6 +271,30 @@
       },
       "over_temp": {
         "name": "Перегрів"
+      },
+      "extra_battery_1_connected": {
+        "name": "Додаткова батарея 1 - Підключена"
+      },
+      "extra_battery_1_battery_low": {
+        "name": "Додаткова батарея 1 - Низький заряд"
+      },
+      "extra_battery_1_battery_full": {
+        "name": "Додаткова батарея 1 - Повний заряд"
+      },
+      "extra_battery_1_over_temp": {
+        "name": "Додаткова батарея 1 - Перегрів"
+      },
+      "extra_battery_2_connected": {
+        "name": "Додаткова батарея 2 - Підключена"
+      },
+      "extra_battery_2_battery_low": {
+        "name": "Додаткова батарея 2 - Низький заряд"
+      },
+      "extra_battery_2_battery_full": {
+        "name": "Додаткова батарея 2 - Повний заряд"
+      },
+      "extra_battery_2_over_temp": {
+        "name": "Додаткова батарея 2 - Перегрів"
       }
     },
     "switch": {
@@ -434,41 +324,14 @@
       }
     },
     "number": {
-      "max_charge_level": {
-        "name": "Макс. рівень заряду"
-      },
-      "min_discharge_level": {
-        "name": "Мін. рівень розряду"
-      },
-      "ac_charge_power": {
+      "ac_chg_power": {
         "name": "Потужність заряду AC"
       },
-      "lcd_brightness": {
-        "name": "Яскравість LCD"
+      "max_chg_soc": {
+        "name": "Макс. рівень заряду"
       },
-      "screen_off_time": {
-        "name": "Час вимкнення екрану"
-      },
-      "generator_start_soc": {
-        "name": "SOC запуску генератора"
-      },
-      "generator_stop_soc": {
-        "name": "SOC зупинки генератора"
-      },
-      "pv_lv_max_current": {
-        "name": "Макс. струм сонячної LV"
-      },
-      "pv_hv_max_current": {
-        "name": "Макс. струм сонячної HV"
-      },
-      "power_inout_max_charge": {
-        "name": "Макс. потужність входу/виходу"
-      },
-      "device_standby_time": {
-        "name": "Час очікування пристрою"
-      },
-      "ble_standby_time": {
-        "name": "Час очікування Bluetooth"
+      "min_dsg_soc": {
+        "name": "Мін. рівень розряду"
       }
     },
     "select": {
@@ -478,11 +341,8 @@
       "dc_standby_time": {
         "name": "Час очікування DC"
       },
-      "battery_charge_mode": {
-        "name": "Режим заряду/розряду батареї"
-      },
-      "ac_output_frequency": {
-        "name": "Частота AC виходу"
+      "lcd_standby_time": {
+        "name": "Час очікування екрану"
       }
     }
   }
