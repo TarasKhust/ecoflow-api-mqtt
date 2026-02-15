@@ -18,6 +18,7 @@ from .const import (
     DEVICE_TYPE_DELTA_2,
     DEVICE_TYPE_DELTA_PRO,
     DEVICE_TYPE_DELTA_PRO_3,
+    DEVICE_TYPE_SMART_PLUG,
     DEVICE_TYPE_STREAM_ULTRA_X,
     DOMAIN,
 )
@@ -425,6 +426,10 @@ DEVICE_BINARY_SENSOR_MAP = {
     "delta_pro": DELTA_PRO_BINARY_SENSOR_DEFINITIONS,
     "delta_2": DELTA_2_BINARY_SENSOR_DEFINITIONS,
     "stream_ultra_x": STREAM_ULTRA_X_BINARY_SENSOR_DEFINITIONS,
+    # Smart Plug doesn't have binary sensors (no battery, charging states, etc.)
+    DEVICE_TYPE_SMART_PLUG: {},
+    "smart_plug": {},
+    "Smart Plug S401": {},
 }
 
 # Extra Battery binary sensor definitions

@@ -16,6 +16,7 @@ from .const import (
     DEVICE_TYPE_DELTA_2,
     DEVICE_TYPE_DELTA_PRO,
     DEVICE_TYPE_DELTA_PRO_3,
+    DEVICE_TYPE_SMART_PLUG,
     DEVICE_TYPE_STREAM_ULTRA_X,
     DOMAIN,
 )
@@ -224,6 +225,10 @@ DEVICE_SELECT_MAP = {
     "delta_pro": DELTA_PRO_SELECT_DEFINITIONS,
     "delta_2": DELTA_2_SELECT_DEFINITIONS,
     "stream_ultra_x": STREAM_ULTRA_X_SELECT_DEFINITIONS,
+    # Smart Plug doesn't have select entities (no AC frequency, energy modes, etc.)
+    DEVICE_TYPE_SMART_PLUG: {},
+    "smart_plug": {},
+    "Smart Plug S401": {},
 }
 
 
