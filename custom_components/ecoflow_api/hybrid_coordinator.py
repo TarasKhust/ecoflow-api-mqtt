@@ -37,7 +37,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
     def __init__(
         self,
         hass: HomeAssistant,
-        client: EcoFlowApiClient,
+        client: EcoFlowApiClient | None,
         device_sn: str,
         device_type: str,
         update_interval: int = 15,
@@ -48,16 +48,16 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         certificate_account: str | None = None,
     ) -> None:
         """Initialize hybrid coordinator.
-        
+
         Args:
             hass: Home Assistant instance
-            client: EcoFlow API client
+            client: EcoFlow API client (optional for MQTT-only mode)
             device_sn: Device serial number
             device_type: Device type identifier
             update_interval: Update interval in seconds (for REST fallback)
             config_entry: Config entry reference
-            mqtt_username: MQTT username (certificateAccount from API)
-            mqtt_password: MQTT password (certificatePassword from API)
+            mqtt_username: MQTT username (certificateAccount from API or user email)
+            mqtt_password: MQTT password (certificatePassword from API or user password)
             mqtt_enabled: Whether to enable MQTT
             certificate_account: Certificate account for MQTT topics (same as username)
         """
@@ -200,6 +200,9 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
 
         Returns:
             True if command sent successfully, False otherwise
+
+        Raises:
+            RuntimeError: If both MQTT and API client unavailable
         """
         # Try MQTT first (faster, real-time)
         if self._mqtt_connected and self._mqtt_client:
@@ -209,11 +212,17 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                     _LOGGER.debug("Command sent via MQTT: %s", command.get("params", {}))
                     return True
                 else:
-                    _LOGGER.warning("MQTT publish failed, falling back to REST API")
+                    _LOGGER.warning("MQTT publish failed, trying REST API fallback")
             except Exception as err:
-                _LOGGER.warning("MQTT command error: %s, falling back to REST API", err)
+                _LOGGER.warning("MQTT command error: %s, trying REST API fallback", err)
 
-        # Fallback to REST API
+        # Fallback to REST API if available
+        if not self.client:
+            raise RuntimeError(
+                "Cannot send command: MQTT unavailable and no API client configured. "
+                "Please provide API keys in integration settings to enable device control."
+            )
+
         try:
             await self.client.set_device_quota(
                 device_sn=self.device_sn,
@@ -394,6 +403,10 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
 
         Solution: Always wake device before REST polling to ensure fresh data.
         """
+        # Skip wake-up if no API client (MQTT-only mode)
+        if not self.client:
+            return
+
         # Always wake device before REST polling
         # This ensures we get fresh data even if device was sleeping
         try:
@@ -412,13 +425,22 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             pass
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from API (and merge with MQTT if available).
-        
+
         Returns:
             Device data dictionary
-            
+
         Raises:
             UpdateFailed: If data fetch fails
         """
+        # MQTT-only mode: skip REST polling, use MQTT data only
+        if not self.client:
+            if self._mqtt_connected and self._mqtt_data:
+                return self._merge_data()
+            else:
+                # No client and MQTT not connected/no data
+                _LOGGER.warning("MQTT-only mode: waiting for MQTT connection and data...")
+                return {}
+
         try:
             # Debug logging (only if logger level is DEBUG)
             if _LOGGER.isEnabledFor(logging.DEBUG):
@@ -426,7 +448,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                 time_since_last = None
                 if self._last_rest_update:
                     time_since_last = time.time() - self._last_rest_update
-                
+
                 _LOGGER.debug(
                     "🔄 [%s] REST UPDATE TRIGGERED for %s (configured_interval=%ds, actual_since_last=%.1fs, mqtt=%s)",
                     timestamp,
@@ -435,10 +457,10 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                     time_since_last if time_since_last else 0,
                     "ON" if self._mqtt_connected else "OFF"
                 )
-            
+
             # Wake up device before requesting data
             await self._async_wake_device()
-            
+
             # Fetch from REST API
             rest_data = await self.client.get_device_quota(self.device_sn)
             

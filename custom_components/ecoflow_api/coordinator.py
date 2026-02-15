@@ -33,17 +33,17 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def __init__(
         self,
         hass: HomeAssistant,
-        client: EcoFlowApiClient,
+        client: EcoFlowApiClient | None,
         device_sn: str,
         device_type: str,
         update_interval: int = 15,
         config_entry: ConfigEntry | None = None,
     ) -> None:
         """Initialize coordinator.
-        
+
         Args:
             hass: Home Assistant instance
-            client: EcoFlow API client
+            client: EcoFlow API client (optional for MQTT-only mode)
             device_sn: Device serial number
             device_type: Device type identifier
             update_interval: Update interval in seconds (default: 15)
@@ -79,11 +79,14 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def _async_wake_device(self) -> None:
         """Wake up device before requesting data.
-        
+
         Some EcoFlow devices go to sleep and don't respond to API requests
         until "woken up" by sending a command or request.
         This method sends a wake-up request to ensure device is responsive.
         """
+        if not self.client:
+            return
+
         try:
             # Send a wake-up request (first quota request to wake device)
             # This is a lightweight operation that helps wake sleeping devices
@@ -97,13 +100,18 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from API.
-        
+
         Returns:
             Device data dictionary
-            
+
         Raises:
             UpdateFailed: If data fetch fails
         """
+        # If no API client (MQTT-only mode), return empty dict
+        # MQTT will provide all data
+        if not self.client:
+            return {}
+
         try:
             # Debug logging (only if logger level is DEBUG)
             if _LOGGER.isEnabledFor(logging.DEBUG):
@@ -114,10 +122,10 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     self.device_sn[-4:],
                     self.update_interval_seconds
                 )
-            
+
             # Wake up device before requesting data
             await self._async_wake_device()
-            
+
             # Fetch device data
             data = await self.client.get_device_quota(self.device_sn)
             
@@ -183,7 +191,7 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def device_info(self) -> dict[str, Any]:
         """Return device info for device registry."""
         from .const import DEVICE_TYPES
-        
+
         return {
             "identifiers": {(DOMAIN, self.device_sn)},
             "name": f"EcoFlow {DEVICE_TYPES.get(self.device_type, self.device_type)}",
@@ -192,17 +200,34 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "serial_number": self.device_sn,
         }
 
+    def _check_api_client(self) -> None:
+        """Check if API client is available for sending commands.
+
+        Raises:
+            RuntimeError: If API client not available (MQTT-only mode)
+        """
+        if not self.client:
+            raise RuntimeError(
+                "Cannot send commands in MQTT-only mode. "
+                "Please provide API keys in integration settings to enable device control."
+            )
+
     # Command methods for Delta Pro 3
     
     async def async_set_ac_charging_power(self, power: int) -> None:
         """Set AC charging power.
-        
+
         Args:
             power: Charging power in watts (400-2900)
+
+        Raises:
+            RuntimeError: If API client not available (MQTT-only mode)
         """
+        self._check_api_client()
+
         try:
             _LOGGER.info("Setting AC charging power to %dW for %s", power, self.device_sn)
-            
+
             # Store command in diagnostic mode
             if self._diagnostic_mode:
                 self.set_commands.append({
@@ -210,7 +235,7 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                     "command": "set_ac_charging_power",
                     "params": {"power": power},
                 })
-            
+
             await self.client.set_ac_charging_power(self.device_sn, power)
             
             # Store reply in diagnostic mode
@@ -237,10 +262,12 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def async_set_max_charge_level(self, level: int) -> None:
         """Set maximum charge level.
-        
+
         Args:
             level: Max charge level (50-100%)
         """
+        self._check_api_client()
+
         try:
             _LOGGER.info("Setting max charge level to %d%% for %s", level, self.device_sn)
             await self.client.set_charge_levels(self.device_sn, max_charge=level)
@@ -251,10 +278,12 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def async_set_min_discharge_level(self, level: int) -> None:
         """Set minimum discharge level.
-        
+
         Args:
             level: Min discharge level (0-30%)
         """
+        self._check_api_client()
+
         try:
             _LOGGER.info("Setting min discharge level to %d%% for %s", level, self.device_sn)
             await self.client.set_charge_levels(self.device_sn, min_discharge=level)
@@ -265,10 +294,12 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def async_set_ac_output(self, enabled: bool) -> None:
         """Set AC output state.
-        
+
         Args:
             enabled: Whether to enable AC output
         """
+        self._check_api_client()
+
         try:
             _LOGGER.info("Setting AC output to %s for %s", enabled, self.device_sn)
             await self.client.set_ac_output(self.device_sn, enabled)
@@ -279,10 +310,12 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def async_set_dc_output(self, enabled: bool) -> None:
         """Set DC output state.
-        
+
         Args:
             enabled: Whether to enable DC output
         """
+        self._check_api_client()
+
         try:
             _LOGGER.info("Setting DC output to %s for %s", enabled, self.device_sn)
             await self.client.set_dc_output(self.device_sn, enabled)
@@ -293,10 +326,12 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def async_set_12v_dc_output(self, enabled: bool) -> None:
         """Set 12V DC output state.
-        
+
         Args:
             enabled: Whether to enable 12V DC output
         """
+        self._check_api_client()
+
         try:
             _LOGGER.info("Setting 12V DC output to %s for %s", enabled, self.device_sn)
             await self.client.set_12v_dc_output(self.device_sn, enabled)
@@ -307,10 +342,12 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def async_set_beep(self, enabled: bool) -> None:
         """Set beep state.
-        
+
         Args:
             enabled: Whether to enable beep
         """
+        self._check_api_client()
+
         try:
             _LOGGER.info("Setting beep to %s for %s", enabled, self.device_sn)
             await self.client.set_beep(self.device_sn, enabled)
@@ -321,10 +358,12 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def async_set_x_boost(self, enabled: bool) -> None:
         """Set X-Boost state.
-        
+
         Args:
             enabled: Whether to enable X-Boost
         """
+        self._check_api_client()
+
         try:
             _LOGGER.info("Setting X-Boost to %s for %s", enabled, self.device_sn)
             await self.client.set_x_boost(self.device_sn, enabled)
@@ -335,10 +374,12 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def async_set_ac_standby_time(self, minutes: int) -> None:
         """Set AC standby time.
-        
+
         Args:
             minutes: Standby time in minutes (0 = never)
         """
+        self._check_api_client()
+
         try:
             _LOGGER.info("Setting AC standby time to %d min for %s", minutes, self.device_sn)
             await self.client.set_ac_standby_time(self.device_sn, minutes)
@@ -349,10 +390,12 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def async_set_dc_standby_time(self, minutes: int) -> None:
         """Set DC standby time.
-        
+
         Args:
             minutes: Standby time in minutes (0 = never)
         """
+        self._check_api_client()
+
         try:
             _LOGGER.info("Setting DC standby time to %d min for %s", minutes, self.device_sn)
             await self.client.set_dc_standby_time(self.device_sn, minutes)
@@ -363,10 +406,12 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def async_set_lcd_standby_time(self, seconds: int) -> None:
         """Set LCD/Screen standby time.
-        
+
         Args:
             seconds: Standby time in seconds (0 = never)
         """
+        self._check_api_client()
+
         try:
             _LOGGER.info("Setting LCD standby time to %d sec for %s", seconds, self.device_sn)
             await self.client.set_lcd_standby_time(self.device_sn, seconds)
