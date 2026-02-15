@@ -37,12 +37,17 @@ from .const import (
 
 _LOGGER = logging.getLogger(__name__)
 
-# Step 1: API credentials with region selection
+# Step 1: Credentials - MQTT (priority) or Developer API
+# Users can provide either MQTT credentials OR API keys OR both
 STEP_CREDENTIALS_SCHEMA = vol.Schema(
     {
         vol.Required(CONF_REGION, default=REGION_EU): vol.In(REGIONS),
-        vol.Required(CONF_ACCESS_KEY): str,
-        vol.Required(CONF_SECRET_KEY): str,
+        # MQTT credentials (PRIORITY - most users have this)
+        vol.Optional(CONF_MQTT_USERNAME): str,
+        vol.Optional(CONF_MQTT_PASSWORD): str,
+        # Developer API credentials (optional - not everyone has this)
+        vol.Optional(CONF_ACCESS_KEY): str,
+        vol.Optional(CONF_SECRET_KEY): str,
     }
 )
 
@@ -53,15 +58,6 @@ STEP_MANUAL_DEVICE_SCHEMA = vol.Schema(
         vol.Required(CONF_DEVICE_TYPE, default=DEVICE_TYPE_DELTA_PRO_3): vol.In(
             DEVICE_TYPES
         ),
-    }
-)
-
-# Step 3: MQTT configuration (optional)
-STEP_MQTT_SCHEMA = vol.Schema(
-    {
-        vol.Required(CONF_MQTT_ENABLED, default=False): bool,
-        vol.Optional(CONF_MQTT_USERNAME): str,
-        vol.Optional(CONF_MQTT_PASSWORD): str,
     }
 )
 
@@ -81,6 +77,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """Initialize the config flow."""
         self._access_key: str | None = None
         self._secret_key: str | None = None
+        self._mqtt_username: str | None = None
+        self._mqtt_password: str | None = None
         self._region: str = REGION_EU
         self._devices: list[dict[str, Any]] = []
         self._client: EcoFlowApiClient | None = None
@@ -116,6 +114,33 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors: dict[str, str] = {}
 
         if user_input is not None:
+            # Validate that at least one set of credentials is provided
+            has_mqtt = user_input.get(CONF_MQTT_USERNAME) and user_input.get(CONF_MQTT_PASSWORD)
+            has_api = user_input.get(CONF_ACCESS_KEY) and user_input.get(CONF_SECRET_KEY)
+
+            if not has_mqtt and not has_api:
+                errors["base"] = "no_credentials"
+                return self.async_show_form(
+                    step_id="auto_discovery",
+                    data_schema=STEP_CREDENTIALS_SCHEMA,
+                    errors=errors,
+                    description_placeholders={
+                        "api_docs": "https://developer-eu.ecoflow.com/",
+                    },
+                )
+
+            # For auto-discovery, API keys are required to get device list
+            if not has_api:
+                errors["base"] = "api_required_for_discovery"
+                return self.async_show_form(
+                    step_id="auto_discovery",
+                    data_schema=STEP_CREDENTIALS_SCHEMA,
+                    errors=errors,
+                    description_placeholders={
+                        "api_docs": "https://developer-eu.ecoflow.com/",
+                    },
+                )
+
             try:
                 session = async_get_clientsession(self.hass)
                 region = user_input.get(CONF_REGION, REGION_EU)
@@ -129,8 +154,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 # Test connection and get device list
                 devices = await client.get_device_list()
 
-                self._access_key = user_input[CONF_ACCESS_KEY]
-                self._secret_key = user_input[CONF_SECRET_KEY]
+                # Store credentials for later use
+                self._access_key = user_input.get(CONF_ACCESS_KEY)
+                self._secret_key = user_input.get(CONF_SECRET_KEY)
+                self._mqtt_username = user_input.get(CONF_MQTT_USERNAME)
+                self._mqtt_password = user_input.get(CONF_MQTT_PASSWORD)
                 self._region = region
                 self._client = client
                 self._devices = devices if isinstance(devices, list) else []
@@ -176,67 +204,95 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """
         errors: dict[str, str] = {}
 
-        # Schema for manual entry - all fields at once
+        # Schema for manual entry - device info + credentials (MQTT or API or both)
         manual_schema = vol.Schema(
             {
                 vol.Required(CONF_REGION, default=REGION_EU): vol.In(REGIONS),
-                vol.Required(CONF_ACCESS_KEY): str,
-                vol.Required(CONF_SECRET_KEY): str,
                 vol.Required(CONF_DEVICE_SN): str,
                 vol.Required(CONF_DEVICE_TYPE, default=DEVICE_TYPE_DELTA_PRO_3): vol.In(
                     DEVICE_TYPES
                 ),
+                # MQTT credentials (PRIORITY - most users have this)
+                vol.Optional(CONF_MQTT_USERNAME): str,
+                vol.Optional(CONF_MQTT_PASSWORD): str,
+                # Developer API credentials (optional)
+                vol.Optional(CONF_ACCESS_KEY): str,
+                vol.Optional(CONF_SECRET_KEY): str,
             }
         )
 
         if user_input is not None:
+            # Validate that at least one set of credentials is provided
+            has_mqtt = user_input.get(CONF_MQTT_USERNAME) and user_input.get(CONF_MQTT_PASSWORD)
+            has_api = user_input.get(CONF_ACCESS_KEY) and user_input.get(CONF_SECRET_KEY)
+
+            if not has_mqtt and not has_api:
+                errors["base"] = "no_credentials"
+                return self.async_show_form(
+                    step_id="manual_entry",
+                    data_schema=manual_schema,
+                    errors=errors,
+                    description_placeholders={
+                        "api_docs": "https://developer-eu.ecoflow.com/",
+                    },
+                )
+
             try:
                 region = user_input.get(CONF_REGION, REGION_EU)
-                access_key = user_input[CONF_ACCESS_KEY]
-                secret_key = user_input[CONF_SECRET_KEY]
                 device_sn = user_input[CONF_DEVICE_SN]
                 device_type = user_input[CONF_DEVICE_TYPE]
 
                 _LOGGER.info(
-                    "Manual entry: SN=%s, Type=%s, Region=%s",
+                    "Manual entry: SN=%s, Type=%s, Region=%s, MQTT=%s, API=%s",
                     device_sn,
                     device_type,
                     region,
+                    "Yes" if has_mqtt else "No",
+                    "Yes" if has_api else "No",
                 )
 
                 # Check if device is already configured
                 await self.async_set_unique_id(device_sn)
                 self._abort_if_unique_id_configured()
 
-                # Test API credentials
-                session = async_get_clientsession(self.hass)
-                client = EcoFlowApiClient(
-                    access_key=access_key,
-                    secret_key=secret_key,
-                    session=session,
-                    region=region,
-                )
-
-                # Try to verify device access (non-blocking)
-                try:
-                    quota = await client.get_device_quota(device_sn)
-                    _LOGGER.info("Device verification successful: %s", quota)
-                except EcoFlowApiError as err:
-                    _LOGGER.warning(
-                        "Device verification failed (will proceed anyway): %s", err
+                # Test API credentials if provided (non-blocking)
+                if has_api:
+                    session = async_get_clientsession(self.hass)
+                    client = EcoFlowApiClient(
+                        access_key=user_input[CONF_ACCESS_KEY],
+                        secret_key=user_input[CONF_SECRET_KEY],
+                        session=session,
+                        region=region,
                     )
+
+                    try:
+                        quota = await client.get_device_quota(device_sn)
+                        _LOGGER.info("Device verification successful: %s", quota)
+                    except EcoFlowApiError as err:
+                        _LOGGER.warning(
+                            "Device verification failed (will proceed anyway): %s", err
+                        )
+
+                # Build entry data with all provided credentials
+                entry_data = {
+                    CONF_DEVICE_SN: device_sn,
+                    CONF_DEVICE_TYPE: device_type,
+                    CONF_REGION: region,
+                }
+                # Add API keys if provided
+                if has_api:
+                    entry_data[CONF_ACCESS_KEY] = user_input[CONF_ACCESS_KEY]
+                    entry_data[CONF_SECRET_KEY] = user_input[CONF_SECRET_KEY]
+                # Add MQTT credentials if provided
+                if has_mqtt:
+                    entry_data[CONF_MQTT_USERNAME] = user_input[CONF_MQTT_USERNAME]
+                    entry_data[CONF_MQTT_PASSWORD] = user_input[CONF_MQTT_PASSWORD]
 
                 # Create entry
                 device_name = DEVICE_TYPES.get(device_type, device_type)
                 return self.async_create_entry(
                     title=f"EcoFlow {device_name} ({device_sn[-4:]})",
-                    data={
-                        CONF_ACCESS_KEY: access_key,
-                        CONF_SECRET_KEY: secret_key,
-                        CONF_DEVICE_SN: device_sn,
-                        CONF_DEVICE_TYPE: device_type,
-                        CONF_REGION: region,
-                    },
+                    data=entry_data,
                 )
 
             except EcoFlowAuthError as err:
@@ -295,15 +351,26 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             if not errors:
                 device_name = DEVICE_TYPES.get(device_type, device_type)
+                # Build data dict with all provided credentials
+                entry_data = {
+                    CONF_DEVICE_SN: device_sn,
+                    CONF_DEVICE_TYPE: device_type,
+                    CONF_REGION: self._region,
+                }
+                # Add API keys if provided
+                if self._access_key:
+                    entry_data[CONF_ACCESS_KEY] = self._access_key
+                if self._secret_key:
+                    entry_data[CONF_SECRET_KEY] = self._secret_key
+                # Add MQTT credentials if provided
+                if self._mqtt_username:
+                    entry_data[CONF_MQTT_USERNAME] = self._mqtt_username
+                if self._mqtt_password:
+                    entry_data[CONF_MQTT_PASSWORD] = self._mqtt_password
+
                 return self.async_create_entry(
                     title=f"EcoFlow {device_name} ({device_sn[-4:]})",
-                    data={
-                        CONF_ACCESS_KEY: self._access_key,
-                        CONF_SECRET_KEY: self._secret_key,
-                        CONF_DEVICE_SN: device_sn,
-                        CONF_DEVICE_TYPE: device_type,
-                        CONF_REGION: self._region,
-                    },
+                    data=entry_data,
                 )
 
         # Build device options for selector
