@@ -206,11 +206,20 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         Returns:
             True if command sent successfully
         """
-        await self.client.set_device_quota(
+        _LOGGER.info(
+            "Sending command via REST API for %s: params=%s",
+            self.device_sn[-4:],
+            command.get("params", {}),
+        )
+        result = await self.client.set_device_quota(
             device_sn=self.device_sn,
             cmd_code=command,
         )
-        _LOGGER.debug("Command sent via REST API: %s", command.get("params", {}))
+        _LOGGER.info(
+            "Command sent via REST API for %s: response=%s",
+            self.device_sn[-4:],
+            result,
+        )
         return True
 
     # Command methods for Delta Pro 3

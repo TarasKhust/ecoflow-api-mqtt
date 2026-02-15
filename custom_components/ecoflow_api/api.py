@@ -367,11 +367,16 @@ class EcoFlowApiClient:
                 "params": params or {},
             }
 
-        return await self._request(
+        _LOGGER.info("SET device quota: PUT payload=%s", data)
+
+        result = await self._request(
             "PUT",
             "/iot-open/sign/device/quota",
             data=data,
         )
+
+        _LOGGER.info("SET device quota: response=%s", result)
+        return result
 
     async def test_connection(self) -> bool:
         """Test API connection.

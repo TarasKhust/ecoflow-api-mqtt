@@ -207,24 +207,36 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         Returns:
             True if command sent successfully
         """
+        _LOGGER.info(
+            "Sending command for %s: mqtt=%s, params=%s",
+            self.device_sn[-4:],
+            "connected" if self._mqtt_connected else "disconnected",
+            command.get("params", {}),
+        )
+
         # Try MQTT first (faster, real-time)
         if self._mqtt_connected and self._mqtt_client:
             try:
                 success = await self._mqtt_client.async_publish_command(command)
                 if success:
-                    _LOGGER.debug("Command sent via MQTT: %s", command.get("params", {}))
+                    _LOGGER.info("Command sent via MQTT for %s", self.device_sn[-4:])
                     return True
                 else:
-                    _LOGGER.warning("MQTT publish failed, falling back to REST API")
+                    _LOGGER.warning("MQTT publish failed for %s, falling back to REST API", self.device_sn[-4:])
             except Exception as err:
-                _LOGGER.warning("MQTT command error: %s, falling back to REST API", err)
+                _LOGGER.warning("MQTT command error for %s: %s, falling back to REST API", self.device_sn[-4:], err)
 
         # Fallback to REST API (raises on failure)
-        await self.client.set_device_quota(
+        _LOGGER.info("Sending command via REST API for %s", self.device_sn[-4:])
+        result = await self.client.set_device_quota(
             device_sn=self.device_sn,
             cmd_code=command,
         )
-        _LOGGER.debug("Command sent via REST API (fallback): %s", command.get("params", {}))
+        _LOGGER.info(
+            "Command sent via REST API for %s: response=%s",
+            self.device_sn[-4:],
+            result,
+        )
         return True
 
     def _schedule_rest_update(self) -> None:
