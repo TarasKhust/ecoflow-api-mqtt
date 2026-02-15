@@ -3631,10 +3631,15 @@ class EcoFlowSensor(EcoFlowBaseEntity, SensorEntity):
             state_map = {0: "idle", 1: "charging", 2: "discharging"}
             return state_map.get(value, "idle")
 
-        # Generic value_map handling for ENUM sensors
+        # Generic value_map handling
         value_map = self._sensor_config.get("value_map")
-        if value_map and isinstance(value, (int, float)):
-            return value_map.get(int(value), value_map.get("default", str(value)))
+        if value_map:
+            # If value_map is a function (lambda), call it for conversion
+            if callable(value_map):
+                return value_map(value)
+            # If value_map is a dict, use it for ENUM mapping
+            elif isinstance(value_map, dict) and isinstance(value, (int, float)):
+                return value_map.get(int(value), value_map.get("default", str(value)))
 
         # Handle resvInfo array decoding for Extra Battery sensors
         if "resvInfo" in api_key and isinstance(value, list):
