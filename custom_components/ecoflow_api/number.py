@@ -512,6 +512,8 @@ STREAM_ULTRA_X_NUMBER_DEFINITIONS = {
 
 # Smart Plug S401 Number Definitions
 # Uses cmdCode format
+# Note: Overload protection (maxWatts) is read-only via Developer API
+# and can only be changed through the official EcoFlow mobile app
 SMART_PLUG_NUMBER_DEFINITIONS = {
     "led_brightness": {
         "name": "LED Brightness",
@@ -527,18 +529,6 @@ SMART_PLUG_NUMBER_DEFINITIONS = {
         # Convert between API (0-1023) and UI (0-100%)
         "value_map_to_ui": lambda x: round((x / 1023) * 100) if x is not None else None,
         "value_map_from_ui": lambda x: round((x / 100) * 1023) if x is not None else None,
-    },
-    "overload_protection": {
-        "name": "Overload Protection",
-        "state_key": "2_1.maxWatts",
-        "cmd_code": "WN511_SOCKET_SET_MAX_WATTS",
-        "param_key": "maxWatts",  # Same as state_key (like brightness)
-        "min": 1000,
-        "max": 2500,
-        "step": 100,
-        "unit": UnitOfPower.WATT,
-        "icon": "mdi:shield-alert",
-        "mode": NumberMode.SLIDER,
     },
 }
 
