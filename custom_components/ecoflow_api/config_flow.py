@@ -130,16 +130,18 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
 
             # For auto-discovery, API keys are required to get device list
+            # If only MQTT provided, redirect to manual entry
             if not has_api:
-                errors["base"] = "api_required_for_discovery"
-                return self.async_show_form(
-                    step_id="auto_discovery",
-                    data_schema=STEP_CREDENTIALS_SCHEMA,
-                    errors=errors,
-                    description_placeholders={
-                        "api_docs": "https://developer-eu.ecoflow.com/",
-                    },
+                # Store MQTT credentials and region
+                self._mqtt_username = user_input.get(CONF_MQTT_USERNAME)
+                self._mqtt_password = user_input.get(CONF_MQTT_PASSWORD)
+                self._region = user_input.get(CONF_REGION, REGION_EU)
+
+                _LOGGER.info(
+                    "Auto-discovery requires API keys, redirecting to manual entry with MQTT credentials"
                 )
+                # Redirect to manual device entry with MQTT credentials already stored
+                return await self.async_step_manual_device()
 
             try:
                 session = async_get_clientsession(self.hass)

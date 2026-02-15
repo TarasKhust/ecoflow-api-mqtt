@@ -11,7 +11,7 @@
       },
       "auto_discovery": {
         "title": "EcoFlow API Configuration",
-        "description": "Enter your EcoFlow credentials for automatic device discovery.\n\n**Most users:** Use MQTT credentials (email + password from EcoFlow app)\n**Advanced:** Use Developer API keys from [EcoFlow Developer Portal]({api_docs})\n\n**You can provide:**\n• MQTT credentials only (recommended for most users)\n• Developer API keys only\n• Both (for full functionality)\n\n**Note:** Auto-discovery requires Developer API keys to list devices",
+        "description": "Enter your EcoFlow credentials.\n\n**Most users:** Use MQTT credentials (email + password from EcoFlow app)\n**Advanced:** Use Developer API keys from [EcoFlow Developer Portal]({api_docs})\n\n**You can provide:**\n• MQTT credentials only → Manual entry (enter device SN)\n• Developer API keys only → Auto-discovery\n• Both → Auto-discovery + MQTT enabled",
         "data": {
           "region": "Region",
           "mqtt_username": "MQTT Username (Email)",
@@ -87,7 +87,6 @@
       "invalid_auth": "Invalid authentication credentials. Please check your access key and secret key.",
       "invalid_device": "Device not found or not accessible. Please verify:\n1. Serial number is correct\n2. Device is online\n3. Device is bound to your Developer account at https://developer-eu.ecoflow.com/",
       "no_credentials": "Please provide at least one set of credentials:\n• MQTT credentials (email + password) - recommended for most users\n• Developer API keys (access_key + secret_key)\n• Both (for full functionality)",
-      "api_required_for_discovery": "Auto-discovery requires Developer API keys.\n\nPlease provide access_key and secret_key, or use Manual Entry if you only have MQTT credentials.",
       "unknown": "An unexpected error occurred. Please check the logs for details."
     },
     "abort": {
