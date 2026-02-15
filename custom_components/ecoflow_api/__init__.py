@@ -63,6 +63,18 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data.setdefault(DOMAIN, {})
 
+    # Check which credentials are available
+    has_api_keys = CONF_ACCESS_KEY in entry.data and CONF_SECRET_KEY in entry.data
+    has_mqtt_creds = CONF_MQTT_USERNAME in entry.data and CONF_MQTT_PASSWORD in entry.data
+
+    # Temporary: require API keys (MQTT-only support coming in future release)
+    if not has_api_keys:
+        _LOGGER.error(
+            "API keys required for setup. MQTT-only mode not yet fully supported. "
+            "Please add both API keys and MQTT credentials."
+        )
+        return False
+
     # Create API client
     session = async_get_clientsession(hass)
     region = entry.data.get(CONF_REGION, REGION_EU)
@@ -72,6 +84,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         session=session,
         region=region,
     )
+    _LOGGER.info("API client created with Developer API keys")
 
     # Get update interval from options (or data for backward compatibility)
     update_interval = (
@@ -80,13 +93,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         or DEFAULT_UPDATE_INTERVAL
     )
 
-    # Get MQTT settings from options
-    mqtt_enabled = entry.options.get(CONF_MQTT_ENABLED, False)
-    mqtt_username = entry.options.get(CONF_MQTT_USERNAME)
-    mqtt_password = entry.options.get(CONF_MQTT_PASSWORD)
+    # Get MQTT settings from options OR data (priority: options > data)
+    mqtt_enabled = entry.options.get(CONF_MQTT_ENABLED, has_mqtt_creds)  # Auto-enable if credentials in data
+    mqtt_username = entry.options.get(CONF_MQTT_USERNAME) or entry.data.get(CONF_MQTT_USERNAME)
+    mqtt_password = entry.options.get(CONF_MQTT_PASSWORD) or entry.data.get(CONF_MQTT_PASSWORD)
     certificate_account = None
 
-    # If MQTT enabled, get certificateAccount and certificatePassword from API
+    # If MQTT enabled, get certificateAccount from API
     if mqtt_enabled:
         try:
             _LOGGER.info("MQTT enabled, fetching MQTT credentials from API...")
