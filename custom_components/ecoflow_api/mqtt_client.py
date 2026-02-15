@@ -21,6 +21,7 @@ import asyncio
 import json
 import logging
 import ssl
+import time
 from typing import Any, Callable
 
 import paho.mqtt.client as mqtt
@@ -148,28 +149,43 @@ class EcoFlowMQTTClient:
         _LOGGER.info("Disconnected from MQTT broker for device %s", self.device_sn)
 
     async def async_publish_command(self, command: dict[str, Any]) -> bool:
-        """Publish command to device.
-        
+        """Publish command to device via MQTT set topic.
+
+        Ensures the payload has required MQTT fields (id, version) that
+        distinguish MQTT SET format from REST API format.
+
         Args:
-            command: Command payload
-            
+            command: Command payload (REST or MQTT format)
+
         Returns:
             True if published successfully, False otherwise
         """
         if not self._connected or not self._client:
             _LOGGER.warning("Cannot publish command: MQTT not connected")
             return False
-            
+
         try:
-            payload = json.dumps(command)
+            # Ensure MQTT-required fields are present
+            mqtt_command = dict(command)
+            if "id" not in mqtt_command:
+                mqtt_command["id"] = int(time.time() * 1000)
+            if "version" not in mqtt_command:
+                mqtt_command["version"] = "1.0"
+
+            payload = json.dumps(mqtt_command)
+            _LOGGER.info(
+                "MQTT publish to %s: %s",
+                self._set_topic.split("/")[-2][-4:],  # last 4 chars of SN
+                payload[:200],
+            )
             result = self._client.publish(self._set_topic, payload, qos=1)
-            
+
             if result.rc == mqtt.MQTT_ERR_SUCCESS:
                 return True
             else:
-                _LOGGER.error("Failed to publish command: %s", result.rc)
+                _LOGGER.error("Failed to publish command: rc=%s", result.rc)
                 return False
-                
+
         except Exception as err:
             _LOGGER.error("Error publishing command: %s", err)
             return False
@@ -290,9 +306,17 @@ class EcoFlowMQTTClient:
                     _LOGGER.info("Device %s status: %s", self.device_sn, "online" if status == 1 else "offline")
                     
             elif msg.topic == self._set_reply_topic:
-                # Set reply topic: command response - only log if there's an error
-                if "code" in payload and payload.get("code") != 0:
-                    _LOGGER.warning("Command response error: %s", payload)
+                # Set reply: Delta Pro 3 format: {"data": {"configOk": true, ...}, "id": 123}
+                #            Smart Plug format: {"data": {"ack": 0}, "id": 123}
+                reply_data = payload.get("data", {})
+                config_ok = reply_data.get("configOk")
+                ack = reply_data.get("ack")
+                reply_id = payload.get("id")
+
+                if config_ok is True or ack == 0:
+                    _LOGGER.info("Command reply OK for %s (id=%s): %s", self.device_sn[-4:], reply_id, reply_data)
+                else:
+                    _LOGGER.warning("Command reply for %s (id=%s): %s", self.device_sn[-4:], reply_id, payload)
                 
             else:
                 # Unknown topic
