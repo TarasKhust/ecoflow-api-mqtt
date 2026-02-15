@@ -494,14 +494,8 @@ class EcoFlowSwitch(EcoFlowBaseEntity, SwitchEntity):
                 cmd_code=payload,
             )
 
-            # Optimistic update: immediately update state in coordinator data
-            state_key = self._switch_def["state_key"]
-            if self.coordinator.data is not None:
-                self.coordinator.data[state_key] = value
-                self.async_write_ha_state()
-
-            # Background refresh to confirm device state
-            await asyncio.sleep(1)
+            # Wait for device to apply changes, then refresh
+            await asyncio.sleep(3)
             await self.coordinator.async_request_refresh()
         except Exception as err:
             _LOGGER.error("Failed to set %s to %s: %s", self._switch_key, state, err)
@@ -592,14 +586,8 @@ class EcoFlowDeltaProSwitch(EcoFlowBaseEntity, SwitchEntity):
                 cmd_code=payload,
             )
 
-            # Optimistic update: immediately update state in coordinator data
-            state_key = self._switch_def["state_key"]
-            if self.coordinator.data is not None:
-                self.coordinator.data[state_key] = state
-                self.async_write_ha_state()
-
-            # Background refresh to confirm device state
-            await asyncio.sleep(1)
+            # Wait for device to apply changes, then refresh
+            await asyncio.sleep(3)
             await self.coordinator.async_request_refresh()
         except Exception as err:
             _LOGGER.error("Failed to set %s to %s: %s", self._switch_key, state, err)
@@ -701,14 +689,8 @@ class EcoFlowDelta2Switch(EcoFlowBaseEntity, SwitchEntity):
                 cmd_code=payload,
             )
 
-            # Optimistic update: immediately update state in coordinator data
-            state_key = self._switch_def["state_key"]
-            if self.coordinator.data is not None:
-                self.coordinator.data[state_key] = state
-                self.async_write_ha_state()
-
-            # Background refresh to confirm device state
-            await asyncio.sleep(1)
+            # Wait for device to apply changes, then refresh
+            await asyncio.sleep(3)
             await self.coordinator.async_request_refresh()
         except Exception as err:
             _LOGGER.error("Failed to set %s to %s: %s", self._switch_key, state, err)
@@ -807,14 +789,8 @@ class EcoFlowStreamSwitch(EcoFlowBaseEntity, SwitchEntity):
                 cmd_code=payload,
             )
 
-            # Optimistic update: immediately update state in coordinator data
-            state_key = self._switch_def["state_key"]
-            if self.coordinator.data is not None:
-                self.coordinator.data[state_key] = state
-                self.async_write_ha_state()
-
-            # Background refresh to confirm device state
-            await asyncio.sleep(1)
+            # Wait for device to apply changes, then refresh
+            await asyncio.sleep(3)
             await self.coordinator.async_request_refresh()
         except Exception as err:
             _LOGGER.error("Failed to set %s to %s: %s", self._switch_key, state, err)
@@ -905,14 +881,8 @@ class EcoFlowSmartPlugSwitch(EcoFlowBaseEntity, SwitchEntity):
                 cmd_code=payload,
             )
 
-            # Optimistic update: immediately update state in coordinator data
-            state_key = self._switch_def["state_key"]
-            if self.coordinator.data is not None:
-                self.coordinator.data[state_key] = value
-                self.async_write_ha_state()
-
-            # Background refresh to confirm device state
-            await asyncio.sleep(1)
+            # Wait for device to apply changes, then refresh
+            await asyncio.sleep(3)
             await self.coordinator.async_request_refresh()
         except Exception as err:
             _LOGGER.error("Failed to set %s to %s: %s", self._switch_key, state, err)
