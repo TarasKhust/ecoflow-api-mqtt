@@ -422,7 +422,7 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def async_set_update_interval(self, interval_seconds: int) -> None:
         """Set the update interval dynamically.
-        
+
         Args:
             interval_seconds: New update interval in seconds
         """
@@ -434,7 +434,7 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         )
         self.update_interval_seconds = interval_seconds
         self.update_interval = timedelta(seconds=interval_seconds)
-        
+
         # Update config entry options to persist the change
         if self.config_entry:
             from .const import CONF_UPDATE_INTERVAL
@@ -444,8 +444,36 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
                 self.config_entry,
                 options=new_options
             )
-        
+
         # Force immediate refresh with new interval
         await self.async_request_refresh()
+
+    async def async_send_command(self, command: dict[str, Any]) -> bool:
+        """Send command to device via REST API.
+
+        This is the base implementation for REST-only mode.
+        HybridCoordinator overrides this to try MQTT first, then REST fallback.
+
+        Args:
+            command: Command payload dict to send
+
+        Returns:
+            True if command sent successfully, False otherwise
+
+        Raises:
+            RuntimeError: If API client not available
+        """
+        self._check_api_client()
+
+        try:
+            await self.client.set_device_quota(
+                device_sn=self.device_sn,
+                cmd_code=command,
+            )
+            _LOGGER.debug("Command sent via REST API: %s", command.get("params", {}))
+            return True
+        except Exception as err:
+            _LOGGER.error("Failed to send command via REST API: %s", err)
+            return False
 
 

@@ -425,11 +425,8 @@ class EcoFlowSelect(EcoFlowBaseEntity, SelectEntity):
         }
 
         try:
-            # Send command via REST API
-            await self.coordinator.api_client.set_device_quota(
-                device_sn=device_sn,
-                cmd_code=payload,
-            )
+            # Send command via MQTT (priority) with REST API fallback
+            await self.coordinator.async_send_command(payload)
 
             # Wait for device to apply changes, then refresh
             await asyncio.sleep(2)
@@ -507,10 +504,8 @@ class EcoFlowDeltaProSelect(EcoFlowBaseEntity, SelectEntity):
         }
 
         try:
-            await self.coordinator.api_client.set_device_quota(
-                device_sn=device_sn,
-                cmd_code=payload,
-            )
+            # Send command via MQTT (priority) with REST API fallback
+            await self.coordinator.async_send_command(payload)
             # Wait 2 seconds for device to apply changes, then refresh
             await asyncio.sleep(2)
             await self.coordinator.async_request_refresh()
@@ -587,10 +582,8 @@ class EcoFlowDelta2Select(EcoFlowBaseEntity, SelectEntity):
         }
 
         try:
-            await self.coordinator.api_client.set_device_quota(
-                device_sn=device_sn,
-                cmd_code=payload,
-            )
+            # Send command via MQTT (priority) with REST API fallback
+            await self.coordinator.async_send_command(payload)
             # Wait 2 seconds for device to apply changes, then refresh
             await asyncio.sleep(2)
             await self.coordinator.async_request_refresh()
@@ -689,10 +682,8 @@ class EcoFlowStreamSelect(EcoFlowBaseEntity, SelectEntity):
         }
 
         try:
-            await self.coordinator.api_client.set_device_quota(
-                device_sn=device_sn,
-                cmd_code=payload,
-            )
+            # Send command via MQTT (priority) with REST API fallback
+            await self.coordinator.async_send_command(payload)
             # Wait 2 seconds for device to apply changes, then refresh
             await asyncio.sleep(2)
             await self.coordinator.async_request_refresh()
