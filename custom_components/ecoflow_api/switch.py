@@ -489,10 +489,7 @@ class EcoFlowSwitch(EcoFlowBaseEntity, SwitchEntity):
         _LOGGER.debug("Sending switch command: %s", payload)
 
         try:
-            await self.coordinator.api_client.set_device_quota(
-                device_sn=device_sn,
-                cmd_code=payload,
-            )
+            await self.coordinator.async_send_command(payload)
 
             # Wait for device to apply changes, then refresh
             await asyncio.sleep(3)
@@ -581,10 +578,7 @@ class EcoFlowDeltaProSwitch(EcoFlowBaseEntity, SwitchEntity):
         }
 
         try:
-            await self.coordinator.api_client.set_device_quota(
-                device_sn=device_sn,
-                cmd_code=payload,
-            )
+            await self.coordinator.async_send_command(payload)
 
             # Wait for device to apply changes, then refresh
             await asyncio.sleep(3)
@@ -684,10 +678,7 @@ class EcoFlowDelta2Switch(EcoFlowBaseEntity, SwitchEntity):
         }
 
         try:
-            await self.coordinator.api_client.set_device_quota(
-                device_sn=device_sn,
-                cmd_code=payload,
-            )
+            await self.coordinator.async_send_command(payload)
 
             # Wait for device to apply changes, then refresh
             await asyncio.sleep(3)
@@ -784,10 +775,7 @@ class EcoFlowStreamSwitch(EcoFlowBaseEntity, SwitchEntity):
         }
 
         try:
-            await self.coordinator.api_client.set_device_quota(
-                device_sn=device_sn,
-                cmd_code=payload,
-            )
+            await self.coordinator.async_send_command(payload)
 
             # Wait for device to apply changes, then refresh
             await asyncio.sleep(3)
@@ -876,10 +864,7 @@ class EcoFlowSmartPlugSwitch(EcoFlowBaseEntity, SwitchEntity):
         _LOGGER.debug("Sending Smart Plug switch command: %s", payload)
 
         try:
-            await self.coordinator.api_client.set_device_quota(
-                device_sn=device_sn,
-                cmd_code=payload,
-            )
+            await self.coordinator.async_send_command(payload)
 
             # Wait for device to apply changes, then refresh
             await asyncio.sleep(3)

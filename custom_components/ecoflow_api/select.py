@@ -425,11 +425,7 @@ class EcoFlowSelect(EcoFlowBaseEntity, SelectEntity):
         }
 
         try:
-            # Send command via REST API
-            await self.coordinator.api_client.set_device_quota(
-                device_sn=device_sn,
-                cmd_code=payload,
-            )
+            await self.coordinator.async_send_command(payload)
 
             # Wait for device to apply changes, then refresh
             await asyncio.sleep(1)
@@ -507,11 +503,9 @@ class EcoFlowDeltaProSelect(EcoFlowBaseEntity, SelectEntity):
         }
 
         try:
-            await self.coordinator.api_client.set_device_quota(
-                device_sn=device_sn,
-                cmd_code=payload,
-            )
-            # Wait 2 seconds for device to apply changes, then refresh
+            await self.coordinator.async_send_command(payload)
+
+            # Wait for device to apply changes, then refresh
             await asyncio.sleep(1)
             await self.coordinator.async_request_refresh()
         except Exception as err:
@@ -587,11 +581,9 @@ class EcoFlowDelta2Select(EcoFlowBaseEntity, SelectEntity):
         }
 
         try:
-            await self.coordinator.api_client.set_device_quota(
-                device_sn=device_sn,
-                cmd_code=payload,
-            )
-            # Wait 2 seconds for device to apply changes, then refresh
+            await self.coordinator.async_send_command(payload)
+
+            # Wait for device to apply changes, then refresh
             await asyncio.sleep(1)
             await self.coordinator.async_request_refresh()
         except Exception as err:
@@ -689,11 +681,9 @@ class EcoFlowStreamSelect(EcoFlowBaseEntity, SelectEntity):
         }
 
         try:
-            await self.coordinator.api_client.set_device_quota(
-                device_sn=device_sn,
-                cmd_code=payload,
-            )
-            # Wait 2 seconds for device to apply changes, then refresh
+            await self.coordinator.async_send_command(payload)
+
+            # Wait for device to apply changes, then refresh
             await asyncio.sleep(1)
             await self.coordinator.async_request_refresh()
         except Exception as err:

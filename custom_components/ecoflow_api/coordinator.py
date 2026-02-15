@@ -192,8 +192,29 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "serial_number": self.device_sn,
         }
 
+    async def async_send_command(self, command: dict) -> bool:
+        """Send command to device via REST API.
+
+        Base implementation uses REST API only.
+        HybridCoordinator overrides this to try MQTT first with REST fallback.
+
+        Raises exceptions on failure so entity code can handle them properly.
+
+        Args:
+            command: Command payload with params
+
+        Returns:
+            True if command sent successfully
+        """
+        await self.client.set_device_quota(
+            device_sn=self.device_sn,
+            cmd_code=command,
+        )
+        _LOGGER.debug("Command sent via REST API: %s", command.get("params", {}))
+        return True
+
     # Command methods for Delta Pro 3
-    
+
     async def async_set_ac_charging_power(self, power: int) -> None:
         """Set AC charging power.
         

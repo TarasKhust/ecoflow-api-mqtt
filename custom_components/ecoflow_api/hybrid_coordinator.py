@@ -80,9 +80,12 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         self._mqtt_connected = False
         self._use_mqtt = False
         self._mqtt_reconnect_count = 0
-        
+
         # Track last REST update time for interval verification
         self._last_rest_update: float | None = None
+
+        # Track last MQTT update time for merge priority
+        self._mqtt_last_update: float = 0
         
         # Timer for periodic REST updates (independent of MQTT)
         self._rest_update_timer: asyncio.TimerHandle | None = None
@@ -195,11 +198,14 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
     async def async_send_command(self, command: dict) -> bool:
         """Send command to device via MQTT (preferred) or REST API (fallback).
 
+        Tries MQTT first for speed, falls back to REST API if MQTT fails.
+        Raises exceptions on REST failure so entity code can handle them.
+
         Args:
             command: Command payload with params
 
         Returns:
-            True if command sent successfully, False otherwise
+            True if command sent successfully
         """
         # Try MQTT first (faster, real-time)
         if self._mqtt_connected and self._mqtt_client:
@@ -213,17 +219,13 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             except Exception as err:
                 _LOGGER.warning("MQTT command error: %s, falling back to REST API", err)
 
-        # Fallback to REST API
-        try:
-            await self.client.set_device_quota(
-                device_sn=self.device_sn,
-                cmd_code=command,
-            )
-            _LOGGER.debug("Command sent via REST API: %s", command.get("params", {}))
-            return True
-        except Exception as err:
-            _LOGGER.error("Failed to send command via REST API: %s", err)
-            return False
+        # Fallback to REST API (raises on failure)
+        await self.client.set_device_quota(
+            device_sn=self.device_sn,
+            cmd_code=command,
+        )
+        _LOGGER.debug("Command sent via REST API (fallback): %s", command.get("params", {}))
+        return True
 
     def _schedule_rest_update(self) -> None:
         """Schedule next REST update.
@@ -330,7 +332,8 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             
             # Merge MQTT data with existing data
             self._mqtt_data.update(mqtt_data)
-            
+            self._mqtt_last_update = time.time()
+
             # Schedule update in Home Assistant event loop
             # MQTT callback runs in different thread, so we need to schedule it properly
             merged_data = self._merge_data()
@@ -348,27 +351,39 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
 
 
     def _merge_data(self) -> dict[str, Any]:
-        """Merge REST API and MQTT data.
+        """Merge REST API and MQTT data using timestamp-based priority.
 
-        Priority: MQTT data > REST data (MQTT is more real-time)
+        The most recently updated source takes priority:
+        - After a command: REST refresh is more recent → REST data wins
+          (prevents stale MQTT data from overwriting fresh REST response)
+        - During normal operation: MQTT updates are more recent → MQTT data wins
+          (real-time updates take priority over periodic REST polling)
 
-        When MQTT is connected and active:
-        - MQTT data has absolute priority
-        - REST data only fills in missing fields (fallback)
-        - REST NEVER overwrites MQTT data
+        This solves the issue where after toggling a switch:
+        1. Command sent → 3s sleep → REST refresh gets new state
+        2. Old MQTT data would overwrite the fresh REST state
+        3. UI would show wrong state until next MQTT update
 
         Returns:
             Merged data dictionary
         """
-        # If MQTT is connected and has data, prioritize it completely
         if self._mqtt_connected and self._mqtt_data:
-            # Start with MQTT data (primary source)
-            merged = dict(self._mqtt_data)
+            rest_time = self._last_rest_update or 0
+            mqtt_time = self._mqtt_last_update
 
-            # Add REST data ONLY for fields not in MQTT (fallback)
-            for key, value in self._last_data.items():
-                if key not in merged:
-                    merged[key] = value
+            if rest_time > mqtt_time:
+                # REST was updated more recently (e.g., after command refresh)
+                # Use REST as primary, MQTT fills missing fields only
+                merged = dict(self._last_data)
+                for key, value in self._mqtt_data.items():
+                    if key not in merged:
+                        merged[key] = value
+            else:
+                # MQTT is more recent - MQTT priority (normal real-time mode)
+                merged = dict(self._mqtt_data)
+                for key, value in self._last_data.items():
+                    if key not in merged:
+                        merged[key] = value
 
             return merged
 

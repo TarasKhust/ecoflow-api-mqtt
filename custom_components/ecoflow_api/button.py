@@ -123,10 +123,7 @@ class EcoFlowButton(EcoFlowBaseEntity, ButtonEntity):
         }
 
         try:
-            await self.coordinator.api_client.set_device_quota(
-                device_sn=device_sn,
-                cmd_code=payload,
-            )
+            await self.coordinator.async_send_command(payload)
             _LOGGER.info("Power off command sent to device %s", device_sn)
         except Exception as err:
             _LOGGER.error("Failed to send power off command: %s", err)
