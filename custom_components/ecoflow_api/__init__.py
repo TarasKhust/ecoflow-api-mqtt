@@ -63,9 +63,9 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data.setdefault(DOMAIN, {})
 
-    # Check which credentials are available
-    has_api_keys = CONF_ACCESS_KEY in entry.data and CONF_SECRET_KEY in entry.data
-    has_mqtt_creds = CONF_MQTT_USERNAME in entry.data and CONF_MQTT_PASSWORD in entry.data
+    # Check which credentials are available (must exist AND not be empty)
+    has_api_keys = bool(entry.data.get(CONF_ACCESS_KEY)) and bool(entry.data.get(CONF_SECRET_KEY))
+    has_mqtt_creds = bool(entry.data.get(CONF_MQTT_USERNAME)) and bool(entry.data.get(CONF_MQTT_PASSWORD))
 
     # Require at least one set of credentials
     if not has_api_keys and not has_mqtt_creds:
