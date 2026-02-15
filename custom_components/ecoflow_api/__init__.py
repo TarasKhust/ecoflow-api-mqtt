@@ -63,31 +63,15 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hass.data.setdefault(DOMAIN, {})
 
-    # Check which credentials are available (must exist AND not be empty)
-    has_api_keys = bool(entry.data.get(CONF_ACCESS_KEY)) and bool(entry.data.get(CONF_SECRET_KEY))
-    has_mqtt_creds = bool(entry.data.get(CONF_MQTT_USERNAME)) and bool(entry.data.get(CONF_MQTT_PASSWORD))
-
-    # Require at least one set of credentials
-    if not has_api_keys and not has_mqtt_creds:
-        _LOGGER.error(
-            "No credentials provided. Please add either API keys or MQTT credentials."
-        )
-        return False
-
-    # Create API client if API keys provided
-    client = None
-    if has_api_keys:
-        session = async_get_clientsession(hass)
-        region = entry.data.get(CONF_REGION, REGION_EU)
-        client = EcoFlowApiClient(
-            access_key=entry.data[CONF_ACCESS_KEY],
-            secret_key=entry.data[CONF_SECRET_KEY],
-            session=session,
-            region=region,
-        )
-        _LOGGER.info("✅ API client created with Developer API keys")
-    else:
-        _LOGGER.info("⚠️ MQTT-only mode: No API keys provided, device control will be limited")
+    # Create API client
+    session = async_get_clientsession(hass)
+    region = entry.data.get(CONF_REGION, REGION_EU)
+    client = EcoFlowApiClient(
+        access_key=entry.data[CONF_ACCESS_KEY],
+        secret_key=entry.data[CONF_SECRET_KEY],
+        session=session,
+        region=region,
+    )
 
     # Get update interval from options (or data for backward compatibility)
     update_interval = (
@@ -96,57 +80,51 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         or DEFAULT_UPDATE_INTERVAL
     )
 
-    # Get MQTT settings from options OR data (priority: options > data)
-    mqtt_enabled = entry.options.get(CONF_MQTT_ENABLED, has_mqtt_creds)  # Auto-enable if credentials in data
-    mqtt_username = entry.options.get(CONF_MQTT_USERNAME) or entry.data.get(CONF_MQTT_USERNAME)
-    mqtt_password = entry.options.get(CONF_MQTT_PASSWORD) or entry.data.get(CONF_MQTT_PASSWORD)
+    # Get MQTT settings from options
+    mqtt_enabled = entry.options.get(CONF_MQTT_ENABLED, False)
+    mqtt_username = entry.options.get(CONF_MQTT_USERNAME)
+    mqtt_password = entry.options.get(CONF_MQTT_PASSWORD)
     certificate_account = None
 
-    # If MQTT enabled and API client available, try to get certificateAccount from API
-    # Otherwise use user-provided MQTT credentials directly
-    if mqtt_enabled and client:
+    # If MQTT enabled, get certificateAccount and certificatePassword from API
+    if mqtt_enabled:
         try:
-            _LOGGER.info("MQTT enabled, fetching certificate credentials from API...")
+            _LOGGER.info("MQTT enabled, fetching MQTT credentials from API...")
             mqtt_creds = await client.get_mqtt_credentials()
             certificate_account = mqtt_creds.get("certificateAccount")
             certificate_password = mqtt_creds.get("certificatePassword")
 
             if certificate_account and certificate_password:
                 _LOGGER.info(
-                    "✅ Successfully obtained MQTT certificate credentials from API"
+                    "Successfully obtained MQTT credentials from API: account=%s (type=%s)",
+                    certificate_account,
+                    type(certificate_account).__name__,
                 )
                 mqtt_username = certificate_account
                 mqtt_password = certificate_password
             else:
                 _LOGGER.warning(
-                    "⚠️ Failed to get MQTT certificate credentials from API, "
-                    "using user-provided credentials"
+                    "Failed to get MQTT credentials from API (account=%s, password=%s), "
+                    "using manual credentials if provided",
+                    certificate_account,
+                    "set" if certificate_password else "not set",
                 )
         except Exception as err:
             _LOGGER.error(
-                "❌ Error fetching MQTT certificate credentials: %s. "
-                "Using user-provided credentials.",
+                "Error fetching MQTT credentials: %s. Using manual credentials if provided.",
                 err,
             )
-    elif mqtt_enabled and not client:
-        _LOGGER.info(
-            "📱 MQTT-only mode: Using user-provided credentials "
-            "(email/password from EcoFlow app)"
-        )
 
-    # Create coordinator based on available credentials
+    # Create coordinator (hybrid if MQTT enabled, otherwise standard)
     coordinator: EcoFlowDataCoordinator | EcoFlowHybridCoordinator
     if mqtt_enabled and mqtt_username and mqtt_password:
-        # MQTT mode (with or without REST API)
-        mode = "hybrid (REST + MQTT)" if client else "MQTT-only"
         _LOGGER.info(
-            "Creating %s coordinator for device %s",
-            mode,
+            "Creating hybrid coordinator (REST + MQTT) for device %s",
             entry.data[CONF_DEVICE_SN],
         )
         coordinator = EcoFlowHybridCoordinator(
             hass=hass,
-            client=client,  # May be None for MQTT-only mode
+            client=client,
             device_sn=entry.data[CONF_DEVICE_SN],
             device_type=entry.data.get(CONF_DEVICE_TYPE, "unknown"),
             update_interval=update_interval,
@@ -158,8 +136,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         )
         # Set up MQTT
         await coordinator.async_setup()
-    elif client:
-        # REST-only mode (no MQTT)
+    else:
         _LOGGER.info(
             "Creating REST-only coordinator for device %s", entry.data[CONF_DEVICE_SN]
         )
@@ -171,35 +148,21 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             update_interval=update_interval,
             config_entry=entry,
         )
-    else:
-        # Should never reach here due to earlier validation
-        _LOGGER.error("No valid configuration for coordinator")
-        return False
 
     # Fetch initial data
     await coordinator.async_config_entry_first_refresh()
 
     # Log connection status
     device_sn = entry.data[CONF_DEVICE_SN]
+    _LOGGER.info("✅ REST API connected for device %s", device_sn)
 
     if isinstance(coordinator, EcoFlowHybridCoordinator):
-        if client and coordinator.mqtt_connected:
-            # Hybrid mode: both REST and MQTT
-            _LOGGER.info("✅ Hybrid mode active for device %s (REST + MQTT)", device_sn)
-        elif not client and coordinator.mqtt_connected:
-            # MQTT-only mode
-            _LOGGER.info("✅ MQTT-only mode active for device %s (read-only, commands via MQTT)", device_sn)
-        elif client and not coordinator.mqtt_connected:
-            # REST-only fallback (MQTT failed)
-            _LOGGER.warning(
-                "⚠️ MQTT connection failed for device %s, using REST-only mode", device_sn
-            )
+        if coordinator.mqtt_connected:
+            _LOGGER.info("✅ MQTT connected for device %s (hybrid mode)", device_sn)
         else:
-            # No connection at all
-            _LOGGER.error("❌ No connection established for device %s", device_sn)
-    else:
-        # REST-only coordinator
-        _LOGGER.info("✅ REST-only mode active for device %s", device_sn)
+            _LOGGER.warning(
+                "⚠️ MQTT not connected for device %s (REST-only mode)", device_sn
+            )
 
     # Store coordinator
     hass.data[DOMAIN][entry.entry_id] = coordinator

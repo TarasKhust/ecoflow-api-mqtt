@@ -459,7 +459,7 @@ class EcoFlowSwitch(EcoFlowBaseEntity, SwitchEntity):
         await self._send_command(False)
 
     async def _send_command(self, state: bool) -> None:
-        """Send command to device via MQTT (priority) with REST API fallback.
+        """Send command to device via REST API.
 
         Delta Pro 3 uses cmdId: 17, cmdFunc: 254 format with boolean values.
         """
@@ -489,11 +489,19 @@ class EcoFlowSwitch(EcoFlowBaseEntity, SwitchEntity):
         _LOGGER.debug("Sending switch command: %s", payload)
 
         try:
-            # Use coordinator's async_send_command for MQTT-first with REST fallback
-            await self.coordinator.async_send_command(payload)
+            await self.coordinator.api_client.set_device_quota(
+                device_sn=device_sn,
+                cmd_code=payload,
+            )
 
-            # Wait for device to apply changes, then refresh
-            await asyncio.sleep(2)
+            # Optimistic update: immediately update state in coordinator data
+            state_key = self._switch_def["state_key"]
+            if self.coordinator.data is not None:
+                self.coordinator.data[state_key] = value
+                self.async_write_ha_state()
+
+            # Background refresh to confirm device state
+            await asyncio.sleep(1)
             await self.coordinator.async_request_refresh()
         except Exception as err:
             _LOGGER.error("Failed to set %s to %s: %s", self._switch_key, state, err)
@@ -562,7 +570,7 @@ class EcoFlowDeltaProSwitch(EcoFlowBaseEntity, SwitchEntity):
         await self._send_command(0)
 
     async def _send_command(self, state: int) -> None:
-        """Send command to device via MQTT (priority) with REST API fallback."""
+        """Send command to device using Delta Pro API format."""
         device_sn = self.coordinator.device_sn
         cmd_set = self._switch_def["cmd_set"]
         cmd_id = self._switch_def["cmd_id"]
@@ -579,10 +587,19 @@ class EcoFlowDeltaProSwitch(EcoFlowBaseEntity, SwitchEntity):
         }
 
         try:
-            # Use coordinator's async_send_command for MQTT-first with REST fallback
-            await self.coordinator.async_send_command(payload)
-            # Wait 2 seconds for device to apply changes, then refresh
-            await asyncio.sleep(2)
+            await self.coordinator.api_client.set_device_quota(
+                device_sn=device_sn,
+                cmd_code=payload,
+            )
+
+            # Optimistic update: immediately update state in coordinator data
+            state_key = self._switch_def["state_key"]
+            if self.coordinator.data is not None:
+                self.coordinator.data[state_key] = state
+                self.async_write_ha_state()
+
+            # Background refresh to confirm device state
+            await asyncio.sleep(1)
             await self.coordinator.async_request_refresh()
         except Exception as err:
             _LOGGER.error("Failed to set %s to %s: %s", self._switch_key, state, err)
@@ -662,7 +679,7 @@ class EcoFlowDelta2Switch(EcoFlowBaseEntity, SwitchEntity):
             await self._send_command(0)
 
     async def _send_command(self, state: int) -> None:
-        """Send command to device via MQTT (priority) with REST API fallback."""
+        """Send command to device using Delta 2 API format."""
         device_sn = self.coordinator.device_sn
         module_type = self._switch_def["module_type"]
         operate_type = self._switch_def["operate_type"]
@@ -679,10 +696,19 @@ class EcoFlowDelta2Switch(EcoFlowBaseEntity, SwitchEntity):
         }
 
         try:
-            # Use coordinator's async_send_command for MQTT-first with REST fallback
-            await self.coordinator.async_send_command(payload)
-            # Wait 2 seconds for device to apply changes, then refresh
-            await asyncio.sleep(2)
+            await self.coordinator.api_client.set_device_quota(
+                device_sn=device_sn,
+                cmd_code=payload,
+            )
+
+            # Optimistic update: immediately update state in coordinator data
+            state_key = self._switch_def["state_key"]
+            if self.coordinator.data is not None:
+                self.coordinator.data[state_key] = state
+                self.async_write_ha_state()
+
+            # Background refresh to confirm device state
+            await asyncio.sleep(1)
             await self.coordinator.async_request_refresh()
         except Exception as err:
             _LOGGER.error("Failed to set %s to %s: %s", self._switch_key, state, err)
@@ -759,7 +785,7 @@ class EcoFlowStreamSwitch(EcoFlowBaseEntity, SwitchEntity):
         await self._send_command(value)
 
     async def _send_command(self, state: bool | int) -> None:
-        """Send command to device via MQTT (priority) with REST API fallback."""
+        """Send command to device using Stream API format."""
         device_sn = self.coordinator.device_sn
         param_key = self._switch_def["param_key"]
 
@@ -776,10 +802,19 @@ class EcoFlowStreamSwitch(EcoFlowBaseEntity, SwitchEntity):
         }
 
         try:
-            # Use coordinator's async_send_command for MQTT-first with REST fallback
-            await self.coordinator.async_send_command(payload)
-            # Wait 2 seconds for device to apply changes, then refresh
-            await asyncio.sleep(2)
+            await self.coordinator.api_client.set_device_quota(
+                device_sn=device_sn,
+                cmd_code=payload,
+            )
+
+            # Optimistic update: immediately update state in coordinator data
+            state_key = self._switch_def["state_key"]
+            if self.coordinator.data is not None:
+                self.coordinator.data[state_key] = state
+                self.async_write_ha_state()
+
+            # Background refresh to confirm device state
+            await asyncio.sleep(1)
             await self.coordinator.async_request_refresh()
         except Exception as err:
             _LOGGER.error("Failed to set %s to %s: %s", self._switch_key, state, err)
@@ -840,7 +875,7 @@ class EcoFlowSmartPlugSwitch(EcoFlowBaseEntity, SwitchEntity):
         await self._send_command(False)
 
     async def _send_command(self, state: bool) -> None:
-        """Send command to Smart Plug via MQTT (priority) with REST API fallback.
+        """Send command to Smart Plug via REST API.
 
         Smart Plug uses cmdCode format:
         {"sn": "DEVICE_SN", "cmdCode": "WN511_SOCKET_SET_PLUG_SWITCH_MESSAGE", "params": {"plugSwitch": 0/1}}
@@ -865,10 +900,19 @@ class EcoFlowSmartPlugSwitch(EcoFlowBaseEntity, SwitchEntity):
         _LOGGER.debug("Sending Smart Plug switch command: %s", payload)
 
         try:
-            # Use coordinator's async_send_command for MQTT-first with REST fallback
-            await self.coordinator.async_send_command(payload)
-            # Wait 2 seconds for device to apply changes, then refresh
-            await asyncio.sleep(2)
+            await self.coordinator.api_client.set_device_quota(
+                device_sn=device_sn,
+                cmd_code=payload,
+            )
+
+            # Optimistic update: immediately update state in coordinator data
+            state_key = self._switch_def["state_key"]
+            if self.coordinator.data is not None:
+                self.coordinator.data[state_key] = value
+                self.async_write_ha_state()
+
+            # Background refresh to confirm device state
+            await asyncio.sleep(1)
             await self.coordinator.async_request_refresh()
         except Exception as err:
             _LOGGER.error("Failed to set %s to %s: %s", self._switch_key, state, err)

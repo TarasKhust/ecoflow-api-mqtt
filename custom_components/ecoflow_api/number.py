@@ -710,11 +710,14 @@ class EcoFlowNumber(EcoFlowBaseEntity, NumberEntity):
         }
 
         try:
-            # Send command via MQTT (priority) with REST API fallback
-            await self.coordinator.async_send_command(payload)
+            # Send command via REST API
+            await self.coordinator.api_client.set_device_quota(
+                device_sn=device_sn,
+                cmd_code=payload,
+            )
 
             # Wait for device to apply changes, then refresh
-            await asyncio.sleep(2)
+            await asyncio.sleep(1)
             await self.coordinator.async_request_refresh()
         except Exception as err:
             _LOGGER.error(
@@ -792,10 +795,12 @@ class EcoFlowDeltaProNumber(EcoFlowBaseEntity, NumberEntity):
         }
 
         try:
-            # Send command via MQTT (priority) with REST API fallback
-            await self.coordinator.async_send_command(payload)
+            await self.coordinator.api_client.set_device_quota(
+                device_sn=device_sn,
+                cmd_code=payload,
+            )
             # Wait 2 seconds for device to apply changes, then refresh
-            await asyncio.sleep(2)
+            await asyncio.sleep(1)
             await self.coordinator.async_request_refresh()
         except Exception as err:
             _LOGGER.error(
@@ -873,10 +878,12 @@ class EcoFlowDelta2Number(EcoFlowBaseEntity, NumberEntity):
         }
 
         try:
-            # Send command via MQTT (priority) with REST API fallback
-            await self.coordinator.async_send_command(payload)
+            await self.coordinator.api_client.set_device_quota(
+                device_sn=device_sn,
+                cmd_code=payload,
+            )
             # Wait 2 seconds for device to apply changes, then refresh
-            await asyncio.sleep(2)
+            await asyncio.sleep(1)
             await self.coordinator.async_request_refresh()
         except Exception as err:
             _LOGGER.error(
@@ -956,10 +963,12 @@ class EcoFlowStreamNumber(EcoFlowBaseEntity, NumberEntity):
         }
 
         try:
-            # Send command via MQTT (priority) with REST API fallback
-            await self.coordinator.async_send_command(payload)
+            await self.coordinator.api_client.set_device_quota(
+                device_sn=device_sn,
+                cmd_code=payload,
+            )
             # Wait 2 seconds for device to apply changes, then refresh
-            await asyncio.sleep(2)
+            await asyncio.sleep(1)
             await self.coordinator.async_request_refresh()
         except Exception as err:
             _LOGGER.error(
@@ -1039,10 +1048,12 @@ class EcoFlowSmartPlugNumber(EcoFlowBaseEntity, NumberEntity):
         _LOGGER.debug("Sending Smart Plug number command: %s", payload)
 
         try:
-            # Send command via MQTT (priority) with REST API fallback
-            await self.coordinator.async_send_command(payload)
+            await self.coordinator.api_client.set_device_quota(
+                device_sn=device_sn,
+                cmd_code=payload,
+            )
             # Wait 2 seconds for device to apply changes, then refresh
-            await asyncio.sleep(2)
+            await asyncio.sleep(1)
             await self.coordinator.async_request_refresh()
         except Exception as err:
             _LOGGER.error("Failed to set %s to %s: %s", self._number_key, value, err)

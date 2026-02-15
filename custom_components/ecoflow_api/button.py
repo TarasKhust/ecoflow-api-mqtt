@@ -106,7 +106,7 @@ class EcoFlowButton(EcoFlowBaseEntity, ButtonEntity):
         self._attr_device_class = button_def.get("device_class")
 
     async def async_press(self) -> None:
-        """Handle the button press via MQTT (priority) with REST API fallback."""
+        """Handle the button press via REST API."""
         command_key = self._button_def["command_key"]
         device_sn = self.coordinator.device_sn
 
@@ -123,8 +123,10 @@ class EcoFlowButton(EcoFlowBaseEntity, ButtonEntity):
         }
 
         try:
-            # Send command via MQTT (priority) with REST API fallback
-            await self.coordinator.async_send_command(payload)
+            await self.coordinator.api_client.set_device_quota(
+                device_sn=device_sn,
+                cmd_code=payload,
+            )
             _LOGGER.info("Power off command sent to device %s", device_sn)
         except Exception as err:
             _LOGGER.error("Failed to send power off command: %s", err)

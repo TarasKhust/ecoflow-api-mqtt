@@ -11,42 +11,34 @@
       },
       "auto_discovery": {
         "title": "EcoFlow API Configuration",
-        "description": "Enter your EcoFlow credentials.\n\n**Most users:** Use MQTT credentials (email + password from EcoFlow app)\n**Advanced:** Use Developer API keys from [EcoFlow Developer Portal]({api_docs})\n\n**You can provide:**\n• MQTT credentials only → Manual entry (enter device SN)\n• Developer API keys only → Auto-discovery\n• Both → Auto-discovery + MQTT enabled",
+        "description": "Enter your EcoFlow Developer API credentials.\n\nGet your API keys from: [EcoFlow Developer Portal]({api_docs})\n\n**Before starting:**\n1. Register at EcoFlow Developer Portal\n2. Create an application and get API keys\n3. Bind your device to the Developer account",
         "data": {
           "region": "Region",
-          "mqtt_username": "MQTT Username (Email)",
-          "mqtt_password": "MQTT Password",
-          "access_key": "Access Key (Optional)",
-          "secret_key": "Secret Key (Optional)"
+          "access_key": "Access Key",
+          "secret_key": "Secret Key"
         },
         "data_description": {
           "region": "Select your EcoFlow API region (EU for Europe, US for United States)",
-          "mqtt_username": "Your EcoFlow account email (for real-time MQTT updates)",
-          "mqtt_password": "Your EcoFlow account password",
-          "access_key": "Developer API access key (optional, for device discovery)",
-          "secret_key": "Developer API secret key (optional)"
+          "access_key": "Your EcoFlow Developer API access key",
+          "secret_key": "Your EcoFlow Developer API secret key"
         }
       },
       "manual_entry": {
         "title": "Manual Device Configuration",
-        "description": "Enter device details and credentials manually.\n\n**Most users:** Use MQTT credentials (email + password from EcoFlow app)\n**Advanced:** Use Developer API keys from [EcoFlow Developer Portal]({api_docs})\n\n**You can provide:**\n• MQTT credentials only (recommended)\n• Developer API keys only\n• Both (for full functionality)\n\n**Required:** Device Serial Number and Type",
+        "description": "Enter all device details manually.\n\nGet your API keys from: [EcoFlow Developer Portal]({api_docs})\n\n**Required information:**\n1. API Access Key and Secret Key\n2. Device Serial Number (on device label or in app)\n3. Device Type",
         "data": {
           "region": "Region",
+          "access_key": "Access Key",
+          "secret_key": "Secret Key",
           "device_sn": "Device Serial Number",
-          "device_type": "Device Type",
-          "mqtt_username": "MQTT Username (Email)",
-          "mqtt_password": "MQTT Password",
-          "access_key": "Access Key (Optional)",
-          "secret_key": "Secret Key (Optional)"
+          "device_type": "Device Type"
         },
         "data_description": {
           "region": "Select your EcoFlow API region (EU for Europe, US for United States)",
-          "device_sn": "Serial number of your EcoFlow device (on device label or in app)",
-          "device_type": "Select your device model",
-          "mqtt_username": "Your EcoFlow account email (for real-time MQTT updates)",
-          "mqtt_password": "Your EcoFlow account password",
-          "access_key": "Developer API access key (optional)",
-          "secret_key": "Developer API secret key (optional)"
+          "access_key": "Your EcoFlow Developer API access key",
+          "secret_key": "Your EcoFlow Developer API secret key",
+          "device_sn": "Serial number of your EcoFlow device",
+          "device_type": "Select your device model"
         }
       },
       "select_device": {
@@ -86,7 +78,6 @@
       "cannot_connect": "Failed to connect to EcoFlow API. Please check your internet connection.",
       "invalid_auth": "Invalid authentication credentials. Please check your access key and secret key.",
       "invalid_device": "Device not found or not accessible. Please verify:\n1. Serial number is correct\n2. Device is online\n3. Device is bound to your Developer account at https://developer-eu.ecoflow.com/",
-      "no_credentials": "Please provide at least one set of credentials:\n• MQTT credentials (email + password) - recommended for most users\n• Developer API keys (access_key + secret_key)\n• Both (for full functionality)",
       "unknown": "An unexpected error occurred. Please check the logs for details."
     },
     "abort": {
