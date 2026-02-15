@@ -349,19 +349,31 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
 
     def _merge_data(self) -> dict[str, Any]:
         """Merge REST API and MQTT data.
-        
+
         Priority: MQTT data > REST data (MQTT is more real-time)
-        
+
+        When MQTT is connected and active:
+        - MQTT data has absolute priority
+        - REST data only fills in missing fields (fallback)
+        - REST NEVER overwrites MQTT data
+
         Returns:
             Merged data dictionary
         """
-        # Start with REST data
-        merged = dict(self._last_data)
-        
-        # Overlay MQTT data (more recent)
-        merged.update(self._mqtt_data)
-        
-        return merged
+        # If MQTT is connected and has data, prioritize it completely
+        if self._mqtt_connected and self._mqtt_data:
+            # Start with MQTT data (primary source)
+            merged = dict(self._mqtt_data)
+
+            # Add REST data ONLY for fields not in MQTT (fallback)
+            for key, value in self._last_data.items():
+                if key not in merged:
+                    merged[key] = value
+
+            return merged
+
+        # If MQTT not connected or no MQTT data yet, use REST only
+        return dict(self._last_data)
 
     async def _async_wake_device(self) -> None:
         """Wake up device before requesting data.
