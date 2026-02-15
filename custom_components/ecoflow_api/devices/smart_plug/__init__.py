@@ -4,6 +4,7 @@ from __future__ import annotations
 from .const import (
     CMD_CODE_BRIGHTNESS,
     CMD_CODE_DELETE_TASK,
+    CMD_CODE_MAX_WATTS,
     CMD_CODE_SWITCH,
     COMMAND_BASE,
     DEVICE_MODEL,
@@ -16,5 +17,6 @@ __all__ = [
     "COMMAND_BASE",
     "CMD_CODE_SWITCH",
     "CMD_CODE_BRIGHTNESS",
+    "CMD_CODE_MAX_WATTS",
     "CMD_CODE_DELETE_TASK",
 ]

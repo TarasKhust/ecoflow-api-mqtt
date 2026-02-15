@@ -3197,6 +3197,14 @@ SMART_PLUG_SENSOR_DEFINITIONS = {
         "icon": "mdi:current-ac",
         "value_map": lambda x: x / 10 if x is not None else None,  # API returns 0.1A units
     },
+    "overload_protection_threshold": {
+        "name": "Overload Protection Threshold",
+        "key": "2_1.maxWatts",
+        "unit": UnitOfPower.WATT,
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:shield-alert",
+    },
     # ============================================================================
     # DIAGNOSTICS
     # ============================================================================

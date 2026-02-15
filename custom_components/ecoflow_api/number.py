@@ -528,6 +528,18 @@ SMART_PLUG_NUMBER_DEFINITIONS = {
         "value_map_to_ui": lambda x: round((x / 1023) * 100) if x is not None else None,
         "value_map_from_ui": lambda x: round((x / 100) * 1023) if x is not None else None,
     },
+    "overload_protection": {
+        "name": "Overload Protection",
+        "state_key": "2_1.maxWatts",
+        "cmd_code": "WN511_SOCKET_SET_MAX_WATTS",
+        "param_key": "maxWatts",
+        "min": 1000,
+        "max": 2500,
+        "step": 100,
+        "unit": UnitOfPower.WATT,
+        "icon": "mdi:shield-alert",
+        "mode": NumberMode.SLIDER,
+    },
 }
 
 
