@@ -18,12 +18,10 @@
         "title": "MQTT Credentials (Regular Account)",
         "description": "Enter your EcoFlow account credentials (email and password from the EcoFlow app).\n\n✅ **Most users choose this option**\n⚠️ **Note:** Manual device entry required (you'll need your device serial number)",
         "data": {
-          "region": "Region",
           "mqtt_username": "Email Address",
           "mqtt_password": "Password"
         },
         "data_description": {
-          "region": "Select your EcoFlow API region (EU for Europe, US for United States)",
           "mqtt_username": "Your EcoFlow account email (used to log into the EcoFlow app)",
           "mqtt_password": "Your EcoFlow account password"
         }

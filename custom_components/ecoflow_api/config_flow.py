@@ -133,16 +133,14 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             # Store MQTT credentials
             self._mqtt_username = user_input.get(CONF_MQTT_USERNAME)
             self._mqtt_password = user_input.get(CONF_MQTT_PASSWORD)
-            self._region = user_input.get(CONF_REGION, REGION_EU)
 
             _LOGGER.info("MQTT credentials provided, redirecting to manual device entry")
             # Redirect to manual device entry
             return await self.async_step_manual_device()
 
-        # Schema: only MQTT fields
+        # Schema: only MQTT fields (no region needed for MQTT)
         mqtt_schema = vol.Schema(
             {
-                vol.Required(CONF_REGION, default=REGION_EU): vol.In(REGIONS),
                 vol.Required(CONF_MQTT_USERNAME): str,
                 vol.Required(CONF_MQTT_PASSWORD): str,
             }
