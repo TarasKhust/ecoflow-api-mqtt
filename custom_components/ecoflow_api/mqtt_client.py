@@ -182,7 +182,7 @@ class EcoFlowMQTTClient:
                     mqtt_command["timestamp"] = int(time.time() * 1000)
 
             payload = json.dumps(mqtt_command)
-            _LOGGER.info(
+            _LOGGER.debug(
                 "MQTT publish to %s: %s",
                 self._set_topic.split("/")[-2][-4:],  # last 4 chars of SN
                 payload[:200],
@@ -326,7 +326,7 @@ class EcoFlowMQTTClient:
                 reply_id = payload.get("id")
 
                 if config_ok is True or ack == 0 or result == 0:
-                    _LOGGER.info("Command reply OK for %s (id=%s): %s", self.device_sn[-4:], reply_id, reply_data)
+                    _LOGGER.debug("Command reply OK for %s (id=%s): %s", self.device_sn[-4:], reply_id, reply_data)
                 else:
                     _LOGGER.warning("Command reply for %s (id=%s): %s", self.device_sn[-4:], reply_id, payload)
                 

@@ -207,7 +207,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         Returns:
             True if command sent successfully
         """
-        _LOGGER.info(
+        _LOGGER.debug(
             "Sending command for %s: mqtt=%s, params=%s",
             self.device_sn[-4:],
             "connected" if self._mqtt_connected else "disconnected",
@@ -219,7 +219,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             try:
                 success = await self._mqtt_client.async_publish_command(command)
                 if success:
-                    _LOGGER.info("Command sent via MQTT for %s", self.device_sn[-4:])
+                    _LOGGER.debug("Command sent via MQTT for %s", self.device_sn[-4:])
                     return True
                 else:
                     _LOGGER.warning("MQTT publish failed for %s, falling back to REST API", self.device_sn[-4:])
@@ -227,12 +227,12 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                 _LOGGER.warning("MQTT command error for %s: %s, falling back to REST API", self.device_sn[-4:], err)
 
         # Fallback to REST API (raises on failure)
-        _LOGGER.info("Sending command via REST API for %s", self.device_sn[-4:])
+        _LOGGER.debug("Sending command via REST API for %s", self.device_sn[-4:])
         result = await self.client.set_device_quota(
             device_sn=self.device_sn,
             cmd_code=command,
         )
-        _LOGGER.info(
+        _LOGGER.debug(
             "Command sent via REST API for %s: response=%s",
             self.device_sn[-4:],
             result,

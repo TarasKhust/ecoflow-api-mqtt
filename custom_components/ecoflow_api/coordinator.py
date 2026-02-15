@@ -206,7 +206,7 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         Returns:
             True if command sent successfully
         """
-        _LOGGER.info(
+        _LOGGER.debug(
             "Sending command via REST API for %s: params=%s",
             self.device_sn[-4:],
             command.get("params", {}),
@@ -215,7 +215,7 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             device_sn=self.device_sn,
             cmd_code=command,
         )
-        _LOGGER.info(
+        _LOGGER.debug(
             "Command sent via REST API for %s: response=%s",
             self.device_sn[-4:],
             result,

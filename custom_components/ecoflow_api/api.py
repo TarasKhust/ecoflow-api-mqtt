@@ -367,7 +367,7 @@ class EcoFlowApiClient:
                 "params": params or {},
             }
 
-        _LOGGER.info("SET device quota: PUT payload=%s", data)
+        _LOGGER.debug("SET device quota: PUT payload=%s", data)
 
         result = await self._request(
             "PUT",
@@ -375,7 +375,7 @@ class EcoFlowApiClient:
             data=data,
         )
 
-        _LOGGER.info("SET device quota: response=%s", result)
+        _LOGGER.debug("SET device quota: response=%s", result)
         return result
 
     async def test_connection(self) -> bool:
