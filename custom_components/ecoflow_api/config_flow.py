@@ -433,14 +433,24 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             if not errors:
                 device_name = DEVICE_TYPES.get(device_type, device_type)
+                # Build data dict with all provided credentials
+                entry_data = {
+                    CONF_DEVICE_SN: device_sn,
+                    CONF_DEVICE_TYPE: device_type,
+                    CONF_REGION: self._region,
+                }
+                if self._access_key:
+                    entry_data[CONF_ACCESS_KEY] = self._access_key
+                if self._secret_key:
+                    entry_data[CONF_SECRET_KEY] = self._secret_key
+                if self._mqtt_username:
+                    entry_data[CONF_MQTT_USERNAME] = self._mqtt_username
+                if self._mqtt_password:
+                    entry_data[CONF_MQTT_PASSWORD] = self._mqtt_password
+
                 return self.async_create_entry(
                     title=f"EcoFlow {device_name} ({device_sn[-4:]})",
-                    data={
-                        CONF_ACCESS_KEY: self._access_key,
-                        CONF_SECRET_KEY: self._secret_key,
-                        CONF_DEVICE_SN: device_sn,
-                        CONF_DEVICE_TYPE: device_type,
-                    },
+                    data=entry_data,
                 )
 
         return self.async_show_form(
