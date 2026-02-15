@@ -532,7 +532,7 @@ SMART_PLUG_NUMBER_DEFINITIONS = {
         "name": "Overload Protection",
         "state_key": "2_1.maxWatts",
         "cmd_code": "WN511_SOCKET_SET_MAX_WATTS",
-        "param_key": "maxWatts",
+        "param_key": "maxWatts",  # Same as state_key (like brightness)
         "min": 1000,
         "max": 2500,
         "step": 100,
