@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 
 from homeassistant.components.button import ButtonEntity
@@ -61,4 +62,11 @@ class EcoFlowButton(EcoFlowBaseEntity, ButtonEntity):
             {self._defn.param_key: self._defn.param_value},
             **self._defn.command_params,
         )
-        await self.coordinator.async_send_command(payload)
+
+        try:
+            await self.coordinator.async_send_command(payload)
+            await asyncio.sleep(1)
+            await self.coordinator.async_request_refresh()
+        except Exception as err:
+            _LOGGER.error("Failed to press %s: %s", self._defn.key, err)
+            raise
