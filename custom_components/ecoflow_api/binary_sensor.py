@@ -4,7 +4,8 @@ from __future__ import annotations
 
 import logging
 import re
-from typing import Any
+from collections.abc import Callable
+from typing import TypedDict
 
 from homeassistant.components.binary_sensor import (
     BinarySensorDeviceClass,
@@ -14,432 +15,34 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import (
-    DEVICE_TYPE_DELTA_2,
-    DEVICE_TYPE_DELTA_PRO,
-    DEVICE_TYPE_DELTA_PRO_3,
-    DEVICE_TYPE_SMART_PLUG,
-    DEVICE_TYPE_STREAM_ULTRA_X,
-    DOMAIN,
-)
+from .const import DOMAIN
 from .coordinator import EcoFlowDataCoordinator
+from .devices import get_profile
+from .devices.base import EcoFlowBinarySensorDef
 from .entity import EcoFlowBaseEntity
 
 _LOGGER = logging.getLogger(__name__)
 
 
-# Binary sensor definitions for Delta Pro 3
-DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS = {
-    "ac_in_connected": {
-        "name": "AC Input Connected",
-        "key": "acInConnected",
-        "device_class": BinarySensorDeviceClass.PLUG,
-        "icon_on": "mdi:power-plug",
-        "icon_off": "mdi:power-plug-off",
-        "derived": True,
-        "derive_from": "powGetAcIn",
-        "derive_condition": lambda v: v is not None and v > 0,
-    },
-    "solar_connected": {
-        "name": "Solar Input Connected",
-        "key": "solarConnected",
-        "device_class": BinarySensorDeviceClass.PLUG,
-        "icon_on": "mdi:solar-power",
-        "icon_off": "mdi:solar-power-variant-outline",
-        "derived": True,
-        "derive_from": "powGetPvH",
-        "derive_condition": lambda v: v is not None and v > 0,
-    },
-    "is_charging": {
-        "name": "Charging",
-        "key": "isCharging",
-        "device_class": BinarySensorDeviceClass.BATTERY_CHARGING,
-        "icon_on": "mdi:battery-charging",
-        "icon_off": "mdi:battery",
-        "derived": True,
-        "derive_from": "powInSumW",
-        "derive_condition": lambda v: v is not None and v > 10,
-    },
-    "is_discharging": {
-        "name": "Discharging",
-        "key": "isDischarging",
-        "device_class": BinarySensorDeviceClass.POWER,
-        "icon_on": "mdi:battery-arrow-down",
-        "icon_off": "mdi:battery",
-        "derived": True,
-        "derive_from": "powOutSumW",
-        "derive_condition": lambda v: v is not None and v > 10,
-    },
-    "ac_out_enabled": {
-        "name": "AC Output Enabled",
-        "key": "acOutState",
-        "device_class": BinarySensorDeviceClass.POWER,
-        "icon_on": "mdi:power-socket",
-        "icon_off": "mdi:power-socket-off",
-        "derived": False,
-    },
-    "dc_out_enabled": {
-        "name": "DC Output Enabled",
-        "key": "dcOutState",
-        "device_class": BinarySensorDeviceClass.POWER,
-        "icon_on": "mdi:current-dc",
-        "icon_off": "mdi:current-dc",
-        "derived": False,
-    },
-    "battery_low": {
-        "name": "Battery Low",
-        "key": "batteryLow",
-        "device_class": BinarySensorDeviceClass.BATTERY,
-        "icon_on": "mdi:battery-alert",
-        "icon_off": "mdi:battery",
-        "derived": True,
-        "derive_from": "bmsBattSoc",
-        "derive_condition": lambda v: v is not None and v < 20,
-    },
-    "battery_full": {
-        "name": "Battery Full",
-        "key": "batteryFull",
-        "device_class": BinarySensorDeviceClass.BATTERY,
-        "icon_on": "mdi:battery-check",
-        "icon_off": "mdi:battery",
-        "derived": True,
-        "derive_from": "bmsBattSoc",
-        "derive_condition": lambda v: v is not None and v >= 100,
-    },
-    "over_temp": {
-        "name": "Over Temperature",
-        "key": "overTemp",
-        "device_class": BinarySensorDeviceClass.HEAT,
-        "icon_on": "mdi:thermometer-alert",
-        "icon_off": "mdi:thermometer",
-        "derived": True,
-        "derive_from": "bmsMaxCellTemp",
-        "derive_condition": lambda v: v is not None and v > 45,
-    },
-}
+class _ExtraBatterySensorDef(TypedDict, total=False):
+    """Type definition for extra battery sensor configuration."""
 
-# Binary sensor definitions for Delta Pro (Original)
-DELTA_PRO_BINARY_SENSOR_DEFINITIONS = {
-    "ac_in_connected": {
-        "name": "AC Input Connected",
-        "key": "acInConnected",
-        "device_class": BinarySensorDeviceClass.PLUG,
-        "icon_on": "mdi:power-plug",
-        "icon_off": "mdi:power-plug-off",
-        "derived": True,
-        "derive_from": "inv.inputWatts",
-        "derive_condition": lambda v: v is not None and v > 0,
-    },
-    "solar_connected": {
-        "name": "Solar Input Connected",
-        "key": "solarConnected",
-        "device_class": BinarySensorDeviceClass.PLUG,
-        "icon_on": "mdi:solar-power",
-        "icon_off": "mdi:solar-power-variant-outline",
-        "derived": True,
-        "derive_from": "mppt.inWatts",
-        "derive_condition": lambda v: v is not None and v > 0,
-    },
-    "is_charging": {
-        "name": "Charging",
-        "key": "isCharging",
-        "device_class": BinarySensorDeviceClass.BATTERY_CHARGING,
-        "icon_on": "mdi:battery-charging",
-        "icon_off": "mdi:battery",
-        "derived": True,
-        "derive_from": "pd.wattsInSum",
-        "derive_condition": lambda v: v is not None and v > 10,
-    },
-    "is_discharging": {
-        "name": "Discharging",
-        "key": "isDischarging",
-        "device_class": BinarySensorDeviceClass.POWER,
-        "icon_on": "mdi:battery-arrow-down",
-        "icon_off": "mdi:battery",
-        "derived": True,
-        "derive_from": "pd.wattsOutSum",
-        "derive_condition": lambda v: v is not None and v > 10,
-    },
-    "ac_out_enabled": {
-        "name": "AC Output Enabled",
-        "key": "inv.cfgAcEnabled",
-        "device_class": BinarySensorDeviceClass.POWER,
-        "icon_on": "mdi:power-socket",
-        "icon_off": "mdi:power-socket-off",
-        "derived": False,
-    },
-    "dc_out_enabled": {
-        "name": "DC Output Enabled",
-        "key": "pd.dcOutState",
-        "device_class": BinarySensorDeviceClass.POWER,
-        "icon_on": "mdi:current-dc",
-        "icon_off": "mdi:current-dc",
-        "derived": False,
-    },
-    "battery_low": {
-        "name": "Battery Low",
-        "key": "batteryLow",
-        "device_class": BinarySensorDeviceClass.BATTERY,
-        "icon_on": "mdi:battery-alert",
-        "icon_off": "mdi:battery",
-        "derived": True,
-        "derive_from": "bmsMaster.soc",
-        "derive_condition": lambda v: v is not None and v < 20,
-    },
-    "battery_full": {
-        "name": "Battery Full",
-        "key": "batteryFull",
-        "device_class": BinarySensorDeviceClass.BATTERY,
-        "icon_on": "mdi:battery-check",
-        "icon_off": "mdi:battery",
-        "derived": True,
-        "derive_from": "bmsMaster.soc",
-        "derive_condition": lambda v: v is not None and v >= 100,
-    },
-    "x_boost_enabled": {
-        "name": "X-Boost Enabled",
-        "key": "inv.cfgAcXboost",
-        "device_class": None,
-        "icon_on": "mdi:lightning-bolt",
-        "icon_off": "mdi:lightning-bolt-outline",
-        "derived": False,
-    },
-    "beeper_enabled": {
-        "name": "Beeper Enabled",
-        "key": "pd.beepState",
-        "device_class": None,
-        "icon_on": "mdi:volume-high",
-        "icon_off": "mdi:volume-off",
-        "derived": False,
-    },
-}
-
-# NOTE: River 3 and River 3 Plus are NOT supported by EcoFlow REST API
-# These devices return error 1006. Removed from codebase.
-
-# NOTE: Delta 3 Plus is NOT supported by EcoFlow REST API
-# Device returns error 1006. Removed from codebase.
-
-# Binary sensor definitions for Delta 2
-# Uses data keys with prefixes: pd., bms_bmsStatus., bms_emsStatus., inv., mppt.
-DELTA_2_BINARY_SENSOR_DEFINITIONS = {
-    "ac_in_connected": {
-        "name": "AC Input Connected",
-        "key": "acInConnected",
-        "device_class": BinarySensorDeviceClass.PLUG,
-        "icon_on": "mdi:power-plug",
-        "icon_off": "mdi:power-plug-off",
-        "derived": True,
-        "derive_from": "inv.inputWatts",
-        "derive_condition": lambda v: v is not None and v > 0,
-    },
-    "solar_connected": {
-        "name": "Solar Input Connected",
-        "key": "solarConnected",
-        "device_class": BinarySensorDeviceClass.PLUG,
-        "icon_on": "mdi:solar-power",
-        "icon_off": "mdi:solar-power-variant-outline",
-        "derived": True,
-        "derive_from": "mppt.inWatts",
-        "derive_condition": lambda v: v is not None and v > 0,
-    },
-    "is_charging": {
-        "name": "Charging",
-        "key": "isCharging",
-        "device_class": BinarySensorDeviceClass.BATTERY_CHARGING,
-        "icon_on": "mdi:battery-charging",
-        "icon_off": "mdi:battery",
-        "derived": True,
-        "derive_from": "pd.wattsInSum",
-        "derive_condition": lambda v: v is not None and v > 10,
-    },
-    "is_discharging": {
-        "name": "Discharging",
-        "key": "isDischarging",
-        "device_class": BinarySensorDeviceClass.POWER,
-        "icon_on": "mdi:battery-arrow-down",
-        "icon_off": "mdi:battery",
-        "derived": True,
-        "derive_from": "pd.wattsOutSum",
-        "derive_condition": lambda v: v is not None and v > 10,
-    },
-    "ac_out_enabled": {
-        "name": "AC Output Enabled",
-        "key": "mppt.cfgAcEnabled",
-        "device_class": BinarySensorDeviceClass.POWER,
-        "icon_on": "mdi:power-socket",
-        "icon_off": "mdi:power-socket-off",
-        "derived": False,
-    },
-    "dc_out_enabled": {
-        "name": "DC Output Enabled",
-        "key": "pd.dcOutState",
-        "device_class": BinarySensorDeviceClass.POWER,
-        "icon_on": "mdi:current-dc",
-        "icon_off": "mdi:current-dc",
-        "derived": False,
-    },
-    "car_charger_enabled": {
-        "name": "Car Charger Enabled",
-        "key": "mppt.carState",
-        "device_class": BinarySensorDeviceClass.POWER,
-        "icon_on": "mdi:car",
-        "icon_off": "mdi:car-off",
-        "derived": False,
-    },
-    "battery_low": {
-        "name": "Battery Low",
-        "key": "batteryLow",
-        "device_class": BinarySensorDeviceClass.BATTERY,
-        "icon_on": "mdi:battery-alert",
-        "icon_off": "mdi:battery",
-        "derived": True,
-        "derive_from": "bms_bmsStatus.soc",
-        "derive_condition": lambda v: v is not None and v < 20,
-    },
-    "battery_full": {
-        "name": "Battery Full",
-        "key": "batteryFull",
-        "device_class": BinarySensorDeviceClass.BATTERY,
-        "icon_on": "mdi:battery-check",
-        "icon_off": "mdi:battery",
-        "derived": True,
-        "derive_from": "bms_bmsStatus.soc",
-        "derive_condition": lambda v: v is not None and v >= 100,
-    },
-    "x_boost_enabled": {
-        "name": "X-Boost Enabled",
-        "key": "mppt.cfgAcXboost",
-        "device_class": None,
-        "icon_on": "mdi:lightning-bolt",
-        "icon_off": "mdi:lightning-bolt-outline",
-        "derived": False,
-    },
-    "beeper_silent": {
-        "name": "Beeper Silent Mode",
-        "key": "mppt.beepState",
-        "device_class": None,
-        "icon_on": "mdi:volume-off",
-        "icon_off": "mdi:volume-high",
-        "derived": False,
-    },
-    "over_temp": {
-        "name": "Over Temperature",
-        "key": "overTemp",
-        "device_class": BinarySensorDeviceClass.HEAT,
-        "icon_on": "mdi:thermometer-alert",
-        "icon_off": "mdi:thermometer",
-        "derived": True,
-        "derive_from": "bms_bmsStatus.temp",
-        "derive_condition": lambda v: v is not None and v > 45,
-    },
-}
-
-# ============================================================================
-# STREAM ULTRA X Binary Sensor Definitions
-# ============================================================================
-
-STREAM_ULTRA_X_BINARY_SENSOR_DEFINITIONS = {
-    "ac1_switch": {
-        "name": "AC1 Switch",
-        "key": "relay2Onoff",
-        "device_class": BinarySensorDeviceClass.POWER,
-        "icon_on": "mdi:power-socket",
-        "icon_off": "mdi:power-socket-off",
-    },
-    "ac2_switch": {
-        "name": "AC2 Switch",
-        "key": "relay3Onoff",
-        "device_class": BinarySensorDeviceClass.POWER,
-        "icon_on": "mdi:power-socket",
-        "icon_off": "mdi:power-socket-off",
-    },
-    "self_powered_mode": {
-        "name": "Self-Powered Mode",
-        "key": "energyStrategyOperateMode.operateSelfPoweredOpen",
-        "device_class": None,
-        "icon_on": "mdi:home-battery",
-        "icon_off": "mdi:home-battery-outline",
-    },
-    "ai_mode": {
-        "name": "AI Mode",
-        "key": "energyStrategyOperateMode.operateIntelligentScheduleModeOpen",
-        "device_class": None,
-        "icon_on": "mdi:robot",
-        "icon_off": "mdi:robot-outline",
-    },
-    "battery_charging": {
-        "name": "Battery Charging",
-        "key": "powGetBpCms",
-        "device_class": BinarySensorDeviceClass.BATTERY_CHARGING,
-        "icon_on": "mdi:battery-charging",
-        "icon_off": "mdi:battery",
-        "derived": True,
-        "derive_condition": lambda v: v is not None and v > 10,
-    },
-    "battery_discharging": {
-        "name": "Battery Discharging",
-        "key": "powGetBpCms",
-        "device_class": None,
-        "icon_on": "mdi:battery-arrow-down",
-        "icon_off": "mdi:battery",
-        "derived": True,
-        "derive_condition": lambda v: v is not None and v < -10,
-    },
-    "solar_generating": {
-        "name": "Solar Generating",
-        "key": "powGetPvSum",
-        "device_class": None,
-        "icon_on": "mdi:solar-power",
-        "icon_off": "mdi:solar-power-variant-outline",
-        "derived": True,
-        "derive_condition": lambda v: v is not None and v > 10,
-    },
-    "grid_feed_in": {
-        "name": "Grid Feed-in",
-        "key": "gridConnectionPower",
-        "device_class": None,
-        "icon_on": "mdi:transmission-tower-export",
-        "icon_off": "mdi:transmission-tower",
-        "derived": True,
-        "derive_condition": lambda v: v is not None and v < -10,
-    },
-    "grid_consuming": {
-        "name": "Grid Consuming",
-        "key": "gridConnectionPower",
-        "device_class": None,
-        "icon_on": "mdi:transmission-tower-import",
-        "icon_off": "mdi:transmission-tower",
-        "derived": True,
-        "derive_condition": lambda v: v is not None and v > 10,
-    },
-}
+    name: str
+    device_class: BinarySensorDeviceClass
+    icon_on: str
+    icon_off: str
+    check_key: str
+    condition: Callable[[int | float | None], bool]
 
 
-# Map device types to binary sensor definitions
-DEVICE_BINARY_SENSOR_MAP = {
-    DEVICE_TYPE_DELTA_PRO_3: DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS,
-    DEVICE_TYPE_DELTA_PRO: DELTA_PRO_BINARY_SENSOR_DEFINITIONS,
-    DEVICE_TYPE_DELTA_2: DELTA_2_BINARY_SENSOR_DEFINITIONS,
-    DEVICE_TYPE_STREAM_ULTRA_X: STREAM_ULTRA_X_BINARY_SENSOR_DEFINITIONS,
-    "delta_pro_3": DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS,
-    "delta_pro": DELTA_PRO_BINARY_SENSOR_DEFINITIONS,
-    "delta_2": DELTA_2_BINARY_SENSOR_DEFINITIONS,
-    "stream_ultra_x": STREAM_ULTRA_X_BINARY_SENSOR_DEFINITIONS,
-    # Smart Plug doesn't have binary sensors (no battery, charging states, etc.)
-    DEVICE_TYPE_SMART_PLUG: {},
-    "smart_plug": {},
-    "Smart Plug S401": {},
-}
-
-# Extra Battery binary sensor definitions
-EXTRA_BATTERY_BINARY_SENSOR_DEFINITIONS = {
+# Extra Battery binary sensor definitions (shared across devices)
+_EXTRA_BATTERY_BINARY_SENSORS: dict[str, _ExtraBatterySensorDef] = {
     "connected": {
         "name": "Connected",
         "device_class": BinarySensorDeviceClass.CONNECTIVITY,
         "icon_on": "mdi:battery-plus",
         "icon_off": "mdi:battery-off",
-        "check_key": "Soc",  # If we have SOC data, battery is connected
+        "check_key": "Soc",
     },
     "battery_low": {
         "name": "Battery Low",
@@ -467,8 +70,7 @@ EXTRA_BATTERY_BINARY_SENSOR_DEFINITIONS = {
     },
 }
 
-# Possible prefixes for extra battery data in API response
-EXTRA_BATTERY_PREFIXES = [
+_EXTRA_BATTERY_PREFIXES = [
     "slave1",
     "slave2",
     "slave3",
@@ -481,34 +83,20 @@ EXTRA_BATTERY_PREFIXES = [
 ]
 
 
-def _detect_extra_batteries(data: dict[str, Any]) -> list[str]:
-    """Detect extra battery prefixes in API response data.
-
-    Args:
-        data: API response data
-
-    Returns:
-        List of found battery prefixes
-    """
+def _detect_extra_batteries(data: dict[str, object]) -> list[str]:
     if not data:
         return []
-
-    found_prefixes: set[str] = set()
-
-    for key in data.keys():
-        for prefix in EXTRA_BATTERY_PREFIXES:
+    found: set[str] = set()
+    for key in data:
+        for prefix in _EXTRA_BATTERY_PREFIXES:
             if key.startswith(prefix):
-                found_prefixes.add(prefix)
-
-    return sorted(list(found_prefixes))
+                found.add(prefix)
+    return sorted(found)
 
 
 def _get_battery_number(prefix: str) -> int:
-    """Extract battery number from prefix."""
     match = re.search(r"(\d+)", prefix)
-    if match:
-        return int(match.group(1))
-    return 1
+    return int(match.group(1)) if match else 1
 
 
 async def async_setup_entry(
@@ -516,126 +104,70 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up EcoFlow binary sensor entities.
-
-    Args:
-        hass: Home Assistant instance
-        entry: Config entry
-        async_add_entities: Callback to add entities
-    """
+    """Set up EcoFlow binary sensor entities."""
     coordinator: EcoFlowDataCoordinator = hass.data[DOMAIN][entry.entry_id]
-    device_type = coordinator.device_type
-
-    # Get binary sensor definitions for this device type
-    binary_sensor_definitions = DEVICE_BINARY_SENSOR_MAP.get(
-        device_type, DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS
-    )
+    profile = get_profile(coordinator.device_type)
 
     entities: list[BinarySensorEntity] = []
 
-    # Add main device binary sensors
-    for sensor_key, sensor_def in binary_sensor_definitions.items():
-        entities.append(
-            EcoFlowBinarySensor(
-                coordinator=coordinator,
-                sensor_key=sensor_key,
-                sensor_def=sensor_def,
-            )
-        )
+    # Add profile-defined binary sensors
+    if profile and profile.binary_sensors:
+        entities.extend(EcoFlowBinarySensor(coordinator, defn) for defn in profile.binary_sensors)
 
     # Detect and add extra battery binary sensors
     if coordinator.data:
-        extra_battery_prefixes = _detect_extra_batteries(coordinator.data)
-        _LOGGER.info(
-            "Detected %d extra batteries for binary sensors",
-            len(extra_battery_prefixes),
-        )
-
-        for prefix in extra_battery_prefixes:
+        extra_prefixes = _detect_extra_batteries(coordinator.data)
+        for prefix in extra_prefixes:
             battery_num = _get_battery_number(prefix)
-
-            for (
-                sensor_key,
-                sensor_def,
-            ) in EXTRA_BATTERY_BINARY_SENSOR_DEFINITIONS.items():
+            for sensor_key, sensor_def in _EXTRA_BATTERY_BINARY_SENSORS.items():
                 entities.append(
-                    EcoFlowExtraBatteryBinarySensor(
-                        coordinator=coordinator,
-                        battery_prefix=prefix,
-                        battery_number=battery_num,
-                        sensor_key=sensor_key,
-                        sensor_def=sensor_def,
-                    )
+                    EcoFlowExtraBatteryBinarySensor(coordinator, prefix, battery_num, sensor_key, sensor_def)
                 )
 
     async_add_entities(entities)
-    _LOGGER.info("Added %d binary sensors for %s", len(entities), coordinator.device_sn)
+    _LOGGER.debug("Added %d binary sensors for %s", len(entities), coordinator.device_sn)
 
 
 class EcoFlowBinarySensor(EcoFlowBaseEntity, BinarySensorEntity):
     """EcoFlow binary sensor entity."""
 
-    def __init__(
-        self,
-        coordinator: EcoFlowDataCoordinator,
-        sensor_key: str,
-        sensor_def: dict[str, Any],
-    ) -> None:
-        """Initialize the binary sensor.
-
-        Args:
-            coordinator: Data update coordinator
-            sensor_key: Unique key for this sensor
-            sensor_def: Sensor definition dictionary
-        """
-        super().__init__(coordinator, sensor_key)
-
-        self._sensor_def = sensor_def
-        self._data_key = sensor_def.get("key", sensor_key)
-        self._is_derived = sensor_def.get("derived", False)
-        self._derive_from = sensor_def.get("derive_from")
-        self._derive_condition = sensor_def.get("derive_condition")
-
-        # Set entity attributes from definition
-        self._attr_name = sensor_def["name"]
-        self._attr_has_entity_name = True
-        self._attr_device_class = sensor_def.get("device_class")
-        self._icon_on = sensor_def.get("icon_on", "mdi:check-circle")
-        self._icon_off = sensor_def.get("icon_off", "mdi:circle-outline")
+    def __init__(self, coordinator: EcoFlowDataCoordinator, defn: EcoFlowBinarySensorDef) -> None:
+        super().__init__(coordinator, defn.key)
+        self._defn = defn
+        self._attr_name = defn.name
+        self._attr_device_class = defn.device_class
+        self._icon_on = defn.icon_on or "mdi:check-circle"
+        self._icon_off = defn.icon_off or "mdi:circle-outline"
 
     @property
     def is_on(self) -> bool | None:
-        """Return True if the binary sensor is on."""
         if not self.coordinator.data:
             return None
 
         # Handle derived sensors
-        if self._is_derived and self._derive_from and self._derive_condition:
-            source_value = self.coordinator.data.get(self._derive_from)
-            return self._derive_condition(source_value)
+        if self._defn.derived:
+            source_key = self._defn.derive_from or self._defn.state_key
+            source_value = self.coordinator.data.get(source_key)
+            if self._defn.derive_condition:
+                return self._defn.derive_condition(source_value)
+            return None
 
         # Handle direct state sensors
-        value = self.coordinator.data.get(self._data_key)
-
+        value = self.coordinator.data.get(self._defn.state_key)
         if value is None:
             return None
 
-        # Handle different value types
         if isinstance(value, bool):
             return value
         if isinstance(value, int):
             return value == 1
         if isinstance(value, str):
             return value.lower() in ("1", "true", "on")
-
         return None
 
     @property
     def icon(self) -> str:
-        """Return the icon based on state."""
-        if self.is_on:
-            return self._icon_on
-        return self._icon_off
+        return self._icon_on if self.is_on else self._icon_off
 
 
 class EcoFlowExtraBatteryBinarySensor(EcoFlowBaseEntity, BinarySensorEntity):
@@ -647,62 +179,38 @@ class EcoFlowExtraBatteryBinarySensor(EcoFlowBaseEntity, BinarySensorEntity):
         battery_prefix: str,
         battery_number: int,
         sensor_key: str,
-        sensor_def: dict[str, Any],
+        sensor_def: _ExtraBatterySensorDef,
     ) -> None:
-        """Initialize the extra battery binary sensor.
-
-        Args:
-            coordinator: Data update coordinator
-            battery_prefix: Battery prefix (e.g., "slave1")
-            battery_number: Battery number (1, 2, etc.)
-            sensor_key: Sensor key (e.g., "connected")
-            sensor_def: Sensor definition dictionary
-        """
         entity_key = f"extra_battery_{battery_number}_{sensor_key}"
         super().__init__(coordinator, entity_key)
-
         self._battery_prefix = battery_prefix
         self._battery_number = battery_number
         self._sensor_key = sensor_key
         self._sensor_def = sensor_def
         self._check_key = f"{battery_prefix}{sensor_def.get('check_key', 'Soc')}"
         self._condition = sensor_def.get("condition")
-
-        # Set entity attributes
         self._attr_name = f"Extra Battery {battery_number} {sensor_def['name']}"
-        self._attr_has_entity_name = True
         self._attr_device_class = sensor_def.get("device_class")
         self._icon_on = sensor_def.get("icon_on", "mdi:check-circle")
         self._icon_off = sensor_def.get("icon_off", "mdi:circle-outline")
 
     @property
     def is_on(self) -> bool | None:
-        """Return True if the binary sensor is on."""
         if not self.coordinator.data:
             return None
-
         value = self.coordinator.data.get(self._check_key)
-
-        # For "connected" sensor, check if we have data
         if self._sensor_key == "connected":
             return value is not None
-
-        # For conditional sensors
         if self._condition:
             return self._condition(value)
-
         return None
 
     @property
     def icon(self) -> str:
-        """Return the icon based on state."""
-        if self.is_on:
-            return self._icon_on
-        return self._icon_off
+        return self._icon_on if self.is_on else self._icon_off
 
     @property
-    def extra_state_attributes(self) -> dict[str, Any]:
-        """Return extra state attributes."""
+    def extra_state_attributes(self) -> dict[str, str | int]:
         return {
             "battery_number": self._battery_number,
             "battery_prefix": self._battery_prefix,

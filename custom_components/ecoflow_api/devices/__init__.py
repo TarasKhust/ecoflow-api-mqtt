@@ -1,27 +1,46 @@
-"""Device-specific modules for EcoFlow API integration.
+"""Device registry for EcoFlow API integration.
 
-Each device type has its own subdirectory containing:
-- const.py: Device-specific constants
-- Command mappings and API structures
-- Device metadata
+Auto-discovers device profiles from subdirectories. Each device module
+must expose a PROFILE attribute of type DeviceProfile.
 
-Supported devices:
-- Delta Pro 3 (devices/delta_pro_3/)
-- Smart Plug S401 (devices/smart_plug/)
+Usage:
+    from .devices import get_profile, get_device_types
+
+    profile = get_profile("delta_pro_3")
+    device_types = get_device_types()  # {"delta_pro_3": "Delta Pro 3", ...}
 """
+
 from __future__ import annotations
 
-from . import delta_pro_3, smart_plug
+from .base import DeviceProfile
+from .delta_2 import PROFILE as _DELTA_2
+from .delta_pro import PROFILE as _DELTA_PRO
+from .delta_pro_3 import PROFILE as _DELTA_PRO_3
+from .smart_plug import PROFILE as _SMART_PLUG
+from .stream_ultra_x import PROFILE as _STREAM_ULTRA_X
 
-# Device type mapping
-DEVICE_MODULES = {
-    "DELTA Pro 3": delta_pro_3,
-    "Smart Plug S401": smart_plug,
+_PROFILES: dict[str, DeviceProfile] = {
+    p.device_type: p
+    for p in (
+        _DELTA_PRO_3,
+        _DELTA_PRO,
+        _DELTA_2,
+        _STREAM_ULTRA_X,
+        _SMART_PLUG,
+    )
 }
 
-__all__ = [
-    "delta_pro_3",
-    "smart_plug",
-    "DEVICE_MODULES",
-]
 
+def get_profile(device_type: str) -> DeviceProfile | None:
+    """Get device profile by device type string."""
+    return _PROFILES.get(device_type)
+
+
+def get_device_types() -> dict[str, str]:
+    """Return mapping of device_type -> display_name for config flow."""
+    return {p.device_type: p.display_name for p in _PROFILES.values()}
+
+
+def get_all_profiles() -> dict[str, DeviceProfile]:
+    """Return all registered device profiles."""
+    return dict(_PROFILES)

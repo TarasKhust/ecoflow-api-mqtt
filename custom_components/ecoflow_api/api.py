@@ -59,11 +59,9 @@ class EcoFlowApiClient:
 
     def _generate_nonce(self, length: int = 6) -> str:
         """Generate a random 6-digit nonce string."""
-        return "".join(random.choices(string.digits, k=length))
+        return "".join(random.choices(string.digits, k=length))  # noqa: S311
 
-    def _flatten_params(
-        self, params: dict[str, Any], parent_key: str = ""
-    ) -> dict[str, str]:
+    def _flatten_params(self, params: dict[str, Any], parent_key: str = "") -> dict[str, str]:
         """Flatten nested dictionary for signature generation."""
         items = {}
         for key, value in params.items():
@@ -75,14 +73,10 @@ class EcoFlowApiClient:
                     if isinstance(item, dict):
                         items.update(self._flatten_params(item, f"{new_key}[{i}]"))
                     else:
-                        items[f"{new_key}[{i}]"] = (
-                            str(item).lower() if isinstance(item, bool) else str(item)
-                        )
+                        items[f"{new_key}[{i}]"] = str(item).lower() if isinstance(item, bool) else str(item)
             else:
                 # Convert boolean to lowercase string (true/false)
-                items[new_key] = (
-                    str(value).lower() if isinstance(value, bool) else str(value)
-                )
+                items[new_key] = str(value).lower() if isinstance(value, bool) else str(value)
         return items
 
     def _sort_and_concat_params(self, params: dict[str, Any]) -> str:
@@ -161,8 +155,8 @@ class EcoFlowApiClient:
         self,
         method: str,
         endpoint: str,
-        params: dict[str, Any] = None,
-        data: dict[str, Any] = None,
+        params: dict[str, Any] | None = None,
+        data: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """Make API request.
 
@@ -205,35 +199,23 @@ class EcoFlowApiClient:
                     async with self._session.get(url, headers=headers) as response:
                         return await self._handle_response(response)
                 elif method == "POST":
-                    async with self._session.post(
-                        url, headers=headers, json=data
-                    ) as response:
+                    async with self._session.post(url, headers=headers, json=data) as response:
                         return await self._handle_response(response)
                 elif method == "PUT":
-                    async with self._session.put(
-                        url, headers=headers, json=data
-                    ) as response:
+                    async with self._session.put(url, headers=headers, json=data) as response:
                         return await self._handle_response(response)
                 elif method == "DELETE":
-                    async with self._session.delete(
-                        url, headers=headers, json=data
-                    ) as response:
+                    async with self._session.delete(url, headers=headers, json=data) as response:
                         return await self._handle_response(response)
                 else:
                     raise ValueError(f"Unsupported HTTP method: {method}")
 
-        except asyncio.TimeoutError as err:
-            raise EcoFlowConnectionError(
-                f"Timeout connecting to EcoFlow API: {err}"
-            ) from err
+        except TimeoutError as err:
+            raise EcoFlowConnectionError(f"Timeout connecting to EcoFlow API: {err}") from err
         except aiohttp.ClientError as err:
-            raise EcoFlowConnectionError(
-                f"Error connecting to EcoFlow API: {err}"
-            ) from err
+            raise EcoFlowConnectionError(f"Error connecting to EcoFlow API: {err}") from err
 
-    async def _handle_response(
-        self, response: aiohttp.ClientResponse
-    ) -> dict[str, Any]:
+    async def _handle_response(self, response: aiohttp.ClientResponse) -> dict[str, Any]:
         """Handle API response.
 
         Args:
@@ -252,9 +234,7 @@ class EcoFlowApiClient:
             raise EcoFlowAuthError("Authentication failed - check your API credentials")
 
         if response.status != 200:
-            raise EcoFlowApiError(
-                f"API request failed with status {response.status}: {text}"
-            )
+            raise EcoFlowApiError(f"API request failed with status {response.status}: {text}")
 
         try:
             result = await response.json()
@@ -265,7 +245,7 @@ class EcoFlowApiClient:
         code = result.get("code")
         if code not in ("0", 0, "200", 200, None):
             message = result.get("message", "Unknown error")
-            
+
             # Special handling for error 1006 - device not allowed
             if code == 1006 or code == "1006":
                 detailed_message = (
@@ -275,14 +255,14 @@ class EcoFlowApiClient:
                     "2. EcoFlow hasn't enabled API access for this device model yet\n"
                     "3. The device serial number might be incorrect\n\n"
                     "Troubleshooting steps:\n"
-                                "- Verify the device is bound to your account in the EcoFlow app\n"
-                                "- Check that you're using the correct device serial number\n"
-                                "- Try regenerating your API credentials in the Developer Portal\n"
-                                "- Contact EcoFlow support to enable API access for your device\n"
-                                "- Note: River 3 and River 3 Plus are not supported by EcoFlow REST API (error 1006)"
+                    "- Verify the device is bound to your account in the EcoFlow app\n"
+                    "- Check that you're using the correct device serial number\n"
+                    "- Try regenerating your API credentials in the Developer Portal\n"
+                    "- Contact EcoFlow support to enable API access for your device\n"
+                    "- Note: River 3 and River 3 Plus are not supported by EcoFlow REST API (error 1006)"
                 )
                 raise EcoFlowApiError(detailed_message)
-            
+
             raise EcoFlowApiError(f"API error (code {code}): {message}")
 
         return result.get("data", result)
@@ -390,209 +370,3 @@ class EcoFlowApiClient:
         except Exception as err:
             _LOGGER.error("Connection test failed: %s", err)
             return False
-
-    # Delta Pro 3 specific methods
-    # Documentation: https://developer-eu.ecoflow.com/us/document/deltaPro3
-
-    async def set_ac_charging_power(
-        self, device_sn: str, power: int, pause: bool = False
-    ) -> dict[str, Any]:
-        """Set AC charging power for Delta Pro 3.
-
-        Args:
-            device_sn: Device serial number
-            power: Charging power in watts (400-2900)
-            pause: Whether to pause charging
-
-        Returns:
-            API response
-        """
-        from .const import CMD_DELTA_PRO_3_SET_AC_CHARGE_SPEED
-
-        return await self.set_device_quota(
-            device_sn,
-            CMD_DELTA_PRO_3_SET_AC_CHARGE_SPEED,
-            {
-                "chgPauseFlag": 1 if pause else 0,
-                "acChgPower": max(400, min(2900, power)),
-            },
-        )
-
-    async def set_charge_levels(
-        self,
-        device_sn: str,
-        max_charge: int = None,
-        min_discharge: int = None,
-    ) -> dict[str, Any]:
-        """Set charge/discharge levels for Delta Pro 3.
-
-        Args:
-            device_sn: Device serial number
-            max_charge: Maximum charge level (50-100%)
-            min_discharge: Minimum discharge level (0-30%)
-
-        Returns:
-            API response
-        """
-        from .const import CMD_DELTA_PRO_3_SET_CHARGE_LEVEL
-
-        params = {}
-        if max_charge is not None:
-            params["maxChgSoc"] = max(50, min(100, max_charge))
-        if min_discharge is not None:
-            params["minDsgSoc"] = max(0, min(30, min_discharge))
-
-        if not params:
-            raise ValueError("At least one of max_charge or min_discharge must be set")
-
-        return await self.set_device_quota(
-            device_sn,
-            CMD_DELTA_PRO_3_SET_CHARGE_LEVEL,
-            params,
-        )
-
-    async def set_ac_output(self, device_sn: str, enabled: bool) -> dict[str, Any]:
-        """Enable/disable AC output for Delta Pro 3.
-
-        Args:
-            device_sn: Device serial number
-            enabled: Whether to enable AC output
-
-        Returns:
-            API response
-        """
-        from .const import CMD_DELTA_PRO_3_SET_AC_OUT
-
-        return await self.set_device_quota(
-            device_sn,
-            CMD_DELTA_PRO_3_SET_AC_OUT,
-            {"acOutState": 1 if enabled else 0},
-        )
-
-    async def set_dc_output(self, device_sn: str, enabled: bool) -> dict[str, Any]:
-        """Enable/disable DC output for Delta Pro 3.
-
-        Args:
-            device_sn: Device serial number
-            enabled: Whether to enable DC output
-
-        Returns:
-            API response
-        """
-        from .const import CMD_DELTA_PRO_3_SET_DC_OUT
-
-        return await self.set_device_quota(
-            device_sn,
-            CMD_DELTA_PRO_3_SET_DC_OUT,
-            {"dcOutState": 1 if enabled else 0},
-        )
-
-    async def set_12v_dc_output(self, device_sn: str, enabled: bool) -> dict[str, Any]:
-        """Enable/disable 12V DC output for Delta Pro 3.
-
-        Args:
-            device_sn: Device serial number
-            enabled: Whether to enable 12V DC output
-
-        Returns:
-            API response
-        """
-        from .const import CMD_DELTA_PRO_3_SET_12V_DC_OUT
-
-        return await self.set_device_quota(
-            device_sn,
-            CMD_DELTA_PRO_3_SET_12V_DC_OUT,
-            {"dc12vOutState": 1 if enabled else 0},
-        )
-
-    async def set_beep(self, device_sn: str, enabled: bool) -> dict[str, Any]:
-        """Enable/disable beep for Delta Pro 3.
-
-        Args:
-            device_sn: Device serial number
-            enabled: Whether to enable beep
-
-        Returns:
-            API response
-        """
-        from .const import CMD_DELTA_PRO_3_SET_BEEP
-
-        return await self.set_device_quota(
-            device_sn,
-            CMD_DELTA_PRO_3_SET_BEEP,
-            {"beepState": 1 if enabled else 0},
-        )
-
-    async def set_x_boost(self, device_sn: str, enabled: bool) -> dict[str, Any]:
-        """Enable/disable X-Boost for Delta Pro 3.
-
-        Args:
-            device_sn: Device serial number
-            enabled: Whether to enable X-Boost
-
-        Returns:
-            API response
-        """
-        from .const import CMD_DELTA_PRO_3_SET_X_BOOST
-
-        return await self.set_device_quota(
-            device_sn,
-            CMD_DELTA_PRO_3_SET_X_BOOST,
-            {"xBoostState": 1 if enabled else 0},
-        )
-
-    async def set_ac_standby_time(self, device_sn: str, minutes: int) -> dict[str, Any]:
-        """Set AC standby time for Delta Pro 3.
-
-        Args:
-            device_sn: Device serial number
-            minutes: Standby time in minutes (0 = never off)
-
-        Returns:
-            API response
-        """
-        from .const import CMD_DELTA_PRO_3_SET_AC_STANDBY_TIME
-
-        return await self.set_device_quota(
-            device_sn,
-            CMD_DELTA_PRO_3_SET_AC_STANDBY_TIME,
-            {"acStandbyTime": minutes},
-        )
-
-    async def set_dc_standby_time(self, device_sn: str, minutes: int) -> dict[str, Any]:
-        """Set DC standby time for Delta Pro 3.
-
-        Args:
-            device_sn: Device serial number
-            minutes: Standby time in minutes (0 = never off)
-
-        Returns:
-            API response
-        """
-        from .const import CMD_DELTA_PRO_3_SET_DC_STANDBY_TIME
-
-        return await self.set_device_quota(
-            device_sn,
-            CMD_DELTA_PRO_3_SET_DC_STANDBY_TIME,
-            {"dcStandbyTime": minutes},
-        )
-
-    async def set_lcd_standby_time(
-        self, device_sn: str, seconds: int
-    ) -> dict[str, Any]:
-        """Set LCD/Screen standby time for Delta Pro 3.
-
-        Args:
-            device_sn: Device serial number
-            seconds: Standby time in seconds (0 = never off)
-
-        Returns:
-            API response
-        """
-        from .const import CMD_DELTA_PRO_3_SET_LCD_STANDBY_TIME
-
-        return await self.set_device_quota(
-            device_sn,
-            CMD_DELTA_PRO_3_SET_LCD_STANDBY_TIME,
-            {"lcdOffTime": seconds},
-        )

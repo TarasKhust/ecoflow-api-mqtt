@@ -1,0 +1,68 @@
+[project]
+requires-python = ">=3.12"
+
+[tool.ruff]
+required-version = ">=0.14.0"
+target-version = "py312"
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "A",      # flake8-builtins (shadowing built-in names)
+    "ASYNC",  # flake8-async (async anti-patterns)
+    "B",      # flake8-bugbear (likely bugs)
+    "C4",     # flake8-comprehensions (unnecessary list/dict calls)
+    "E",      # pycodestyle errors
+    "F",      # Pyflakes (undefined names, unused imports)
+    "I",      # isort (import sorting)
+    "LOG",    # flake8-logging (logging anti-patterns)
+    "N",      # pep8-naming (naming conventions)
+    "PERF",   # Perflint (performance anti-patterns)
+    "PGH",    # pygrep-hooks (blanket type: ignore, eval)
+    "PIE",    # flake8-pie (misc lint)
+    "RET",    # flake8-return (unnecessary return/else)
+    "RSE",    # flake8-raise (unnecessary parens on raise)
+    "RUF",    # Ruff-specific rules
+    "S",      # flake8-bandit (security)
+    "SIM",    # flake8-simplify (simplifiable code)
+    "T20",    # flake8-print (print statements)
+    "TID",    # flake8-tidy-imports (banned imports)
+    "TRY",    # tryceratops (exception anti-patterns)
+    "UP",     # pyupgrade (Python syntax modernization)
+    "W",      # pycodestyle warnings
+]
+ignore = [
+    "E501",     # Line length (handled by formatter)
+    "TID252",   # Relative imports from parent modules (standard for HA packages)
+    "TRY003",   # Long exception messages (acceptable in HA integrations)
+    "TRY300",   # Return in try block (style preference, HA core ignores too)
+    "TRY400",   # Use logging.exception instead of logging.error (style preference)
+    "SIM108",   # Ternary operator (if-else with comments is more readable)
+    "PERF203",  # try-except in loop (unavoidable in some HA patterns)
+]
+
+[tool.ruff.lint.isort]
+known-first-party = ["custom_components.ecoflow_api"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["S101"]
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+
+[tool.mypy]
+python_version = "3.12"
+warn_return_any = true
+warn_unused_configs = true
+disallow_any_explicit = true
+check_untyped_defs = true
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+asyncio_mode = "auto"

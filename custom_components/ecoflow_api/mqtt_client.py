@@ -15,6 +15,7 @@ EcoFlow MQTT Protocol:
 
 Note: certificateAccount is typically the user_id or username from EcoFlow account.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -22,7 +23,8 @@ import json
 import logging
 import ssl
 import time
-from typing import Any, Callable
+from collections.abc import Callable
+from typing import Any
 
 import paho.mqtt.client as mqtt
 
@@ -66,7 +68,7 @@ class EcoFlowMQTTClient:
         self._client: mqtt.Client | None = None
         self._connected = False
         self._reconnect_task: asyncio.Task | None = None
-        
+
         # MQTT topics (correct format: /open/${certificateAccount}/${sn}/...)
         # certificateAccount is typically the user_id (not email)
         # If not provided, try using username (but this might not work)
@@ -75,7 +77,7 @@ class EcoFlowMQTTClient:
         self._status_topic = f"/open/{self._certificate_account}/{device_sn}/status"
         self._set_topic = f"/open/{self._certificate_account}/{device_sn}/set"
         self._set_reply_topic = f"/open/{self._certificate_account}/{device_sn}/set_reply"
-        
+
     @property
     def is_connected(self) -> bool:
         """Return connection status."""
@@ -83,7 +85,7 @@ class EcoFlowMQTTClient:
 
     async def async_connect(self) -> bool:
         """Connect to MQTT broker.
-        
+
         Returns:
             True if connection successful, False otherwise
         """
@@ -93,10 +95,10 @@ class EcoFlowMQTTClient:
                 client_id=f"ha_ecoflow_{self.device_sn}",
                 protocol=MQTT_PROTOCOL,
             )
-            
+
             # Set credentials
             self._client.username_pw_set(self.username, self.password)
-            
+
             # Configure TLS - run in executor to avoid blocking the event loop
             # ssl.create_default_context() loads certificates from disk which is blocking I/O
             def create_ssl_context():
@@ -105,31 +107,31 @@ class EcoFlowMQTTClient:
                 context.check_hostname = False
                 context.verify_mode = ssl.CERT_NONE
                 return context
-            
+
             loop = asyncio.get_event_loop()
             ssl_context = await loop.run_in_executor(None, create_ssl_context)
             self._client.tls_set_context(ssl_context)
-            
+
             # Set callbacks
             self._client.on_connect = self._on_connect
             self._client.on_disconnect = self._on_disconnect
             self._client.on_message = self._on_message
-            
+
             # Connect to broker
-            
+
             # Use loop_start() for async operation
             self._client.connect_async(MQTT_BROKER, MQTT_PORT, MQTT_KEEPALIVE)
             self._client.loop_start()
-            
+
             # Wait for connection (with timeout)
             for _ in range(10):  # 10 seconds timeout
                 if self._connected:
                     return True
                 await asyncio.sleep(1)
-            
+
             _LOGGER.error("MQTT connection timeout for device %s", self.device_sn)
             return False
-            
+
         except Exception as err:
             _LOGGER.error("Failed to connect to MQTT broker: %s", err)
             return False
@@ -139,12 +141,12 @@ class EcoFlowMQTTClient:
         if self._reconnect_task:
             self._reconnect_task.cancel()
             self._reconnect_task = None
-            
+
         if self._client:
             self._client.loop_stop()
             self._client.disconnect()
             self._client = None
-            
+
         self._connected = False
         _LOGGER.info("Disconnected from MQTT broker for device %s", self.device_sn)
 
@@ -191,9 +193,8 @@ class EcoFlowMQTTClient:
 
             if result.rc == mqtt.MQTT_ERR_SUCCESS:
                 return True
-            else:
-                _LOGGER.error("Failed to publish command: rc=%s", result.rc)
-                return False
+            _LOGGER.error("Failed to publish command: rc=%s", result.rc)
+            return False
 
         except Exception as err:
             _LOGGER.error("Error publishing command: %s", err)
@@ -225,14 +226,18 @@ class EcoFlowMQTTClient:
                 "✅ MQTT %s for device %s (certificateAccount=%s)",
                 "reconnected" if is_reconnect else "connected",
                 self.device_sn[-4:],
-                self._certificate_account[:20] + "..." if len(self._certificate_account) > 20 else self._certificate_account,
+                self._certificate_account[:20] + "..."
+                if len(self._certificate_account) > 20
+                else self._certificate_account,
             )
 
             # Subscribe to topics
             client.subscribe(self._quota_topic, qos=1)
             client.subscribe(self._status_topic, qos=1)
             client.subscribe(self._set_reply_topic, qos=1)
-            _LOGGER.debug("Subscribed to MQTT topics: %s, %s, %s", self._quota_topic, self._status_topic, self._set_reply_topic)
+            _LOGGER.debug(
+                "Subscribed to MQTT topics: %s, %s, %s", self._quota_topic, self._status_topic, self._set_reply_topic
+            )
 
             # Notify status callback
             if self.on_status_callback:
@@ -240,12 +245,7 @@ class EcoFlowMQTTClient:
         else:
             self._connected = False
             error_msg = error_messages.get(rc, f"Unknown error (code {rc})")
-            _LOGGER.error(
-                "❌ MQTT connection failed for device %s: %s (code %d)",
-                self.device_sn[-4:],
-                error_msg,
-                rc
-            )
+            _LOGGER.error("❌ MQTT connection failed for device %s: %s (code %d)", self.device_sn[-4:], error_msg, rc)
             _LOGGER.error(
                 "MQTT Troubleshooting:\n"
                 "1. certificateAccount from API: %s\n"
@@ -276,9 +276,7 @@ class EcoFlowMQTTClient:
 
         if rc != 0:
             _LOGGER.warning(
-                "⚠️ MQTT disconnected for device %s: %s. Paho will auto-reconnect.",
-                self.device_sn[-4:],
-                reason
+                "⚠️ MQTT disconnected for device %s: %s. Paho will auto-reconnect.", self.device_sn[-4:], reason
             )
         else:
             _LOGGER.info("Disconnected from MQTT broker for device %s", self.device_sn[-4:])
@@ -296,7 +294,7 @@ class EcoFlowMQTTClient:
         """Handle received MQTT message."""
         try:
             payload = json.loads(msg.payload.decode())
-            
+
             # Handle different topic types
             if msg.topic == self._quota_topic:
                 # Quota topic: payload can be direct data or wrapped in "params"
@@ -304,16 +302,16 @@ class EcoFlowMQTTClient:
                     quota_data = payload["params"]
                 else:
                     quota_data = payload
-                
+
                 if self.on_message_callback:
                     self.on_message_callback(quota_data)
-                    
+
             elif msg.topic == self._status_topic:
                 # Status topic: payload has "params.status" (0=offline, 1=online)
                 if "params" in payload and "status" in payload["params"]:
                     status = payload["params"]["status"]
                     _LOGGER.info("Device %s status: %s", self.device_sn, "online" if status == 1 else "offline")
-                    
+
             elif msg.topic == self._set_reply_topic:
                 # Set reply formats by device type:
                 #   Delta Pro 3:    {"data": {"configOk": true, ...}, "id": 123}
@@ -329,14 +327,13 @@ class EcoFlowMQTTClient:
                     _LOGGER.debug("Command reply OK for %s (id=%s): %s", self.device_sn[-4:], reply_id, reply_data)
                 else:
                     _LOGGER.warning("Command reply for %s (id=%s): %s", self.device_sn[-4:], reply_id, payload)
-                
+
             else:
                 # Unknown topic
                 if self.on_message_callback:
                     self.on_message_callback(payload)
-                
+
         except json.JSONDecodeError as err:
             _LOGGER.error("Failed to decode MQTT message: %s", err)
         except Exception as err:
             _LOGGER.error("Error handling MQTT message: %s", err)
-

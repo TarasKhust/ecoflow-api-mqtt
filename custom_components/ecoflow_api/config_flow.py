@@ -27,15 +27,16 @@ from .const import (
     CONF_SECRET_KEY,
     CONF_UPDATE_INTERVAL,
     DEFAULT_UPDATE_INTERVAL,
-    DEVICE_TYPE_DELTA_PRO_3,
-    DEVICE_TYPES,
     DOMAIN,
     OPTS_DIAGNOSTIC_MODE,
     REGION_EU,
     REGIONS,
 )
+from .devices import get_device_types
 
 _LOGGER = logging.getLogger(__name__)
+
+_DEFAULT_DEVICE_TYPE = "delta_pro_3"
 
 # Step 1: API credentials with region selection
 STEP_CREDENTIALS_SCHEMA = vol.Schema(
@@ -46,15 +47,8 @@ STEP_CREDENTIALS_SCHEMA = vol.Schema(
     }
 )
 
-# Step 2: Manual device entry (fallback)
-STEP_MANUAL_DEVICE_SCHEMA = vol.Schema(
-    {
-        vol.Required(CONF_DEVICE_SN): str,
-        vol.Required(CONF_DEVICE_TYPE, default=DEVICE_TYPE_DELTA_PRO_3): vol.In(
-            DEVICE_TYPES
-        ),
-    }
-)
+# Step 2: Manual device entry (fallback) - built dynamically in methods
+# (can't use get_device_types() at module level due to import order)
 
 # Step 3: MQTT configuration (optional)
 STEP_MQTT_SCHEMA = vol.Schema(
@@ -85,9 +79,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._devices: list[dict[str, Any]] = []
         self._client: EcoFlowApiClient | None = None
 
-    async def async_step_user(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle the initial step - choose setup method.
 
         Args:
@@ -102,9 +94,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             menu_options=["auto_discovery", "manual_entry"],
         )
 
-    async def async_step_auto_discovery(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    async def async_step_auto_discovery(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle automatic device discovery via API.
 
         Args:
@@ -140,9 +130,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 if self._devices:
                     # Proceed to device selection
                     return await self.async_step_select_device()
-                else:
-                    # No devices found, allow manual entry
-                    return await self.async_step_manual_device()
+                # No devices found, allow manual entry
+                return await self.async_step_manual_device()
 
             except EcoFlowAuthError as err:
                 _LOGGER.error("Authentication failed: %s", err)
@@ -150,8 +139,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             except EcoFlowApiError as err:
                 _LOGGER.error("API error: %s", err)
                 errors["base"] = "cannot_connect"
-            except Exception as err:
-                _LOGGER.exception("Unexpected exception: %s", err)
+            except Exception:
+                _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
 
         return self.async_show_form(
@@ -163,9 +152,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             },
         )
 
-    async def async_step_manual_entry(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    async def async_step_manual_entry(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle manual entry of all device information.
 
         Args:
@@ -183,9 +170,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 vol.Required(CONF_ACCESS_KEY): str,
                 vol.Required(CONF_SECRET_KEY): str,
                 vol.Required(CONF_DEVICE_SN): str,
-                vol.Required(CONF_DEVICE_TYPE, default=DEVICE_TYPE_DELTA_PRO_3): vol.In(
-                    DEVICE_TYPES
-                ),
+                vol.Required(CONF_DEVICE_TYPE, default=_DEFAULT_DEVICE_TYPE): vol.In(get_device_types()),
             }
         )
 
@@ -222,12 +207,10 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     quota = await client.get_device_quota(device_sn)
                     _LOGGER.info("Device verification successful: %s", quota)
                 except EcoFlowApiError as err:
-                    _LOGGER.warning(
-                        "Device verification failed (will proceed anyway): %s", err
-                    )
+                    _LOGGER.warning("Device verification failed (will proceed anyway): %s", err)
 
                 # Create entry
-                device_name = DEVICE_TYPES.get(device_type, device_type)
+                device_name = get_device_types().get(device_type, device_type)
                 return self.async_create_entry(
                     title=f"EcoFlow {device_name} ({device_sn[-4:]})",
                     data={
@@ -245,8 +228,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             except EcoFlowApiError as err:
                 _LOGGER.error("API error: %s", err)
                 errors["base"] = "cannot_connect"
-            except Exception as err:
-                _LOGGER.exception("Unexpected exception: %s", err)
+            except Exception:
+                _LOGGER.exception("Unexpected exception")
                 errors["base"] = "unknown"
 
         return self.async_show_form(
@@ -258,9 +241,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             },
         )
 
-    async def async_step_select_device(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    async def async_step_select_device(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle device selection from discovered devices.
 
         Args:
@@ -273,7 +254,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             device_sn = user_input[CONF_DEVICE_SN]
-            device_type = user_input.get(CONF_DEVICE_TYPE, DEVICE_TYPE_DELTA_PRO_3)
+            device_type = user_input.get(CONF_DEVICE_TYPE, _DEFAULT_DEVICE_TYPE)
 
             _LOGGER.info("Selected device: SN=%s, Type=%s", device_sn, device_type)
 
@@ -287,14 +268,12 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     quota = await self._client.get_device_quota(device_sn)
                     _LOGGER.info("Device verification successful: %s", quota)
             except EcoFlowApiError as err:
-                _LOGGER.warning(
-                    "Device verification failed (will proceed anyway): %s", err
-                )
+                _LOGGER.warning("Device verification failed (will proceed anyway): %s", err)
                 # Don't set error - allow setup to continue
                 # The coordinator will handle verification during runtime
 
             if not errors:
-                device_name = DEVICE_TYPES.get(device_type, device_type)
+                device_name = get_device_types().get(device_type, device_type)
                 return self.async_create_entry(
                     title=f"EcoFlow {device_name} ({device_sn[-4:]})",
                     data={
@@ -334,13 +313,9 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         mode=SelectSelectorMode.DROPDOWN,
                     )
                 ),
-                vol.Required(
-                    CONF_DEVICE_TYPE, default=DEVICE_TYPE_DELTA_PRO_3
-                ): SelectSelector(
+                vol.Required(CONF_DEVICE_TYPE, default=_DEFAULT_DEVICE_TYPE): SelectSelector(
                     SelectSelectorConfig(
-                        options=[
-                            {"value": k, "label": v} for k, v in DEVICE_TYPES.items()
-                        ],
+                        options=[{"value": k, "label": v} for k, v in get_device_types().items()],
                         mode=SelectSelectorMode.DROPDOWN,
                     )
                 ),
@@ -353,9 +328,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-    async def async_step_manual_device(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    async def async_step_manual_device(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle manual device entry.
 
         Args:
@@ -382,14 +355,12 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     quota = await self._client.get_device_quota(device_sn)
                     _LOGGER.info("Device verification successful: %s", quota)
             except EcoFlowApiError as err:
-                _LOGGER.warning(
-                    "Device verification failed (will proceed anyway): %s", err
-                )
+                _LOGGER.warning("Device verification failed (will proceed anyway): %s", err)
                 # Don't set error - allow setup to continue
                 # The coordinator will handle verification during runtime
 
             if not errors:
-                device_name = DEVICE_TYPES.get(device_type, device_type)
+                device_name = get_device_types().get(device_type, device_type)
                 return self.async_create_entry(
                     title=f"EcoFlow {device_name} ({device_sn[-4:]})",
                     data={
@@ -400,9 +371,16 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     },
                 )
 
+        manual_device_schema = vol.Schema(
+            {
+                vol.Required(CONF_DEVICE_SN): str,
+                vol.Required(CONF_DEVICE_TYPE, default=_DEFAULT_DEVICE_TYPE): vol.In(get_device_types()),
+            }
+        )
+
         return self.async_show_form(
             step_id="manual_device",
-            data_schema=STEP_MANUAL_DEVICE_SCHEMA,
+            data_schema=manual_device_schema,
             errors=errors,
         )
 
@@ -417,9 +395,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         """
         return await self.async_step_reauth_confirm()
 
-    async def async_step_reauth_confirm(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    async def async_step_reauth_confirm(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Handle reauthorization confirmation.
 
         Args:
@@ -441,9 +417,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
                 if await client.test_connection():
                     # Update the config entry with new credentials
-                    entry = self.hass.config_entries.async_get_entry(
-                        self.context["entry_id"]
-                    )
+                    entry = self.hass.config_entries.async_get_entry(self.context["entry_id"])
                     if entry:
                         self.hass.config_entries.async_update_entry(
                             entry,
@@ -497,9 +471,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         """Return config entry."""
         return self._entry
 
-    async def async_step_init(
-        self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
         """Manage the options."""
         if user_input is not None:
             return self.async_create_entry(title="", data=user_input)
@@ -508,9 +480,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         current_interval = (
             self.config_entry.options.get(CONF_UPDATE_INTERVAL)
             if self.config_entry.options
-            else self.config_entry.data.get(
-                CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL
-            )
+            else self.config_entry.data.get(CONF_UPDATE_INTERVAL, DEFAULT_UPDATE_INTERVAL)
         )
 
         # Get current MQTT settings

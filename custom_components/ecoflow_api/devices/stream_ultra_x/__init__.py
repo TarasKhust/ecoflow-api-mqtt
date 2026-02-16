@@ -1,4 +1,4 @@
-"""Delta Pro 3 device profile."""
+"""Stream Ultra X device profile."""
 
 from ...commands.base import CommandFormat
 from ..base import DeviceProfile
@@ -10,8 +10,8 @@ from .sensors import SENSORS
 from .switches import SWITCHES
 
 PROFILE = DeviceProfile(
-    device_type="delta_pro_3",
-    display_name="Delta Pro 3",
+    device_type="stream_ultra_x",
+    display_name="Stream Ultra X",
     command_format=CommandFormat.PRO_V2,
     sensors=SENSORS,
     switches=SWITCHES,

@@ -75,9 +75,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Get update interval from options (or data for backward compatibility)
     update_interval = (
-        entry.options.get(CONF_UPDATE_INTERVAL)
-        or entry.data.get(CONF_UPDATE_INTERVAL)
-        or DEFAULT_UPDATE_INTERVAL
+        entry.options.get(CONF_UPDATE_INTERVAL) or entry.data.get(CONF_UPDATE_INTERVAL) or DEFAULT_UPDATE_INTERVAL
     )
 
     # Get MQTT settings from options
@@ -137,9 +135,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         # Set up MQTT
         await coordinator.async_setup()
     else:
-        _LOGGER.info(
-            "Creating REST-only coordinator for device %s", entry.data[CONF_DEVICE_SN]
-        )
+        _LOGGER.info("Creating REST-only coordinator for device %s", entry.data[CONF_DEVICE_SN])
         coordinator = EcoFlowDataCoordinator(
             hass=hass,
             client=client,
@@ -160,9 +156,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         if coordinator.mqtt_connected:
             _LOGGER.info("✅ MQTT connected for device %s (hybrid mode)", device_sn)
         else:
-            _LOGGER.warning(
-                "⚠️ MQTT not connected for device %s (REST-only mode)", device_sn
-            )
+            _LOGGER.warning("⚠️ MQTT not connected for device %s (REST-only mode)", device_sn)
 
     # Store coordinator
     hass.data[DOMAIN][entry.entry_id] = coordinator
@@ -193,9 +187,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
         hass.data[DOMAIN].pop(entry.entry_id)
-        _LOGGER.info(
-            "EcoFlow API integration unloaded for device %s", entry.data[CONF_DEVICE_SN]
-        )
+        _LOGGER.info("EcoFlow API integration unloaded for device %s", entry.data[CONF_DEVICE_SN])
 
     return unload_ok
 

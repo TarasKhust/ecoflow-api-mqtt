@@ -4,12 +4,13 @@ This coordinator combines:
 - REST API for device control and fallback polling
 - MQTT for real-time sensor updates and additional data
 """
+
 from __future__ import annotations
 
 import asyncio
 import logging
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
@@ -26,7 +27,7 @@ _LOGGER = logging.getLogger(__name__)
 
 class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
     """Hybrid coordinator using both REST API and MQTT.
-    
+
     Features:
     - Real-time updates via MQTT
     - Device control via REST API
@@ -48,7 +49,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         certificate_account: str | None = None,
     ) -> None:
         """Initialize hybrid coordinator.
-        
+
         Args:
             hass: Home Assistant instance
             client: EcoFlow API client
@@ -69,12 +70,12 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             update_interval=update_interval,
             config_entry=config_entry,
         )
-        
+
         self.mqtt_enabled = mqtt_enabled
         self.mqtt_username = mqtt_username
         self.mqtt_password = mqtt_password
         self.certificate_account = certificate_account or mqtt_username
-        
+
         self._mqtt_client: EcoFlowMQTTClient | None = None
         self._mqtt_data: dict[str, Any] = {}
         self._mqtt_connected = False
@@ -84,36 +85,34 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         # Track last REST update time for interval verification
         self._last_rest_update: float | None = None
 
-        
         # Timer for periodic REST updates (independent of MQTT)
         self._rest_update_timer: asyncio.TimerHandle | None = None
-        
+
         # MQTT messages collection for diagnostic mode
         if self._diagnostic_mode:
             self.mqtt_messages: BoundFifoList[dict[str, Any]] = BoundFifoList(maxlen=20)
-        
+
         # Track if we've logged connection success (to avoid spam)
         self._logged_rest_success = False
         self._logged_mqtt_connected = False
-        
+
     @property
     def mqtt_connected(self) -> bool:
         """Return MQTT connection status."""
         return self._mqtt_connected
-    
+
     @property
     def connection_mode(self) -> str:
         """Return current connection mode."""
         if self._use_mqtt and self._mqtt_connected:
             return "hybrid"
-        elif self._mqtt_connected:
+        if self._mqtt_connected:
             return "mqtt_standby"
-        else:
-            return "rest_only"
+        return "rest_only"
 
     async def async_setup(self) -> bool:
         """Set up the coordinator (including MQTT if enabled).
-        
+
         Returns:
             True if setup successful
         """
@@ -121,23 +120,20 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         if self.mqtt_enabled and self.mqtt_username and self.mqtt_password:
             await self._async_setup_mqtt()
         else:
-            _LOGGER.info(
-                "MQTT disabled or credentials not provided for %s, using REST API only",
-                self.device_sn
-            )
-        
+            _LOGGER.info("MQTT disabled or credentials not provided for %s, using REST API only", self.device_sn)
+
         # Start periodic REST updates (independent of MQTT updates)
         # This ensures REST polling happens even when MQTT is updating data
         self._schedule_rest_update()
-        
+
         # Listen for Home Assistant stop event to gracefully shutdown
         self.hass.bus.async_listen_once("homeassistant_stop", self._async_handle_stop)
-        
+
         return True
-    
+
     async def _async_handle_stop(self, event) -> None:
         """Handle Home Assistant stop event.
-        
+
         This ensures MQTT client is properly disconnected before Home Assistant shuts down,
         preventing "Event loop is closed" errors during restart.
         """
@@ -155,10 +151,10 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                 on_status_callback=self._handle_mqtt_status,
                 certificate_account=self.certificate_account,
             )
-            
+
             # Try to connect
             connected = await self._mqtt_client.async_connect()
-            
+
             if connected:
                 self._mqtt_connected = True
                 self._use_mqtt = True
@@ -166,16 +162,13 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                 _LOGGER.info(
                     "✅ MQTT connected to broker for device %s (hybrid mode: MQTT + REST every %ds)",
                     self.device_sn[-4:],
-                    self.update_interval_seconds
+                    self.update_interval_seconds,
                 )
             else:
-                _LOGGER.warning(
-                    "⚠️ MQTT connection failed for device %s, using REST API only",
-                    self.device_sn[-4:]
-                )
+                _LOGGER.warning("⚠️ MQTT connection failed for device %s, using REST API only", self.device_sn[-4:])
                 self._mqtt_connected = False
                 self._use_mqtt = False
-                
+
         except Exception as err:
             _LOGGER.error("🔴 MQTT connection error for device %s: %s", self.device_sn[-4:], err)
             self._mqtt_connected = False
@@ -219,8 +212,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                 if success:
                     _LOGGER.debug("Command sent via MQTT for %s", self.device_sn[-4:])
                     return True
-                else:
-                    _LOGGER.warning("MQTT publish failed for %s, falling back to REST API", self.device_sn[-4:])
+                _LOGGER.warning("MQTT publish failed for %s, falling back to REST API", self.device_sn[-4:])
             except Exception as err:
                 _LOGGER.warning("MQTT command error for %s: %s, falling back to REST API", self.device_sn[-4:], err)
 
@@ -239,25 +231,24 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
 
     def _schedule_rest_update(self) -> None:
         """Schedule next REST update.
-        
+
         This runs independently of MQTT updates to ensure periodic REST polling.
         """
         # Cancel any existing timer
         if self._rest_update_timer:
             self._rest_update_timer.cancel()
-        
+
         # Schedule next update - use hass.async_create_task for proper tracking
         async def do_update():
             try:
                 await self._do_rest_update()
             except Exception as err:
                 _LOGGER.error("Error in scheduled REST update: %s", err)
-        
+
         self._rest_update_timer = self.hass.loop.call_later(
-            self.update_interval_seconds,
-            lambda: self.hass.async_create_task(do_update())
+            self.update_interval_seconds, lambda: self.hass.async_create_task(do_update())
         )
-    
+
     async def _do_rest_update(self) -> None:
         """Perform REST update and schedule next one."""
         _LOGGER.debug("Executing scheduled REST update")
@@ -269,7 +260,6 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         finally:
             # Schedule next update
             self._schedule_rest_update()
-
 
     def _handle_mqtt_status(self, connected: bool) -> None:
         """Handle MQTT connection status change.
@@ -304,60 +294,54 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             # Check if event loop is still running (Home Assistant not shutting down)
             if not self.hass.loop.is_running() or self.hass.loop.is_closed():
                 return
-            
+
             # MQTT client already extracts params from quota topic
             # So payload here is the actual device data
             mqtt_data = payload
-            
+
             # Debug logging (only if logger level is DEBUG)
             if _LOGGER.isEnabledFor(logging.DEBUG):
                 timestamp = datetime.now().strftime("%H:%M:%S")
                 fields_count = len(mqtt_data)
-                
+
                 _LOGGER.debug(
-                    "⚡ [%s] MQTT message for %s: %d fields updated",
-                    timestamp,
-                    self.device_sn[-4:],
-                    fields_count
+                    "⚡ [%s] MQTT message for %s: %d fields updated", timestamp, self.device_sn[-4:], fields_count
                 )
-                
+
                 if fields_count > 0:
                     field_names = list(mqtt_data.keys())
                     if fields_count <= 10:
                         _LOGGER.debug("   Fields: %s", ", ".join(field_names))
                     else:
-                        _LOGGER.debug(
-                            "   Fields: %s ... (+%d more)",
-                            ", ".join(field_names[:10]),
-                            fields_count - 10
-                        )
-            
+                        _LOGGER.debug("   Fields: %s ... (+%d more)", ", ".join(field_names[:10]), fields_count - 10)
+
             # Store MQTT message in diagnostic mode
             if self._diagnostic_mode:
-                self.mqtt_messages.append({
-                    "timestamp": time.time(),
-                    "device_sn": self.device_sn,
-                    "payload": mqtt_data,
-                })
-            
+                self.mqtt_messages.append(
+                    {
+                        "timestamp": time.time(),
+                        "device_sn": self.device_sn,
+                        "payload": mqtt_data,
+                    }
+                )
+
             # Merge MQTT data with existing data
             self._mqtt_data.update(mqtt_data)
 
             # Schedule update in Home Assistant event loop
             # MQTT callback runs in different thread, so we need to schedule it properly
             merged_data = self._merge_data()
-            
+
             # Schedule update in HA event loop from MQTT thread
             # async_set_updated_data is a sync method (despite the async_ prefix)
             # Use call_soon_threadsafe to schedule it in the correct event loop
             self.hass.loop.call_soon_threadsafe(lambda: self.async_set_updated_data(merged_data))
-            
+
         except RuntimeError:
             # Event loop closed during shutdown - ignore silently
             pass
         except Exception as err:
             _LOGGER.error("Error handling MQTT message: %s", err)
-
 
     def _merge_data(self) -> dict[str, Any]:
         """Merge REST API and MQTT data.
@@ -407,15 +391,16 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             # Re-raise cancellation to allow proper shutdown
             # CancelledError inherits from BaseException in Python 3.8+
             raise
-        except Exception:
+        except Exception:  # noqa: S110
             # Don't fail on wake-up errors - device might already be awake
             pass
+
     async def _async_update_data(self) -> dict[str, Any]:
         """Fetch data from API (and merge with MQTT if available).
-        
+
         Returns:
             Device data dictionary
-            
+
         Raises:
             UpdateFailed: If data fetch fails
         """
@@ -426,22 +411,22 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                 time_since_last = None
                 if self._last_rest_update:
                     time_since_last = time.time() - self._last_rest_update
-                
+
                 _LOGGER.debug(
                     "🔄 [%s] REST UPDATE TRIGGERED for %s (configured_interval=%ds, actual_since_last=%.1fs, mqtt=%s)",
                     timestamp,
                     self.device_sn[-4:],
                     self.update_interval_seconds,
                     time_since_last if time_since_last else 0,
-                    "ON" if self._mqtt_connected else "OFF"
+                    "ON" if self._mqtt_connected else "OFF",
                 )
-            
+
             # Wake up device before requesting data
             await self._async_wake_device()
-            
+
             # Fetch from REST API
             rest_data = await self.client.get_device_quota(self.device_sn)
-            
+
             # Log success only once (first successful request)
             if not self._logged_rest_success:
                 self._logged_rest_success = True
@@ -450,14 +435,14 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                     "✅ REST API connected for device %s (%s mode, update interval: %ds)",
                     self.device_sn[-4:],
                     mode,
-                    self.update_interval_seconds
+                    self.update_interval_seconds,
                 )
-            
+
             # Debug: Log data details
             if _LOGGER.isEnabledFor(logging.DEBUG):
                 timestamp = datetime.now().strftime("%H:%M:%S")
                 field_count = len(rest_data)
-                
+
                 # Compare with previous data
                 changed_fields = []
                 if self._last_data is not None:
@@ -465,18 +450,18 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                         old_value = self._last_data.get(key)
                         if old_value != new_value:
                             changed_fields.append((key, old_value, new_value))
-                    for key in self._last_data:
-                        if key not in rest_data:
-                            changed_fields.append((key, self._last_data[key], None))
-                
+                    changed_fields.extend(
+                        (key, self._last_data[key], None) for key in self._last_data if key not in rest_data
+                    )
+
                 _LOGGER.debug(
                     "✅ [%s] REST update for %s: received %d fields, %d changed",
                     timestamp,
                     self.device_sn[-4:],
                     field_count,
-                    len(changed_fields)
+                    len(changed_fields),
                 )
-                
+
                 if changed_fields:
                     _LOGGER.debug("📊 [%s] Changed fields (%d total):", timestamp, len(changed_fields))
                     for key, old_val, new_val in changed_fields[:10]:  # Show max 10
@@ -485,17 +470,17 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                         _LOGGER.debug("   • %s: %s → %s", key, old_str, new_str)
                     if len(changed_fields) > 10:
                         _LOGGER.debug("   ... and %d more", len(changed_fields) - 10)
-            
+
             # Update last REST update timestamp
             self._last_rest_update = time.time()
-            
+
             # Store last successful REST data
             self._last_data = rest_data
-            
+
             # If MQTT is active, merge data
             if self._use_mqtt and self._mqtt_connected:
                 merged = self._merge_data()
-                
+
                 # Debug: Log merge info
                 if _LOGGER.isEnabledFor(logging.DEBUG):
                     timestamp = datetime.now().strftime("%H:%M:%S")
@@ -505,21 +490,19 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                         self.device_sn[-4:],
                         len(rest_data),
                         len(self._mqtt_data),
-                        len(merged)
+                        len(merged),
                     )
-                
+
                 return merged
-            else:
-                # REST only
-                return rest_data
-            
+            # REST only
+            return rest_data
+
         except EcoFlowApiError as err:
             _LOGGER.error("Error fetching REST data for %s: %s", self.device_sn, err)
-            
+
             # If MQTT is available, use MQTT data only
             if self._use_mqtt and self._mqtt_connected and self._mqtt_data:
                 _LOGGER.info("Using MQTT data only (REST API failed)")
                 return self._merge_data()
-            
-            raise UpdateFailed(f"Error fetching data: {err}") from err
 
+            raise UpdateFailed(f"Error fetching data: {err}") from err
