@@ -84,8 +84,6 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         # Track last REST update time for interval verification
         self._last_rest_update: float | None = None
 
-        # Track last MQTT update time for merge priority
-        self._mqtt_last_update: float = 0
         
         # Timer for periodic REST updates (independent of MQTT)
         self._rest_update_timer: asyncio.TimerHandle | None = None
@@ -344,7 +342,6 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             
             # Merge MQTT data with existing data
             self._mqtt_data.update(mqtt_data)
-            self._mqtt_last_update = time.time()
 
             # Schedule update in Home Assistant event loop
             # MQTT callback runs in different thread, so we need to schedule it properly
@@ -363,44 +360,20 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
 
 
     def _merge_data(self) -> dict[str, Any]:
-        """Merge REST API and MQTT data using timestamp-based priority.
+        """Merge REST API and MQTT data.
 
-        The most recently updated source takes priority:
-        - After a command: REST refresh is more recent → REST data wins
-          (prevents stale MQTT data from overwriting fresh REST response)
-        - During normal operation: MQTT updates are more recent → MQTT data wins
-          (real-time updates take priority over periodic REST polling)
-
-        This solves the issue where after toggling a switch:
-        1. Command sent → 3s sleep → REST refresh gets new state
-        2. Old MQTT data would overwrite the fresh REST state
-        3. UI would show wrong state until next MQTT update
+        Priority: MQTT data > REST data (MQTT is more real-time)
 
         Returns:
             Merged data dictionary
         """
-        if self._mqtt_connected and self._mqtt_data:
-            rest_time = self._last_rest_update or 0
-            mqtt_time = self._mqtt_last_update
+        # Start with REST data
+        merged = dict(self._last_data)
 
-            if rest_time > mqtt_time:
-                # REST was updated more recently (e.g., after command refresh)
-                # Use REST as primary, MQTT fills missing fields only
-                merged = dict(self._last_data)
-                for key, value in self._mqtt_data.items():
-                    if key not in merged:
-                        merged[key] = value
-            else:
-                # MQTT is more recent - MQTT priority (normal real-time mode)
-                merged = dict(self._mqtt_data)
-                for key, value in self._last_data.items():
-                    if key not in merged:
-                        merged[key] = value
+        # Overlay MQTT data (more recent)
+        merged.update(self._mqtt_data)
 
-            return merged
-
-        # If MQTT not connected or no MQTT data yet, use REST only
-        return dict(self._last_data)
+        return merged
 
     async def _async_wake_device(self) -> None:
         """Wake up device before requesting data.
