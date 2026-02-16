@@ -64,14 +64,17 @@ class EcoFlowBaseEntity(CoordinatorEntity[EcoFlowDataCoordinator]):
         profile = get_profile(self.coordinator.device_type)
         display_name = profile.display_name if profile else self.coordinator.device_type
 
+        sw_str = str(sw_version) if isinstance(sw_version, (str, int, float)) else None
+        hw_str = str(hw_version) if isinstance(hw_version, (str, int, float)) else None
+
         return DeviceInfo(
             identifiers={(DOMAIN, self.coordinator.device_sn)},
             name=f"EcoFlow {display_name}",
             manufacturer="EcoFlow",
             model=display_name,
             serial_number=self.coordinator.device_sn,
-            sw_version=sw_version,
-            hw_version=hw_version,
+            sw_version=sw_str,
+            hw_version=hw_str,
         )
 
     @property

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 from homeassistant.components.button import ButtonEntity
 from homeassistant.config_entries import ConfigEntry
@@ -11,6 +10,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .commands import build_command
+from .commands.base import CommandFormat
 from .const import DOMAIN
 from .coordinator import EcoFlowDataCoordinator
 from .devices import get_profile
@@ -20,9 +20,9 @@ from .entity import EcoFlowBaseEntity
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup_entry(
+async def async_setup_entry(  # type: ignore[explicit-any]
     hass: HomeAssistant,
-    entry: ConfigEntry,
+    entry: ConfigEntry,  # type: ignore[explicit-any]
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up EcoFlow button entities."""
@@ -44,7 +44,7 @@ class EcoFlowButton(EcoFlowBaseEntity, ButtonEntity):
         self,
         coordinator: EcoFlowDataCoordinator,
         defn: EcoFlowButtonDef,
-        cmd_format: Any,
+        cmd_format: CommandFormat,
     ) -> None:
         """Initialize the button entity."""
         super().__init__(coordinator, defn.key)

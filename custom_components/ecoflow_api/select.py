@@ -11,7 +11,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .commands import build_command
-from .const import DOMAIN
+from .commands.base import CommandFormat
+from .const import DOMAIN, JsonVal
 from .coordinator import EcoFlowDataCoordinator
 from .devices import get_profile
 from .devices.base import EcoFlowSelectDef
@@ -37,7 +38,7 @@ _UPDATE_INTERVAL_SELECT = EcoFlowSelectDef(
 )
 
 
-async def async_setup_entry(
+async def async_setup_entry(  # type: ignore[explicit-any]
     hass: HomeAssistant,
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
@@ -62,7 +63,9 @@ async def async_setup_entry(
 class EcoFlowSelect(EcoFlowBaseEntity, SelectEntity):
     """Unified EcoFlow select entity."""
 
-    def __init__(self, coordinator, defn: EcoFlowSelectDef, cmd_format) -> None:
+    def __init__(
+        self, coordinator: EcoFlowDataCoordinator, defn: EcoFlowSelectDef, cmd_format: CommandFormat | None
+    ) -> None:
         super().__init__(coordinator, defn.key)
         self._defn = defn
         self._cmd_format = cmd_format
@@ -70,7 +73,10 @@ class EcoFlowSelect(EcoFlowBaseEntity, SelectEntity):
         self._attr_icon = defn.icon
         self._options_map = defn.options
         self._attr_options = list(defn.options.keys())
-        self._value_to_option = {v: k for k, v in defn.options.items()}
+        # Reverse mapping only for scalar options (nested dict options can't be dict keys)
+        self._value_to_option: dict[int | str, str] = {
+            v: k for k, v in defn.options.items() if isinstance(v, (int, str))
+        }
 
     @property
     def current_option(self) -> str | None:
@@ -92,11 +98,14 @@ class EcoFlowSelect(EcoFlowBaseEntity, SelectEntity):
         if not state_key:
             return None
 
-        value = self.coordinator.data.get(state_key)
-        if value is None:
+        raw = self.coordinator.data.get(state_key)
+        if raw is None:
             return None
 
-        return self._value_to_option.get(value)
+        scalar = raw if isinstance(raw, (int, str)) else None
+        if scalar is None:
+            return None
+        return self._value_to_option.get(scalar)
 
     def _get_nested_state(self) -> str | None:
         """Get state for nested param selects by checking boolean flags."""
@@ -132,20 +141,17 @@ class EcoFlowSelect(EcoFlowBaseEntity, SelectEntity):
 
         # Handle local-only settings
         if self._defn.is_local:
-            if self._defn.key == "update_interval":
+            if self._defn.key == "update_interval" and isinstance(value, int):
                 await self.coordinator.async_set_update_interval(value)
                 self.async_write_ha_state()
             return
 
         # Build params
-        if self._defn.nested_params:
-            params = {self._defn.param_key: value}
-        else:
-            params = {self._defn.param_key: value}
+        params: dict[str, JsonVal] = {self._defn.param_key: value}  # type: ignore[dict-item]
 
         # Special case: energy_strategy_mode with string values
         if self._defn.key == "energy_strategy_mode" and isinstance(value, str):
-            option_to_params = {
+            option_to_params: dict[str, dict[str, JsonVal]] = {
                 "off": {
                     "operateSelfPoweredOpen": False,
                     "operateTouModeOpen": False,
@@ -167,6 +173,9 @@ class EcoFlowSelect(EcoFlowBaseEntity, SelectEntity):
             }
             params = {self._defn.param_key: option_to_params.get(value, {})}
 
+        if self._cmd_format is None:
+            _LOGGER.error("Command format required for non-local select %s", self._defn.key)
+            return
         payload = build_command(
             self._cmd_format,
             self.coordinator.device_sn,

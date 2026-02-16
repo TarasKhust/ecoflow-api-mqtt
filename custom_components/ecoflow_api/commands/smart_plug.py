@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from ..const import JsonVal
 
 
 class SmartPlugCommandBuilder:
@@ -16,10 +16,10 @@ class SmartPlugCommandBuilder:
     def build_command(
         self,
         device_sn: str,
-        params: dict[str, Any],
-        **kwargs: Any,
-    ) -> dict[str, Any]:
-        cmd_code: str = kwargs["cmd_code"]
+        params: dict[str, JsonVal],
+        **kwargs: int | str,
+    ) -> dict[str, JsonVal]:
+        cmd_code = str(kwargs["cmd_code"])
         return {
             "sn": device_sn,
             "cmdCode": cmd_code,

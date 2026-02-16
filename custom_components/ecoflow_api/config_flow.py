@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 import voluptuous as vol
 from homeassistant import config_entries
-from homeassistant.data_entry_flow import FlowResult
+from homeassistant.config_entries import ConfigFlowResult
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
+    SelectOptionDict,
     SelectSelector,
     SelectSelectorConfig,
     SelectSelectorMode,
@@ -31,6 +31,7 @@ from .const import (
     OPTS_DIAGNOSTIC_MODE,
     REGION_EU,
     REGIONS,
+    JsonVal,
 )
 from .devices import get_device_types
 
@@ -76,42 +77,30 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._access_key: str | None = None
         self._secret_key: str | None = None
         self._region: str = REGION_EU
-        self._devices: list[dict[str, Any]] = []
+        self._devices: list[dict[str, JsonVal]] = []
         self._client: EcoFlowApiClient | None = None
 
-    async def async_step_user(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Handle the initial step - choose setup method.
-
-        Args:
-            user_input: User provided data
-
-        Returns:
-            Flow result
-        """
+    async def async_step_user(self, user_input: dict[str, JsonVal] | None = None) -> ConfigFlowResult:
+        """Handle the initial step - choose setup method."""
         # Show menu to choose between automatic discovery or manual entry
         return self.async_show_menu(
             step_id="user",
             menu_options=["auto_discovery", "manual_entry"],
         )
 
-    async def async_step_auto_discovery(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Handle automatic device discovery via API.
-
-        Args:
-            user_input: User provided data
-
-        Returns:
-            Flow result
-        """
+    async def async_step_auto_discovery(self, user_input: dict[str, JsonVal] | None = None) -> ConfigFlowResult:
+        """Handle automatic device discovery via API."""
         errors: dict[str, str] = {}
 
         if user_input is not None:
             try:
                 session = async_get_clientsession(self.hass)
-                region = user_input.get(CONF_REGION, REGION_EU)
+                access_key = str(user_input[CONF_ACCESS_KEY])
+                secret_key = str(user_input[CONF_SECRET_KEY])
+                region = str(user_input.get(CONF_REGION, REGION_EU))
                 client = EcoFlowApiClient(
-                    access_key=user_input[CONF_ACCESS_KEY],
-                    secret_key=user_input[CONF_SECRET_KEY],
+                    access_key=access_key,
+                    secret_key=secret_key,
                     session=session,
                     region=region,
                 )
@@ -119,8 +108,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 # Test connection and get device list
                 devices = await client.get_device_list()
 
-                self._access_key = user_input[CONF_ACCESS_KEY]
-                self._secret_key = user_input[CONF_SECRET_KEY]
+                self._access_key = access_key
+                self._secret_key = secret_key
                 self._region = region
                 self._client = client
                 self._devices = devices if isinstance(devices, list) else []
@@ -152,15 +141,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             },
         )
 
-    async def async_step_manual_entry(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Handle manual entry of all device information.
-
-        Args:
-            user_input: User provided data
-
-        Returns:
-            Flow result
-        """
+    async def async_step_manual_entry(self, user_input: dict[str, JsonVal] | None = None) -> ConfigFlowResult:
+        """Handle manual entry of all device information."""
         errors: dict[str, str] = {}
 
         # Schema for manual entry - all fields at once
@@ -176,11 +158,11 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             try:
-                region = user_input.get(CONF_REGION, REGION_EU)
-                access_key = user_input[CONF_ACCESS_KEY]
-                secret_key = user_input[CONF_SECRET_KEY]
-                device_sn = user_input[CONF_DEVICE_SN]
-                device_type = user_input[CONF_DEVICE_TYPE]
+                region = str(user_input.get(CONF_REGION, REGION_EU))
+                access_key = str(user_input[CONF_ACCESS_KEY])
+                secret_key = str(user_input[CONF_SECRET_KEY])
+                device_sn = str(user_input[CONF_DEVICE_SN])
+                device_type = str(user_input[CONF_DEVICE_TYPE])
 
                 _LOGGER.info(
                     "Manual entry: SN=%s, Type=%s, Region=%s",
@@ -241,20 +223,13 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             },
         )
 
-    async def async_step_select_device(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Handle device selection from discovered devices.
-
-        Args:
-            user_input: User provided data
-
-        Returns:
-            Flow result
-        """
+    async def async_step_select_device(self, user_input: dict[str, JsonVal] | None = None) -> ConfigFlowResult:
+        """Handle device selection from discovered devices."""
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            device_sn = user_input[CONF_DEVICE_SN]
-            device_type = user_input.get(CONF_DEVICE_TYPE, _DEFAULT_DEVICE_TYPE)
+            device_sn = str(user_input[CONF_DEVICE_SN])
+            device_type = str(user_input.get(CONF_DEVICE_TYPE, _DEFAULT_DEVICE_TYPE))
 
             _LOGGER.info("Selected device: SN=%s, Type=%s", device_sn, device_type)
 
@@ -286,19 +261,19 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
 
         # Build device options for selector
-        device_options = []
+        device_options: list[SelectOptionDict] = []
         for device in self._devices:
-            sn = device.get("sn", device.get("deviceSn", ""))
-            device_name = device.get("deviceName", device.get("name", sn))
+            sn = str(device.get("sn", device.get("deviceSn", "")))
+            device_name = str(device.get("deviceName", device.get("name", sn)))
             online = device.get("online", device.get("isOnline", False))
-            status = "🟢" if online else "🔴"
+            status = "\U0001f7e2" if online else "\U0001f534"
 
             if sn:
                 device_options.append(
-                    {
-                        "value": sn,
-                        "label": f"{status} {device_name} ({sn[-4:]})",
-                    }
+                    SelectOptionDict(
+                        value=sn,
+                        label=f"{status} {device_name} ({sn[-4:]})",
+                    )
                 )
 
         # If no valid devices, go to manual entry
@@ -315,7 +290,7 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 ),
                 vol.Required(CONF_DEVICE_TYPE, default=_DEFAULT_DEVICE_TYPE): SelectSelector(
                     SelectSelectorConfig(
-                        options=[{"value": k, "label": v} for k, v in get_device_types().items()],
+                        options=[SelectOptionDict(value=k, label=v) for k, v in get_device_types().items()],
                         mode=SelectSelectorMode.DROPDOWN,
                     )
                 ),
@@ -328,20 +303,13 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-    async def async_step_manual_device(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Handle manual device entry.
-
-        Args:
-            user_input: User provided data
-
-        Returns:
-            Flow result
-        """
+    async def async_step_manual_device(self, user_input: dict[str, JsonVal] | None = None) -> ConfigFlowResult:
+        """Handle manual device entry."""
         errors: dict[str, str] = {}
 
         if user_input is not None:
-            device_sn = user_input[CONF_DEVICE_SN]
-            device_type = user_input[CONF_DEVICE_TYPE]
+            device_sn = str(user_input[CONF_DEVICE_SN])
+            device_type = str(user_input[CONF_DEVICE_TYPE])
 
             _LOGGER.info("Manual device entry: SN=%s, Type=%s", device_sn, device_type)
 
@@ -384,47 +352,37 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors=errors,
         )
 
-    async def async_step_reauth(self, entry_data: dict[str, Any]) -> FlowResult:
-        """Handle reauthorization.
-
-        Args:
-            entry_data: Existing entry data
-
-        Returns:
-            Flow result
-        """
+    async def async_step_reauth(self, entry_data: dict[str, JsonVal]) -> ConfigFlowResult:
+        """Handle reauthorization."""
         return await self.async_step_reauth_confirm()
 
-    async def async_step_reauth_confirm(self, user_input: dict[str, Any] | None = None) -> FlowResult:
-        """Handle reauthorization confirmation.
-
-        Args:
-            user_input: User provided data
-
-        Returns:
-            Flow result
-        """
+    async def async_step_reauth_confirm(self, user_input: dict[str, JsonVal] | None = None) -> ConfigFlowResult:
+        """Handle reauthorization confirmation."""
         errors: dict[str, str] = {}
 
         if user_input is not None:
             try:
                 session = async_get_clientsession(self.hass)
+                access_key = str(user_input[CONF_ACCESS_KEY])
+                secret_key = str(user_input[CONF_SECRET_KEY])
                 client = EcoFlowApiClient(
-                    access_key=user_input[CONF_ACCESS_KEY],
-                    secret_key=user_input[CONF_SECRET_KEY],
+                    access_key=access_key,
+                    secret_key=secret_key,
                     session=session,
                 )
 
                 if await client.test_connection():
                     # Update the config entry with new credentials
-                    entry = self.hass.config_entries.async_get_entry(self.context["entry_id"])
+                    entry = self.hass.config_entries.async_get_entry(
+                        self.context["entry_id"]  # type: ignore[index]
+                    )
                     if entry:
                         self.hass.config_entries.async_update_entry(
                             entry,
                             data={
                                 **entry.data,
-                                CONF_ACCESS_KEY: user_input[CONF_ACCESS_KEY],
-                                CONF_SECRET_KEY: user_input[CONF_SECRET_KEY],
+                                CONF_ACCESS_KEY: access_key,
+                                CONF_SECRET_KEY: secret_key,
                             },
                         )
                         await self.hass.config_entries.async_reload(entry.entry_id)
@@ -450,8 +408,8 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         )
 
     @staticmethod
-    def async_get_options_flow(
-        config_entry: config_entries.ConfigEntry,
+    def async_get_options_flow(  # type: ignore[explicit-any]
+        config_entry: config_entries.ConfigEntry,  # type: ignore[explicit-any]
     ) -> config_entries.OptionsFlow:
         """Get the options flow for this handler."""
         return OptionsFlowHandler(config_entry)
@@ -460,21 +418,20 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 class OptionsFlowHandler(config_entries.OptionsFlow):
     """Handle options flow for EcoFlow API integration."""
 
-    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:
+    def __init__(self, config_entry: config_entries.ConfigEntry) -> None:  # type: ignore[explicit-any]
         """Initialize options flow."""
         super().__init__()
-        # Store config_entry reference (use private variable to avoid property conflict)
         self._entry = config_entry
 
-    @property
-    def config_entry(self) -> config_entries.ConfigEntry:
+    @property  # type: ignore[misc]
+    def config_entry(self) -> config_entries.ConfigEntry:  # type: ignore[explicit-any]
         """Return config entry."""
         return self._entry
 
-    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> FlowResult:
+    async def async_step_init(self, user_input: dict[str, JsonVal] | None = None) -> ConfigFlowResult:
         """Manage the options."""
         if user_input is not None:
-            return self.async_create_entry(title="", data=user_input)
+            return self.async_create_entry(title="", data=user_input)  # type: ignore[arg-type]
 
         # Get current update interval
         current_interval = (

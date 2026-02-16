@@ -7,6 +7,13 @@ repos:
       - id: ruff-format
   - repo: local
     hooks:
+      - id: mypy
+        name: mypy
+        entry: mypy custom_components/ecoflow_api/
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]
       - id: pytest
         name: pytest
         entry: pytest tests/ --tb=short -q

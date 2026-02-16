@@ -11,13 +11,13 @@ import asyncio
 import logging
 import time
 from datetime import datetime
-from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from .api import EcoFlowApiClient, EcoFlowApiError
+from .const import JsonVal
 from .coordinator import EcoFlowDataCoordinator
 from .data_holder import BoundFifoList
 from .mqtt_client import EcoFlowMQTTClient
@@ -35,7 +35,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
     - Merges data from both sources
     """
 
-    def __init__(
+    def __init__(  # type: ignore[explicit-any]
         self,
         hass: HomeAssistant,
         client: EcoFlowApiClient,
@@ -77,7 +77,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         self.certificate_account = certificate_account or mqtt_username
 
         self._mqtt_client: EcoFlowMQTTClient | None = None
-        self._mqtt_data: dict[str, Any] = {}
+        self._mqtt_data: dict[str, JsonVal] = {}
         self._mqtt_connected = False
         self._use_mqtt = False
         self._mqtt_reconnect_count = 0
@@ -90,7 +90,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
 
         # MQTT messages collection for diagnostic mode
         if self._diagnostic_mode:
-            self.mqtt_messages: BoundFifoList[dict[str, Any]] = BoundFifoList(maxlen=20)
+            self.mqtt_messages: BoundFifoList[dict[str, JsonVal]] = BoundFifoList(maxlen=20)
 
         # Track if we've logged connection success (to avoid spam)
         self._logged_rest_success = False
@@ -143,6 +143,9 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
     async def _async_setup_mqtt(self) -> None:
         """Set up MQTT client."""
         try:
+            if self.mqtt_username is None or self.mqtt_password is None:
+                _LOGGER.error("MQTT credentials not set for %s", self.device_sn)
+                return
             self._mqtt_client = EcoFlowMQTTClient(
                 username=self.mqtt_username,
                 password=self.mqtt_password,
@@ -284,7 +287,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                 self.device_sn[-4:],
             )
 
-    def _handle_mqtt_message(self, payload: dict[str, Any]) -> None:
+    def _handle_mqtt_message(self, payload: dict[str, JsonVal]) -> None:
         """Handle MQTT message from device.
 
         Args:
@@ -343,7 +346,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         except Exception as err:
             _LOGGER.error("Error handling MQTT message: %s", err)
 
-    def _merge_data(self) -> dict[str, Any]:
+    def _merge_data(self) -> dict[str, JsonVal]:
         """Merge REST API and MQTT data.
 
         Priority: MQTT data > REST data (MQTT is more real-time)
@@ -395,7 +398,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             # Don't fail on wake-up errors - device might already be awake
             pass
 
-    async def _async_update_data(self) -> dict[str, Any]:
+    async def _async_update_data(self) -> dict[str, JsonVal]:
         """Fetch data from API (and merge with MQTT if available).
 
         Returns:

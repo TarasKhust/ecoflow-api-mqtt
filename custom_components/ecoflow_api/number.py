@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any
 
 from homeassistant.components.number import NumberEntity
 from homeassistant.config_entries import ConfigEntry
@@ -12,7 +11,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .commands import build_command
-from .const import DEFAULT_POWER_STEP, DOMAIN, OPTS_POWER_STEP
+from .commands.base import CommandFormat
+from .const import DEFAULT_POWER_STEP, DOMAIN, OPTS_POWER_STEP, JsonVal
 from .coordinator import EcoFlowDataCoordinator
 from .devices import get_profile
 from .devices.base import EcoFlowNumberDef
@@ -21,9 +21,9 @@ from .entity import EcoFlowBaseEntity
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup_entry(
+async def async_setup_entry(  # type: ignore[explicit-any]
     hass: HomeAssistant,
-    entry: ConfigEntry,
+    entry: ConfigEntry,  # type: ignore[explicit-any]
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up EcoFlow number entities."""
@@ -41,12 +41,12 @@ async def async_setup_entry(
 class EcoFlowNumber(EcoFlowBaseEntity, NumberEntity):
     """Unified EcoFlow number entity."""
 
-    def __init__(
+    def __init__(  # type: ignore[explicit-any]
         self,
         coordinator: EcoFlowDataCoordinator,
-        entry: ConfigEntry,
+        entry: ConfigEntry,  # type: ignore[explicit-any]
         defn: EcoFlowNumberDef,
-        cmd_format: Any,
+        cmd_format: CommandFormat,
     ) -> None:
         super().__init__(coordinator, defn.key)
         self._defn = defn
@@ -75,11 +75,11 @@ class EcoFlowNumber(EcoFlowBaseEntity, NumberEntity):
             return None
 
         # Apply value_to_ui mapping if defined (e.g., Smart Plug brightness 0-1023 -> 0-100%)
-        if self._defn.value_to_ui:
-            value = self._defn.value_to_ui(value)
+        if self._defn.value_to_ui and isinstance(value, (int, float)):
+            return self._defn.value_to_ui(float(value))
 
         try:
-            return float(value) if value is not None else None
+            return float(value) if isinstance(value, (int, float, str)) else None
         except (ValueError, TypeError):
             return None
 
@@ -95,9 +95,10 @@ class EcoFlowNumber(EcoFlowBaseEntity, NumberEntity):
         int_value = int(api_value)
 
         # Handle nested parameters (e.g., backup reserve level)
+        params: dict[str, JsonVal]
         if self._defn.nested_params:
             # Replace None values with the actual value
-            nested = {}
+            nested: dict[str, JsonVal] = {}
             for k, v in self._defn.nested_params.items():
                 nested[k] = int_value if v is None else v
             params = {self._defn.param_key: nested}

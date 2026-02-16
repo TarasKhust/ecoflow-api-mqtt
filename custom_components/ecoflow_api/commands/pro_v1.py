@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
+from ..const import JsonVal
 
 
 class ProV1CommandBuilder:
@@ -16,11 +16,11 @@ class ProV1CommandBuilder:
     def build_command(
         self,
         device_sn: str,
-        params: dict[str, Any],
-        **kwargs: Any,
-    ) -> dict[str, Any]:
-        cmd_set: int = kwargs["cmd_set"]
-        cmd_id: int = kwargs["cmd_id"]
+        params: dict[str, JsonVal],
+        **kwargs: int | str,
+    ) -> dict[str, JsonVal]:
+        cmd_set = int(kwargs["cmd_set"])
+        cmd_id = int(kwargs["cmd_id"])
         return {
             "sn": device_sn,
             "params": {

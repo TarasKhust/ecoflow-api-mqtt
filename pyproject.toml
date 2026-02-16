@@ -1,4 +1,5 @@
 [project]
+name = "ecoflow-api"
 requires-python = ">=3.12"
 
 [tool.ruff]
@@ -30,6 +31,7 @@ select = [
     "TRY",    # tryceratops (exception anti-patterns)
     "UP",     # pyupgrade (Python syntax modernization)
     "W",      # pycodestyle warnings
+    "ANN401",  # typing.Any disallowed in annotations
 ]
 ignore = [
     "E501",     # Line length (handled by formatter)
@@ -40,6 +42,9 @@ ignore = [
     "SIM108",   # Ternary operator (if-else with comments is more readable)
     "PERF203",  # try-except in loop (unavoidable in some HA patterns)
 ]
+
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"typing.Any".msg = "Use specific types (JsonVal, object, union types) instead of Any. See CLAUDE.md."
 
 [tool.ruff.lint.isort]
 known-first-party = ["custom_components.ecoflow_api"]

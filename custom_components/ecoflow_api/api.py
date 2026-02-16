@@ -9,11 +9,10 @@ import logging
 import random
 import string
 import time
-from typing import Any
 
 import aiohttp
 
-from .const import API_BASE_URL_EU, API_BASE_URL_US, API_TIMEOUT, REGION_EU
+from .const import API_BASE_URL_EU, API_BASE_URL_US, API_TIMEOUT, REGION_EU, JsonVal
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -61,7 +60,7 @@ class EcoFlowApiClient:
         """Generate a random 6-digit nonce string."""
         return "".join(random.choices(string.digits, k=length))  # noqa: S311
 
-    def _flatten_params(self, params: dict[str, Any], parent_key: str = "") -> dict[str, str]:
+    def _flatten_params(self, params: dict[str, JsonVal], parent_key: str = "") -> dict[str, str]:
         """Flatten nested dictionary for signature generation."""
         items = {}
         for key, value in params.items():
@@ -79,7 +78,7 @@ class EcoFlowApiClient:
                 items[new_key] = str(value).lower() if isinstance(value, bool) else str(value)
         return items
 
-    def _sort_and_concat_params(self, params: dict[str, Any]) -> str:
+    def _sort_and_concat_params(self, params: dict[str, JsonVal]) -> str:
         """Sort and concatenate parameters into query string.
 
         Args:
@@ -155,9 +154,9 @@ class EcoFlowApiClient:
         self,
         method: str,
         endpoint: str,
-        params: dict[str, Any] | None = None,
-        data: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
+        params: dict[str, JsonVal] | None = None,
+        data: dict[str, JsonVal] | None = None,
+    ) -> dict[str, JsonVal]:
         """Make API request.
 
         Args:
@@ -179,7 +178,7 @@ class EcoFlowApiClient:
 
         # For GET requests, params go in query string and signature
         # For POST/PUT, params go in body and signature includes flattened body params
-        sign_params = params if method == "GET" else (data or {})
+        sign_params = (params if method == "GET" else data) or {}
         params_str = self._sort_and_concat_params(sign_params)
 
         # Get authenticated headers
@@ -215,7 +214,7 @@ class EcoFlowApiClient:
         except aiohttp.ClientError as err:
             raise EcoFlowConnectionError(f"Error connecting to EcoFlow API: {err}") from err
 
-    async def _handle_response(self, response: aiohttp.ClientResponse) -> dict[str, Any]:
+    async def _handle_response(self, response: aiohttp.ClientResponse) -> dict[str, JsonVal]:
         """Handle API response.
 
         Args:
@@ -237,7 +236,7 @@ class EcoFlowApiClient:
             raise EcoFlowApiError(f"API request failed with status {response.status}: {text}")
 
         try:
-            result = await response.json()
+            result: dict[str, JsonVal] = await response.json()  # type: ignore[assignment]
         except Exception as err:
             raise EcoFlowApiError(f"Failed to parse API response: {err}") from err
 
@@ -265,9 +264,10 @@ class EcoFlowApiClient:
 
             raise EcoFlowApiError(f"API error (code {code}): {message}")
 
-        return result.get("data", result)
+        data = result.get("data", result)
+        return data if isinstance(data, dict) else result
 
-    async def get_mqtt_credentials(self) -> dict[str, Any]:
+    async def get_mqtt_credentials(self) -> dict[str, JsonVal]:
         """Get MQTT credentials (certificateAccount and certificatePassword).
 
         Returns:
@@ -281,8 +281,8 @@ class EcoFlowApiClient:
         result = await self._request("GET", "/iot-open/sign/certification")
 
         # Log full response for debugging (mask password)
-        cert_account = result.get("certificateAccount", "N/A")
-        cert_password = result.get("certificatePassword", "")
+        cert_account = str(result.get("certificateAccount", "N/A"))
+        cert_password = str(result.get("certificatePassword", ""))
         masked_password = f"{cert_password[:4]}...{cert_password[-4:]}" if len(cert_password) > 8 else "***"
 
         _LOGGER.info(
@@ -295,7 +295,7 @@ class EcoFlowApiClient:
 
         return result
 
-    async def get_device_list(self) -> list[dict[str, Any]]:
+    async def get_device_list(self) -> list[dict[str, JsonVal]]:
         """Get list of all devices associated with the account.
 
         Returns:
@@ -304,7 +304,7 @@ class EcoFlowApiClient:
         result = await self._request("GET", "/iot-open/sign/device/list")
         return result if isinstance(result, list) else []
 
-    async def get_device_quota(self, device_sn: str) -> dict[str, Any]:
+    async def get_device_quota(self, device_sn: str) -> dict[str, JsonVal]:
         """Get all device quotas/status.
 
         Args:
@@ -322,9 +322,9 @@ class EcoFlowApiClient:
     async def set_device_quota(
         self,
         device_sn: str,
-        cmd_code: dict[str, Any] | str,
-        params: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
+        cmd_code: dict[str, JsonVal] | str,
+        params: dict[str, JsonVal] | None = None,
+    ) -> dict[str, JsonVal]:
         """Set device quota/parameter.
 
         Args:

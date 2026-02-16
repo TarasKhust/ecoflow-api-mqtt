@@ -99,9 +99,9 @@ def _get_battery_number(prefix: str) -> int:
     return int(match.group(1)) if match else 1
 
 
-async def async_setup_entry(
+async def async_setup_entry(  # type: ignore[explicit-any]
     hass: HomeAssistant,
-    entry: ConfigEntry,
+    entry: ConfigEntry,  # type: ignore[explicit-any]
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up EcoFlow binary sensor entities."""
@@ -116,7 +116,7 @@ async def async_setup_entry(
 
     # Detect and add extra battery binary sensors
     if coordinator.data:
-        extra_prefixes = _detect_extra_batteries(coordinator.data)
+        extra_prefixes = _detect_extra_batteries(coordinator.data)  # type: ignore[arg-type]
         for prefix in extra_prefixes:
             battery_num = _get_battery_number(prefix)
             for sensor_key, sensor_def in _EXTRA_BATTERY_BINARY_SENSORS.items():
@@ -147,9 +147,10 @@ class EcoFlowBinarySensor(EcoFlowBaseEntity, BinarySensorEntity):
         # Handle derived sensors
         if self._defn.derived:
             source_key = self._defn.derive_from or self._defn.state_key
-            source_value = self.coordinator.data.get(source_key)
+            raw = self.coordinator.data.get(source_key)
+            numeric_value = raw if isinstance(raw, (int, float)) else None
             if self._defn.derive_condition:
-                return self._defn.derive_condition(source_value)
+                return self._defn.derive_condition(numeric_value)
             return None
 
         # Handle direct state sensors
@@ -202,7 +203,8 @@ class EcoFlowExtraBatteryBinarySensor(EcoFlowBaseEntity, BinarySensorEntity):
         if self._sensor_key == "connected":
             return value is not None
         if self._condition:
-            return self._condition(value)
+            numeric = value if isinstance(value, (int, float)) else None
+            return self._condition(numeric)
         return None
 
     @property

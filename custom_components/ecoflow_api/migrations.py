@@ -21,7 +21,7 @@ _LOGGER = logging.getLogger(__name__)
 CONFIG_VERSION = 2
 
 
-async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
+async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:  # type: ignore[explicit-any]
     """Migrate config entry to latest version.
 
     Args:

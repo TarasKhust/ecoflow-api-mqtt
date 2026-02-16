@@ -48,7 +48,7 @@ PLATFORMS: list[Platform] = [
 ]
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  # type: ignore[explicit-any]
     """Set up EcoFlow API from a config entry.
 
     Args:
@@ -89,8 +89,10 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         try:
             _LOGGER.info("MQTT enabled, fetching MQTT credentials from API...")
             mqtt_creds = await client.get_mqtt_credentials()
-            certificate_account = mqtt_creds.get("certificateAccount")
-            certificate_password = mqtt_creds.get("certificatePassword")
+            raw_account = mqtt_creds.get("certificateAccount")
+            raw_password = mqtt_creds.get("certificatePassword")
+            certificate_account = str(raw_account) if isinstance(raw_account, str) else None
+            certificate_password = str(raw_password) if isinstance(raw_password, str) else None
 
             if certificate_account and certificate_password:
                 _LOGGER.info(
@@ -169,7 +171,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return True
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:  # type: ignore[explicit-any]
     """Unload a config entry.
 
     Args:
@@ -192,7 +194,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     return unload_ok
 
 
-async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:  # type: ignore[explicit-any]
     """Handle removal of an entry.
 
     Cleans up device and entity registry entries.
@@ -224,7 +226,7 @@ async def async_remove_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
     )
 
 
-async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:
+async def async_reload_entry(hass: HomeAssistant, entry: ConfigEntry) -> None:  # type: ignore[explicit-any]
     """Reload config entry.
 
     Args:

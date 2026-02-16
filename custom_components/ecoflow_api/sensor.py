@@ -5,7 +5,6 @@ from __future__ import annotations
 import logging
 import struct
 from datetime import datetime, timedelta
-from typing import Any
 
 from homeassistant.components.integration.sensor import IntegrationSensor
 from homeassistant.components.sensor import (
@@ -19,6 +18,7 @@ from homeassistant.const import (
     STATE_UNKNOWN,
     UnitOfEnergy,
     UnitOfPower,
+    UnitOfTime,
 )
 from homeassistant.core import Event, EventStateChangedData, HomeAssistant, callback
 from homeassistant.helpers.entity import EntityCategory
@@ -26,7 +26,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.event import async_track_state_change_event
 from homeassistant.util import dt as dt_util
 
-from .const import DOMAIN
+from .const import DOMAIN, JsonVal
 from .coordinator import EcoFlowDataCoordinator
 from .devices import get_profile
 from .devices.base import EcoFlowSensorDef
@@ -43,13 +43,13 @@ _ENERGY_INTEGRATION_KEYS = {
 }
 
 
-async def async_setup_entry(
+async def async_setup_entry(  # type: ignore[explicit-any]
     hass: HomeAssistant,
-    entry: ConfigEntry,
+    entry: ConfigEntry,  # type: ignore[explicit-any]
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up EcoFlow sensor entities."""
-    coordinator: EcoFlowDataCoordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator: EcoFlowDataCoordinator = hass.data[DOMAIN][entry.entry_id]  # type: ignore[explicit-any]
     profile = get_profile(coordinator.device_type)
 
     if not profile:
@@ -124,7 +124,7 @@ def _setup_energy_sensors(
 # ============================================================================
 
 
-class EcoFlowSensor(EcoFlowBaseEntity, SensorEntity):
+class EcoFlowSensor(EcoFlowBaseEntity, SensorEntity):  # type: ignore[misc]
     """Unified EcoFlow sensor entity driven by EcoFlowSensorDef."""
 
     def __init__(
@@ -138,7 +138,7 @@ class EcoFlowSensor(EcoFlowBaseEntity, SensorEntity):
         self._attr_name = defn.name
         self._attr_native_unit_of_measurement = defn.unit
         self._attr_device_class = defn.device_class
-        self._attr_state_class = defn.state_class
+        self._attr_state_class = defn.state_class  # type: ignore[assignment]
         self._attr_icon = defn.icon
         self._attr_entity_category = defn.entity_category
 
@@ -152,7 +152,7 @@ class EcoFlowSensor(EcoFlowBaseEntity, SensorEntity):
         return self._defn
 
     @property
-    def native_value(self) -> Any:
+    def native_value(self) -> str | int | float | datetime | None:
         """Return the state of the sensor."""
         if not self.coordinator.data:
             return None
@@ -195,9 +195,12 @@ class EcoFlowSensor(EcoFlowBaseEntity, SensorEntity):
         if isinstance(value, bool):
             return "on" if value else "off"
 
-        return value
+        # Return only scalar values compatible with sensor native_value
+        if isinstance(value, (str, int, float)):
+            return value
+        return None
 
-    def _decode_resv_value(self, raw_value: Any) -> float | None:
+    def _decode_resv_value(self, raw_value: JsonVal) -> float | None:
         """Decode value from resvInfo array."""
         if not isinstance(raw_value, list):
             return None
@@ -206,6 +209,8 @@ class EcoFlowSensor(EcoFlowBaseEntity, SensorEntity):
             return None
 
         raw_val = raw_value[idx]
+        if not isinstance(raw_val, (int, float)):
+            return None
         if raw_val == 0:
             return None  # No data available
 
@@ -214,7 +219,7 @@ class EcoFlowSensor(EcoFlowBaseEntity, SensorEntity):
         if resv_type == "float":
             # Decode IEEE 754 float from int
             try:
-                decoded = struct.unpack("f", struct.pack("I", raw_val))[0]
+                decoded: float = struct.unpack("f", struct.pack("I", int(raw_val)))[0]
                 return round(decoded, 2)
             except (struct.error, OverflowError):
                 return None
@@ -222,10 +227,10 @@ class EcoFlowSensor(EcoFlowBaseEntity, SensorEntity):
             # Convert mAh to Ah
             return round(raw_val / 1000, 2)
 
-        return raw_val
+        return float(raw_val)
 
     @staticmethod
-    def _parse_timestamp(value: Any) -> datetime | None:
+    def _parse_timestamp(value: object) -> datetime | None:
         """Parse timestamp value."""
         if value is None or value == 0 or value == "0":
             return None
@@ -279,22 +284,22 @@ class EcoFlowIntegralEnergySensor(IntegrationSensor):
     ):
         """Initialize energy sensor from power sensor."""
         super().__init__(
-            hass=hass,
             integration_method="left",
             name=f"{power_sensor.name} Energy",
             round_digits=4,
             source_entity=power_sensor.entity_id,
             unique_id=f"{power_sensor.unique_id}_energy",
             unit_prefix="k",
-            unit_time="h",
+            unit_time=UnitOfTime.HOURS,
             max_sub_interval=timedelta(seconds=60),
         )
+        self._hass_ref = hass
         # Copy device info from power sensor
         self._attr_device_info = power_sensor.device_info
         self._attr_entity_registry_enabled_default = enabled_default
 
 
-class EcoFlowPowerDifferenceSensor(SensorEntity, EcoFlowBaseEntity):
+class EcoFlowPowerDifferenceSensor(SensorEntity, EcoFlowBaseEntity):  # type: ignore[misc]
     """Sensor that calculates power difference (input - output).
 
     Useful for Home Assistant Energy Dashboard to show net power flow.
@@ -410,13 +415,13 @@ class EcoFlowPowerDifferenceSensor(SensorEntity, EcoFlowBaseEntity):
 # ============================================================================
 
 
-class EcoFlowMQTTStatusSensor(EcoFlowBaseEntity, SensorEntity):
+class EcoFlowMQTTStatusSensor(EcoFlowBaseEntity, SensorEntity):  # type: ignore[misc]
     """Sensor for MQTT connection status."""
 
-    def __init__(
+    def __init__(  # type: ignore[explicit-any]
         self,
         coordinator: EcoFlowHybridCoordinator,
-        entry: ConfigEntry,
+        entry: ConfigEntry,  # type: ignore[explicit-any]
     ) -> None:
         """Initialize MQTT status sensor."""
         super().__init__(coordinator, "mqtt_connection_status")
@@ -440,13 +445,13 @@ class EcoFlowMQTTStatusSensor(EcoFlowBaseEntity, SensorEntity):
         return "mdi:cloud-off"
 
 
-class EcoFlowMQTTModeSensor(EcoFlowBaseEntity, SensorEntity):
+class EcoFlowMQTTModeSensor(EcoFlowBaseEntity, SensorEntity):  # type: ignore[misc]
     """Sensor for connection mode (hybrid/rest_only)."""
 
-    def __init__(
+    def __init__(  # type: ignore[explicit-any]
         self,
         coordinator: EcoFlowHybridCoordinator,
-        entry: ConfigEntry,
+        entry: ConfigEntry,  # type: ignore[explicit-any]
     ) -> None:
         """Initialize connection mode sensor."""
         super().__init__(coordinator, "connection_mode")

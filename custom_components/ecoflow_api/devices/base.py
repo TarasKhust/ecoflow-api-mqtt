@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any
 
 from homeassistant.components.binary_sensor import BinarySensorDeviceClass
 from homeassistant.components.number import NumberMode
@@ -56,7 +55,7 @@ class EcoFlowBinarySensorDef:
     # Derived sensors: value computed from another sensor
     derived: bool = False
     derive_from: str | None = None
-    derive_condition: Callable[[Any], bool] | None = None
+    derive_condition: Callable[[int | float | None], bool] | None = None
 
 
 # =============================================================================
@@ -79,9 +78,9 @@ class EcoFlowSwitchDef:
     name: str
     state_key: str  # Key in coordinator.data to read current state
     param_key: str  # Key inside params dict for the command
-    command_params: dict[str, Any] = field(default_factory=dict)
-    value_on: Any = True
-    value_off: Any = False
+    command_params: dict[str, int | str] = field(default_factory=dict)
+    value_on: int | bool = True
+    value_off: int | bool = False
     icon_on: str | None = None
     icon_off: str | None = None
     device_class: SwitchDeviceClass | None = None
@@ -103,7 +102,7 @@ class EcoFlowNumberDef:
     name: str
     state_key: str
     param_key: str  # Key inside params dict
-    command_params: dict[str, Any] = field(default_factory=dict)
+    command_params: dict[str, int | str] = field(default_factory=dict)
     min_value: float = 0
     max_value: float = 100
     step: float = 1
@@ -111,10 +110,10 @@ class EcoFlowNumberDef:
     icon: str | None = None
     mode: NumberMode = NumberMode.SLIDER
     # For nested parameter structures (e.g., backup reserve level)
-    nested_params: dict[str, Any] | None = None
+    nested_params: dict[str, int | float | str | None] | None = None
     # Value mapping functions (e.g., Smart Plug brightness 0-1023 <-> 0-100%)
-    value_to_ui: Callable[[Any], Any] | None = None
-    value_from_ui: Callable[[Any], Any] | None = None
+    value_to_ui: Callable[[float], float] | None = None
+    value_from_ui: Callable[[float], float] | None = None
 
 
 # =============================================================================
@@ -129,9 +128,9 @@ class EcoFlowSelectDef:
     key: str
     name: str
     param_key: str  # Key inside params dict
-    options: dict[str, Any]  # Display name -> API value mapping
+    options: dict[str, int | str | dict[str, bool]]  # Display name -> API value mapping
     state_key: str | None = None  # None for local-only settings
-    command_params: dict[str, Any] = field(default_factory=dict)
+    command_params: dict[str, int | str] = field(default_factory=dict)
     icon: str | None = None
     is_local: bool = False
     nested_params: bool = False
@@ -149,8 +148,8 @@ class EcoFlowButtonDef:
     key: str
     name: str
     param_key: str  # Key inside params dict
-    command_params: dict[str, Any] = field(default_factory=dict)
-    param_value: Any = 1
+    command_params: dict[str, int | str] = field(default_factory=dict)
+    param_value: int | str = 1
     icon: str | None = None
 
 

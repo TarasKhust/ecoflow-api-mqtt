@@ -6,20 +6,19 @@ import asyncio
 import logging
 import time
 from datetime import datetime, timedelta
-from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .api import EcoFlowApiClient, EcoFlowApiError
-from .const import DOMAIN, OPTS_DIAGNOSTIC_MODE
+from .const import DOMAIN, OPTS_DIAGNOSTIC_MODE, JsonVal
 from .data_holder import BoundFifoList
 
 _LOGGER = logging.getLogger(__name__)
 
 
-class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
+class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, JsonVal]]):  # type: ignore[type-arg]
     """Class to manage fetching EcoFlow data from API.
 
     This coordinator handles:
@@ -29,9 +28,9 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     - Providing methods for setting device parameters
     """
 
-    config_entry: ConfigEntry
+    config_entry: ConfigEntry  # type: ignore[assignment,explicit-any]
 
-    def __init__(
+    def __init__(  # type: ignore[explicit-any]
         self,
         hass: HomeAssistant,
         client: EcoFlowApiClient,
@@ -61,7 +60,7 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.device_sn = device_sn
         self.device_type = device_type
         self.update_interval_seconds = update_interval
-        self._last_data: dict[str, Any] = {}
+        self._last_data: dict[str, JsonVal] = {}
         if config_entry:
             self.config_entry = config_entry
 
@@ -71,9 +70,9 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             self._diagnostic_mode = config_entry.options.get(OPTS_DIAGNOSTIC_MODE, False)
 
         if self._diagnostic_mode:
-            self.rest_requests: BoundFifoList[dict[str, Any]] = BoundFifoList(maxlen=20)
-            self.set_commands: BoundFifoList[dict[str, Any]] = BoundFifoList(maxlen=20)
-            self.set_replies: BoundFifoList[dict[str, Any]] = BoundFifoList(maxlen=20)
+            self.rest_requests: BoundFifoList[dict[str, JsonVal]] = BoundFifoList(maxlen=20)
+            self.set_commands: BoundFifoList[dict[str, JsonVal]] = BoundFifoList(maxlen=20)
+            self.set_replies: BoundFifoList[dict[str, JsonVal]] = BoundFifoList(maxlen=20)
 
         # Track if we've logged connection success (to avoid spam)
         self._logged_rest_success = False
@@ -95,7 +94,7 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             # Don't fail on wake-up errors - device might already be awake
             pass
 
-    async def _async_update_data(self) -> dict[str, Any]:
+    async def _async_update_data(self) -> dict[str, JsonVal]:
         """Fetch data from API.
 
         Returns:
@@ -182,7 +181,7 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             raise UpdateFailed(f"Error fetching data: {err}") from err
 
     @property
-    def device_info(self) -> dict[str, Any]:
+    def device_info(self) -> dict[str, object]:
         """Return device info for device registry."""
         from .devices import get_profile
 

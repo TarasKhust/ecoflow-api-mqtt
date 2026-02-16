@@ -2,8 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any
-
+from ..const import JsonVal
 from .base import CommandBuilder, CommandFormat
 from .delta_v2 import DeltaV2CommandBuilder
 from .pro_v1 import ProV1CommandBuilder
@@ -28,9 +27,9 @@ def get_command_builder(fmt: CommandFormat) -> CommandBuilder:
 def build_command(
     fmt: CommandFormat,
     device_sn: str,
-    params: dict[str, Any],
-    **kwargs: Any,
-) -> dict[str, Any]:
+    params: dict[str, JsonVal],
+    **kwargs: int | str,
+) -> dict[str, JsonVal]:
     """Build a command payload using the appropriate format builder.
 
     Args:

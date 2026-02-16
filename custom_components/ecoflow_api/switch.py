@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any
 
 from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
@@ -12,6 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .commands import build_command
+from .commands.base import CommandFormat
 from .const import DOMAIN
 from .coordinator import EcoFlowDataCoordinator
 from .devices import get_profile
@@ -21,7 +21,7 @@ from .entity import EcoFlowBaseEntity
 _LOGGER = logging.getLogger(__name__)
 
 
-async def async_setup_entry(
+async def async_setup_entry(  # type: ignore[explicit-any]
     hass: HomeAssistant,
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
@@ -41,7 +41,7 @@ async def async_setup_entry(
 class EcoFlowSwitch(EcoFlowBaseEntity, SwitchEntity):
     """Unified EcoFlow switch entity."""
 
-    def __init__(self, coordinator, defn: EcoFlowSwitchDef, cmd_format) -> None:
+    def __init__(self, coordinator: EcoFlowDataCoordinator, defn: EcoFlowSwitchDef, cmd_format: CommandFormat) -> None:
         super().__init__(coordinator, defn.key)
         self._defn = defn
         self._cmd_format = cmd_format
@@ -98,19 +98,19 @@ class EcoFlowSwitch(EcoFlowBaseEntity, SwitchEntity):
             return self._defn.icon_on
         return self._defn.icon_off
 
-    async def async_turn_on(self, **kwargs: Any) -> None:
+    async def async_turn_on(self, **kwargs: object) -> None:
         value = self._defn.value_on
         if self._defn.inverted:
             value = self._defn.value_off
         await self._send_command(value)
 
-    async def async_turn_off(self, **kwargs: Any) -> None:
+    async def async_turn_off(self, **kwargs: object) -> None:
         value = self._defn.value_off
         if self._defn.inverted:
             value = self._defn.value_on
         await self._send_command(value)
 
-    async def _send_command(self, value: Any) -> None:
+    async def _send_command(self, value: int | bool) -> None:
         payload = build_command(
             self._cmd_format,
             self.coordinator.device_sn,

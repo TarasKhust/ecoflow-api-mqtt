@@ -1,6 +1,11 @@
 """Constants for EcoFlow API integration."""
 
+from __future__ import annotations
+
 from typing import Final
+
+# JSON value type for EcoFlow API/MQTT data
+type JsonVal = str | int | float | bool | None | dict[str, JsonVal] | list[JsonVal]
 
 DOMAIN: Final = "ecoflow_api"
 

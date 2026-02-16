@@ -3,7 +3,8 @@
 from __future__ import annotations
 
 import time
-from typing import Any
+
+from ..const import JsonVal
 
 
 class DeltaV2CommandBuilder:
@@ -17,11 +18,11 @@ class DeltaV2CommandBuilder:
     def build_command(
         self,
         device_sn: str,
-        params: dict[str, Any],
-        **kwargs: Any,
-    ) -> dict[str, Any]:
-        module_type: int = kwargs["module_type"]
-        operate_type: str = kwargs["operate_type"]
+        params: dict[str, JsonVal],
+        **kwargs: int | str,
+    ) -> dict[str, JsonVal]:
+        module_type = int(kwargs["module_type"])
+        operate_type = str(kwargs["operate_type"])
         return {
             "id": int(time.time() * 1000),
             "version": "1.0",

@@ -24,9 +24,10 @@ import logging
 import ssl
 import time
 from collections.abc import Callable
-from typing import Any
 
 import paho.mqtt.client as mqtt
+
+from .const import JsonVal
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -45,7 +46,7 @@ class EcoFlowMQTTClient:
         username: str,
         password: str,
         device_sn: str,
-        on_message_callback: Callable[[dict[str, Any]], None] | None = None,
+        on_message_callback: Callable[[dict[str, JsonVal]], None] | None = None,
         on_status_callback: Callable[[bool], None] | None = None,
         certificate_account: str | None = None,
     ) -> None:
@@ -150,7 +151,7 @@ class EcoFlowMQTTClient:
         self._connected = False
         _LOGGER.info("Disconnected from MQTT broker for device %s", self.device_sn)
 
-    async def async_publish_command(self, command: dict[str, Any]) -> bool:
+    async def async_publish_command(self, command: dict[str, JsonVal]) -> bool:
         """Publish command to device via MQTT set topic.
 
         Ensures the payload has required MQTT fields (id, version) that
@@ -203,8 +204,8 @@ class EcoFlowMQTTClient:
     def _on_connect(
         self,
         client: mqtt.Client,
-        userdata: Any,
-        flags: dict[str, Any],
+        userdata: object,
+        flags: dict[str, int],
         rc: int,
     ) -> None:
         """Handle MQTT connection."""
@@ -259,7 +260,7 @@ class EcoFlowMQTTClient:
     def _on_disconnect(
         self,
         client: mqtt.Client,
-        userdata: Any,
+        userdata: object,
         rc: int,
     ) -> None:
         """Handle MQTT disconnection."""
@@ -288,7 +289,7 @@ class EcoFlowMQTTClient:
     def _on_message(
         self,
         client: mqtt.Client,
-        userdata: Any,
+        userdata: object,
         msg: mqtt.MQTTMessage,
     ) -> None:
         """Handle received MQTT message."""

@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from enum import Enum
-from typing import Any, Protocol
+from typing import Protocol
+
+from ..const import JsonVal
 
 
 class CommandFormat(str, Enum):
@@ -21,9 +23,9 @@ class CommandBuilder(Protocol):
     def build_command(
         self,
         device_sn: str,
-        params: dict[str, Any],
-        **kwargs: Any,
-    ) -> dict[str, Any]:
+        params: dict[str, JsonVal],
+        **kwargs: int | str,
+    ) -> dict[str, JsonVal]:
         """Build a command payload for the device.
 
         Args:
