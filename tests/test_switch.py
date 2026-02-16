@@ -236,4 +236,4 @@ class TestSwitchUniqueId:
 
     def test_unique_id_format(self, mock_coordinator):
         switch = _make_switch(mock_coordinator, key="ac_out")
-        assert switch.unique_id == "TEST1234567890_ac_out"
+        assert switch.unique_id == "test_entry_id_123_ac_out"

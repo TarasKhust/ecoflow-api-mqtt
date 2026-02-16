@@ -262,7 +262,21 @@ class TestSensorAttributes:
 
     def test_unique_id(self, mock_coordinator):
         sensor = _make_sensor(mock_coordinator, key="bms_batt_soc")
-        assert sensor.unique_id == "TEST1234567890_bms_batt_soc"
+        assert sensor.unique_id == "test_entry_id_123_bms_batt_soc"
+
+    def test_unique_id_uses_entry_id_not_device_sn(self, mock_coordinator):
+        """Verify unique_id uses config entry ID (not device_sn) for backward compatibility.
+
+        Changing the unique_id prefix breaks existing HA installations by creating
+        duplicate entities. The old code used entry.entry_id, so we must keep it.
+        """
+        sensor = _make_sensor(mock_coordinator, key="test_key")
+        entry_id = mock_coordinator.config_entry.entry_id
+        device_sn = mock_coordinator.device_sn
+        # Must use entry_id prefix
+        assert sensor.unique_id == f"{entry_id}_test_key"
+        # Must NOT use device_sn prefix
+        assert sensor.unique_id != f"{device_sn}_test_key"
 
     def test_definition_property(self, mock_coordinator):
         sensor = _make_sensor(mock_coordinator)

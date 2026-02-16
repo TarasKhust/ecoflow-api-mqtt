@@ -138,7 +138,7 @@ class TestSelectAttributes:
 
     def test_unique_id(self, mock_coordinator):
         select = _make_select(mock_coordinator, key="ac_mode")
-        assert select.unique_id == "TEST1234567890_ac_mode"
+        assert select.unique_id == "test_entry_id_123_ac_mode"
 
     def test_name(self, mock_coordinator):
         select = _make_select(mock_coordinator)

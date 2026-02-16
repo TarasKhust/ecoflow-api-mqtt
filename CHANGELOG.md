@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0-beta.2] - 2026-02-16
+
+### Bug Fixes
+
+- **Fix entity duplication** — unique_id prefix reverted from `device_sn` to `config_entry.entry_id` to maintain backward compatibility with existing HA installations. Without this fix, all entities appeared duplicated with `_2` suffix after upgrading.
+
+### Tests
+
+- Added backward compatibility test verifying unique_id uses `entry_id` (not `device_sn`)
+- Updated test fixtures with proper `config_entry.entry_id` mock (319 tests total)
+
 ## [2.0.0-beta.1] - 2026-02-16
 
 ### Breaking Changes

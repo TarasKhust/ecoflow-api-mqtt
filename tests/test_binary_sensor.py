@@ -264,7 +264,7 @@ class TestExtraBatteryBinarySensor:
     def test_unique_id(self, mock_coordinator):
         mock_coordinator.data = {}
         sensor = self._make_extra_battery_sensor(mock_coordinator)
-        assert sensor.unique_id == "TEST1234567890_extra_battery_1_connected"
+        assert sensor.unique_id == "test_entry_id_123_extra_battery_1_connected"
 
     def test_name(self, mock_coordinator):
         mock_coordinator.data = {}

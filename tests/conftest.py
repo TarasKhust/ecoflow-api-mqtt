@@ -23,6 +23,9 @@ def mock_coordinator():
     coordinator.async_set_update_interval = AsyncMock()
     # CoordinatorEntity expects this
     coordinator.async_add_listener = MagicMock(return_value=lambda: None)
+    # config_entry with entry_id (used for unique_id generation)
+    coordinator.config_entry = MagicMock()
+    coordinator.config_entry.entry_id = "test_entry_id_123"
     return coordinator
 
 

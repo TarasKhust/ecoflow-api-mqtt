@@ -192,7 +192,7 @@ class TestNumberAttributes:
 
     def test_unique_id(self, mock_coordinator):
         number = _make_number(mock_coordinator, key="max_charge")
-        assert number.unique_id == "TEST1234567890_max_charge"
+        assert number.unique_id == "test_entry_id_123_max_charge"
 
     def test_ac_charge_power_uses_config_step(self, mock_coordinator):
         """Test that ac_charge_power uses configurable step from entry options."""

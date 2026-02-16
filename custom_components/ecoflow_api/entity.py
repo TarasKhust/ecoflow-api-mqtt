@@ -34,7 +34,7 @@ class EcoFlowBaseEntity(CoordinatorEntity[EcoFlowDataCoordinator]):
         """
         super().__init__(coordinator)
         self._entity_key = entity_key
-        self._attr_unique_id = f"{coordinator.device_sn}_{entity_key}"
+        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{entity_key}"
 
     @property
     def device_info(self) -> DeviceInfo:
