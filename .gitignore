@@ -63,10 +63,16 @@ venv.bak/
 .idea/
 .vscode/
 .cursorrules
+.cursor/
+shared-rules/.cursor
 *.swp
 *.swo
 *~
 *.code-workspace
+
+# Linter / type checker caches
+.mypy_cache/
+.ruff_cache/
 
 # Temporary API response files
 api_response_*.json
@@ -86,28 +92,6 @@ home-assistant_v2.db-wal
 # Release archives
 *.zip
 
-# Test files with API credentials (DO NOT COMMIT)
-test_*.py
-!tests/test_*.py
-get_device_data.py
-test_device_controls.py
-generate_signature.py
-EcoFlow_API_Postman_Collection.json
-POSTMAN_SETUP.md
-*_test.py
-!tests/*_test.py
-
-# Development helper scripts (local use only)
-check_structure.py
-run_tests.py
-create_release_zip.py
-make_zip.py
-
-
-.cursorrules
-shared-rules/.cursor
-.cursor/
-
-# Delta 2 API response test files
+# Temporary API test/response files
 delta2_api_response_*.json
 device_availability_results.json
