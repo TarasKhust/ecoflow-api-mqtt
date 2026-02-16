@@ -5,6 +5,37 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.0-beta.1] - 2026-02-16
+
+### Breaking Changes
+
+- **Modular architecture** — complete rewrite of device definitions from monolithic files to device-per-folder pattern under `devices/`
+- Entity keys remain stable (no user-facing breakage), but internal code structure changed significantly
+
+### New Features
+
+- **Device-per-folder architecture** — each device (Delta Pro 3, Delta Pro, Delta 2, Stream Ultra X, Smart Plug) has its own folder with sensors, switches, numbers, selects, binary sensors, buttons
+- **Command Strategy pattern** — 4 command formats (PRO_V2, PRO_V1, DELTA_V2, SMART_PLUG) behind `build_command()` factory
+- **Frozen dataclasses** for entity definitions — immutable, type-safe configuration
+- **Single generic class per platform** — one `EcoFlowSensor`, `EcoFlowSwitch`, etc. handles all devices
+- **Device registry** — `get_profile()` / `get_device_types()` auto-wires profiles from subfolders
+- **EcoFlow brand icons** — custom icon and logo on HA integrations page
+
+### Code Quality
+
+- **Strict type safety** — removed all `typing.Any`, added `JsonVal` recursive type alias
+- **mypy strict checking** — `disallow_any_explicit = true`, zero errors across 56 source files
+- **ruff linting** — ANN401 + TID251 rules to prevent future Any usage
+- **318 unit tests** with pytest, pre-commit hook runs ruff + mypy + pytest
+- **Cleaned up** root-level test scripts, stale .gitignore entries, automations folder
+
+### Bug Fixes
+
+- **MQTT data merge** — always prioritize MQTT over REST
+- **Button platform** — added error handling and state refresh (sleep + refresh + try/except)
+
+---
+
 ## [1.8.4] - 2026-02-08
 
 ### 🐛 Bug Fixes
