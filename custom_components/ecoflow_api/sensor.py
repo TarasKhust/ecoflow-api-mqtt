@@ -3636,7 +3636,7 @@ class EcoFlowSensor(EcoFlowBaseEntity, SensorEntity):
 
         # Charge/discharge state mapping
         if api_key in ["bmsChgDsgState", "cmsChgDsgState"]:
-            state_map = {0: "idle", 1: "charging", 2: "discharging"}
+            state_map = {0: "idle", 1: "discharging", 2: "charging"}
             return state_map.get(value, "idle")
 
         # Generic value_map handling
