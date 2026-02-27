@@ -3642,6 +3642,66 @@ class EcoFlowPowerDifferenceSensor(SensorEntity, EcoFlowBaseEntity):
         self._difference = input_power - output_power
 
 
+def _get_nested_value(data: dict, key: str) -> Any:
+    """Get value from data, supporting dotted keys for nested lookup."""
+    value = data.get(key)
+    if value is None and "." in key:
+        parts = key.split(".", 1)
+        parent = data.get(parts[0])
+        if isinstance(parent, dict):
+            value = parent.get(parts[1])
+    return value
+
+
+class EcoFlowPowerstreamSolarPowerSensor(EcoFlowBaseEntity, SensorEntity):
+    """Combined solar input power sensor for Powerstream (PV1 + PV2).
+
+    Provides power in W for use with IntegrationSensor / Energy Dashboard.
+    Uses pv1InputWatts + pv2InputWatts (0.1W units) or computes from V*I.
+    """
+
+    _attr_device_class = SensorDeviceClass.POWER
+    _attr_native_unit_of_measurement = UnitOfPower.WATT
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_icon = "mdi:solar-power"
+
+    def __init__(
+        self,
+        coordinator: EcoFlowDataCoordinator,
+        entry: ConfigEntry,
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, "combined_solar_power")
+        self._attr_unique_id = f"{entry.entry_id}_combined_solar_power"
+        self._attr_name = "Combined Solar Input Power"
+        self._attr_has_entity_name = True
+        self._sensor_id = "combined_solar_power"
+
+    @property
+    def native_value(self) -> float | None:
+        """Return combined PV1 + PV2 power in watts."""
+        if not self.coordinator.data:
+            return None
+
+        data = self.coordinator.data
+        pv1_w = _get_nested_value(data, "20_1.pv1InputWatts")
+        pv2_w = _get_nested_value(data, "20_1.pv2InputWatts")
+
+        if pv1_w is not None and pv2_w is not None:
+            return round((pv1_w + pv2_w) / 10, 1)
+
+        pv1_v = _get_nested_value(data, "20_1.pv1InputVolt")
+        pv1_i = _get_nested_value(data, "20_1.pv1InputCur")
+        pv2_v = _get_nested_value(data, "20_1.pv2InputVolt")
+        pv2_i = _get_nested_value(data, "20_1.pv2InputCur")
+
+        if all(v is not None for v in [pv1_v, pv1_i, pv2_v, pv2_i]):
+            power = (pv1_v * pv1_i + pv2_v * pv2_i) / 100
+            return round(power, 1)
+
+        return None
+
+
 # ============================================================================
 # Sensor Setup
 # ============================================================================
@@ -3673,6 +3733,16 @@ async def async_setup_entry(
                 sensor_id=sensor_id,
                 sensor_config=sensor_config,
             )
+        )
+
+    is_powerstream = device_type in (
+        DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER,
+        "powerstream_micro_inverter",
+        "Powerstream Micro Inverter",
+    )
+    if is_powerstream:
+        entities.append(
+            EcoFlowPowerstreamSolarPowerSensor(coordinator=coordinator, entry=entry)
         )
 
     # Add MQTT status sensors if using hybrid coordinator
@@ -3728,6 +3798,12 @@ async def async_setup_entry(
                 energy_sensors.append(
                     EcoFlowIntegralEnergySensor(hass, sensor, enabled_default=False)
                 )
+
+        # Powerstream: Combined Solar Input Power -> Energy (for Energy Dashboard)
+        if isinstance(sensor, EcoFlowPowerstreamSolarPowerSensor):
+            energy_sensors.append(
+                EcoFlowIntegralEnergySensor(hass, sensor, enabled_default=True)
+            )
 
     # Add Power Difference Sensor (for HA Energy "Now" tab)
     if total_input_sensor and total_output_sensor:
