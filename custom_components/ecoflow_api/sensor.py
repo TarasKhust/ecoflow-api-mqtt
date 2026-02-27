@@ -3122,6 +3122,49 @@ STREAM_ULTRA_X_SENSOR_DEFINITIONS = {
         "device_class": SensorDeviceClass.TIMESTAMP,
         "icon": "mdi:clock-outline",
     },
+    # ============================================================================
+    # TEMPERATURE
+    # ============================================================================
+    "battery_temperature": {
+        "name": "Battery Temperature",
+        "key": "temp",
+        "unit": UnitOfTemperature.CELSIUS,
+        "device_class": SensorDeviceClass.TEMPERATURE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:thermometer",
+    },
+    "max_cell_temperature": {
+        "name": "Max Cell Temperature",
+        "key": "bmsMaxCellTemp",
+        "unit": UnitOfTemperature.CELSIUS,
+        "device_class": SensorDeviceClass.TEMPERATURE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:thermometer-high",
+    },
+    "min_cell_temperature": {
+        "name": "Min Cell Temperature",
+        "key": "bmsMinCellTemp",
+        "unit": UnitOfTemperature.CELSIUS,
+        "device_class": SensorDeviceClass.TEMPERATURE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:thermometer-low",
+    },
+    "max_mosfet_temperature": {
+        "name": "Max MOSFET Temperature",
+        "key": "bmsMaxMosTemp",
+        "unit": UnitOfTemperature.CELSIUS,
+        "device_class": SensorDeviceClass.TEMPERATURE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:thermometer-high",
+    },
+    "min_mosfet_temperature": {
+        "name": "Min MOSFET Temperature",
+        "key": "bmsMinMosTemp",
+        "unit": UnitOfTemperature.CELSIUS,
+        "device_class": SensorDeviceClass.TEMPERATURE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:thermometer-low",
+    },
 }
 
 
