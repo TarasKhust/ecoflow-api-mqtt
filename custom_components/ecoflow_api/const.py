@@ -1852,6 +1852,39 @@ STREAM_ULTRA_X_SENSORS: Final = {
         "device_class": "timestamp",
         "icon": "mdi:clock-outline",
     },
+    # ============================================================================
+    # Temperature
+    # ============================================================================
+    "temp": {
+        "name": "Battery Temperature",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer",
+    },
+    "bmsMaxCellTemp": {
+        "name": "Max Cell Temperature",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer-high",
+    },
+    "bmsMinCellTemp": {
+        "name": "Min Cell Temperature",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer-low",
+    },
+    "bmsMaxMosTemp": {
+        "name": "Max MOSFET Temperature",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer-high",
+    },
+    "bmsMinMosTemp": {
+        "name": "Min MOSFET Temperature",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer-low",
+    },
 }
 
 # Stream Ultra X Binary Sensors
