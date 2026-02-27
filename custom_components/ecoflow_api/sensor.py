@@ -33,6 +33,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     DEVICE_TYPE_DELTA_2,
+    DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER,
     DEVICE_TYPE_SMART_PLUG,
     DEVICE_TYPE_STREAM_ULTRA_X,
     DOMAIN,
@@ -3169,6 +3170,187 @@ STREAM_ULTRA_X_SENSOR_DEFINITIONS = {
 
 
 # ============================================================================
+# Powerstream Micro Inverter Sensor Definitions
+# Based on EcoFlow Powerstream API (heartbeat 20_1)
+# Units: batTemp 0.1°C, voltages 0.1V, currents 0.1A, invFreq 0.1Hz, permanentWatts 0.1W
+# ============================================================================
+POWERSTREAM_MICRO_INVERTER_SENSOR_DEFINITIONS = {
+    # Battery
+    "battery_level": {
+        "name": "Battery Level",
+        "key": "20_1.batSoc",
+        "unit": PERCENTAGE,
+        "device_class": SensorDeviceClass.BATTERY,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:battery",
+    },
+    "battery_temperature": {
+        "name": "Battery Temperature",
+        "key": "20_1.batTemp",
+        "unit": UnitOfTemperature.CELSIUS,
+        "device_class": SensorDeviceClass.TEMPERATURE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:thermometer",
+        "value_map": lambda x: x / 10 if x is not None else None,
+    },
+    "battery_input_voltage": {
+        "name": "Battery Input Voltage",
+        "key": "20_1.batInputVolt",
+        "unit": UnitOfElectricPotential.VOLT,
+        "device_class": SensorDeviceClass.VOLTAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:flash",
+        "value_map": lambda x: x / 10 if x is not None else None,
+    },
+    "battery_input_current": {
+        "name": "Battery Input Current",
+        "key": "20_1.batInputCur",
+        "unit": UnitOfElectricCurrent.AMPERE,
+        "device_class": SensorDeviceClass.CURRENT,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:current-dc",
+        "value_map": lambda x: x / 10 if x is not None else None,
+    },
+    # PV inputs
+    "pv1_input_voltage": {
+        "name": "PV1 Input Voltage",
+        "key": "20_1.pv1InputVolt",
+        "unit": UnitOfElectricPotential.VOLT,
+        "device_class": SensorDeviceClass.VOLTAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:solar-power",
+        "value_map": lambda x: x / 10 if x is not None else None,
+    },
+    "pv1_input_current": {
+        "name": "PV1 Input Current",
+        "key": "20_1.pv1InputCur",
+        "unit": UnitOfElectricCurrent.AMPERE,
+        "device_class": SensorDeviceClass.CURRENT,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:current-ac",
+        "value_map": lambda x: x / 10 if x is not None else None,
+    },
+    "pv2_input_voltage": {
+        "name": "PV2 Input Voltage",
+        "key": "20_1.pv2InputVolt",
+        "unit": UnitOfElectricPotential.VOLT,
+        "device_class": SensorDeviceClass.VOLTAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:solar-power",
+        "value_map": lambda x: x / 10 if x is not None else None,
+    },
+    "pv2_input_current": {
+        "name": "PV2 Input Current",
+        "key": "20_1.pv2InputCur",
+        "unit": UnitOfElectricCurrent.AMPERE,
+        "device_class": SensorDeviceClass.CURRENT,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:current-ac",
+        "value_map": lambda x: x / 10 if x is not None else None,
+    },
+    # Settings/Status
+    "supply_priority": {
+        "name": "Supply Priority",
+        "key": "20_1.supplyPriority",
+        "device_class": SensorDeviceClass.ENUM,
+        "icon": "mdi:transmission-tower",
+        "options": ["Prioritize Power Supply", "Prioritize Power Storage"],
+        "value_map": {0: "Prioritize Power Supply", 1: "Prioritize Power Storage"},
+    },
+    "discharge_limit": {
+        "name": "Discharge Limit",
+        "key": "20_1.lowerLimit",
+        "unit": PERCENTAGE,
+        "device_class": SensorDeviceClass.BATTERY,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:battery-low",
+    },
+    "charge_limit": {
+        "name": "Charge Limit",
+        "key": "20_1.upperLimit",
+        "unit": PERCENTAGE,
+        "device_class": SensorDeviceClass.BATTERY,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:battery-charging-100",
+    },
+    "inverter_switch": {
+        "name": "Inverter Switch",
+        "key": "20_1.invOnOff",
+        "device_class": SensorDeviceClass.ENUM,
+        "icon": "mdi:power",
+        "options": ["off", "on"],
+        "value_map": {0: "off", 1: "on"},
+    },
+    "led_brightness": {
+        "name": "LED Brightness",
+        "key": "20_1.invBrightness",
+        "unit": None,
+        "device_class": None,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:brightness-6",
+    },
+    "custom_load_power": {
+        "name": "Custom Load Power",
+        "key": "20_1.permanentWatts",
+        "unit": UnitOfPower.WATT,
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:lightning-bolt",
+        "value_map": lambda x: x / 10 if x is not None else None,
+    },
+    "charge_remaining_time": {
+        "name": "Charge Remaining Time",
+        "key": "20_1.chgRemainTime",
+        "unit": UnitOfTime.MINUTES,
+        "device_class": SensorDeviceClass.DURATION,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:battery-charging",
+    },
+    "discharge_remaining_time": {
+        "name": "Discharge Remaining Time",
+        "key": "20_1.dsgRemainTime",
+        "unit": UnitOfTime.MINUTES,
+        "device_class": SensorDeviceClass.DURATION,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:battery-arrow-down",
+    },
+    "feed_in_control": {
+        "name": "Feed-in Control",
+        "key": "20_1.feedProtect",
+        "device_class": SensorDeviceClass.ENUM,
+        "icon": "mdi:transmission-tower-export",
+        "options": ["off", "on"],
+        "value_map": {0: "off", 1: "on"},
+    },
+    "inverter_frequency": {
+        "name": "Inverter Frequency",
+        "key": "20_1.invFreq",
+        "unit": UnitOfFrequency.HERTZ,
+        "device_class": SensorDeviceClass.FREQUENCY,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:sine-wave",
+        "value_map": lambda x: x / 10 if x is not None else None,
+    },
+    "rated_power": {
+        "name": "Rated Power",
+        "key": "20_1.ratedPower",
+        "unit": UnitOfPower.WATT,
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:power-plug",
+    },
+    "wifi_signal_strength": {
+        "name": "WiFi Signal Strength",
+        "key": "20_1.wifiRssi",
+        "unit": "dBm",
+        "device_class": SensorDeviceClass.SIGNAL_STRENGTH,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:wifi",
+    },
+}
+
+
+# ============================================================================
 # Smart Plug S401 Sensor Definitions
 # Based on EcoFlow API documentation for Smart Plug
 # Field prefix: 2_1. (heartbeat data)
@@ -3292,8 +3474,11 @@ DEVICE_SENSOR_MAP = {
     DEVICE_TYPE_STREAM_ULTRA_X: STREAM_ULTRA_X_SENSOR_DEFINITIONS,
     "Stream Ultra X": STREAM_ULTRA_X_SENSOR_DEFINITIONS,
     DEVICE_TYPE_SMART_PLUG: SMART_PLUG_SENSOR_DEFINITIONS,
+    DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER: POWERSTREAM_MICRO_INVERTER_SENSOR_DEFINITIONS,
     "Smart Plug S401": SMART_PLUG_SENSOR_DEFINITIONS,
     "smart_plug": SMART_PLUG_SENSOR_DEFINITIONS,
+    "Powerstream Micro Inverter": POWERSTREAM_MICRO_INVERTER_SENSOR_DEFINITIONS,
+    "powerstream_micro_inverter": POWERSTREAM_MICRO_INVERTER_SENSOR_DEFINITIONS,
 }
 
 

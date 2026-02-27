@@ -299,9 +299,12 @@ class EcoFlowMQTTClient:
             
             # Handle different topic types
             if msg.topic == self._quota_topic:
-                # Quota topic: payload can be direct data or wrapped in "params"
+                # Quota topic: payload can be direct data, wrapped in "params", or "param" (Powerstream)
                 if "params" in payload:
                     quota_data = payload["params"]
+                elif "param" in payload:
+                    # Powerstream format: wrap in 20_1 to match HTTP GetAllQuotaResponse structure
+                    quota_data = {"20_1": payload["param"]}
                 else:
                     quota_data = payload
                 
