@@ -16,6 +16,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
     DEVICE_TYPE_DELTA_2,
+    DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER,
     DEVICE_TYPE_DELTA_PRO,
     DEVICE_TYPE_DELTA_PRO_3,
     DEVICE_TYPE_SMART_PLUG,
@@ -415,6 +416,53 @@ STREAM_ULTRA_X_BINARY_SENSOR_DEFINITIONS = {
     },
 }
 
+# Powerstream Micro Inverter Binary Sensor Definitions
+# Uses 20_1 prefix for nested lookup
+POWERSTREAM_MICRO_INVERTER_BINARY_SENSOR_DEFINITIONS = {
+    "feed_in_control": {
+        "name": "Feed-in Control",
+        "key": "20_1.feedProtect",
+        "device_class": BinarySensorDeviceClass.POWER,
+        "icon_on": "mdi:transmission-tower-export",
+        "icon_off": "mdi:transmission-tower-off",
+    },
+    "pv1_on_off": {
+        "name": "PV1 On/Off",
+        "key": "20_1.pv1CtrlMpptOffFlag",
+        "device_class": BinarySensorDeviceClass.POWER,
+        "icon_on": "mdi:solar-power",
+        "icon_off": "mdi:solar-power-variant-outline",
+    },
+    "pv2_on_off": {
+        "name": "PV2 On/Off",
+        "key": "20_1.pv2CtrlMpptOffFlag",
+        "device_class": BinarySensorDeviceClass.POWER,
+        "icon_on": "mdi:solar-power",
+        "icon_off": "mdi:solar-power-variant-outline",
+    },
+    "battery_on_off": {
+        "name": "Battery On/Off",
+        "key": "20_1.batOffFlag",
+        "device_class": BinarySensorDeviceClass.POWER,
+        "icon_on": "mdi:battery",
+        "icon_off": "mdi:battery-off",
+    },
+    "llc_on_off": {
+        "name": "LLC On/Off",
+        "key": "20_1.llcOffFlag",
+        "device_class": BinarySensorDeviceClass.POWER,
+        "icon_on": "mdi:power",
+        "icon_off": "mdi:power-off",
+    },
+    "inv_on_off": {
+        "name": "Micro-inverter Switch",
+        "key": "20_1.invOnOff",
+        "device_class": BinarySensorDeviceClass.POWER,
+        "icon_on": "mdi:power",
+        "icon_off": "mdi:power-off",
+    },
+}
+
 
 # Map device types to binary sensor definitions
 DEVICE_BINARY_SENSOR_MAP = {
@@ -426,10 +474,13 @@ DEVICE_BINARY_SENSOR_MAP = {
     "delta_pro": DELTA_PRO_BINARY_SENSOR_DEFINITIONS,
     "delta_2": DELTA_2_BINARY_SENSOR_DEFINITIONS,
     "stream_ultra_x": STREAM_ULTRA_X_BINARY_SENSOR_DEFINITIONS,
+    DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER: POWERSTREAM_MICRO_INVERTER_BINARY_SENSOR_DEFINITIONS,
     # Smart Plug doesn't have binary sensors (no battery, charging states, etc.)
     DEVICE_TYPE_SMART_PLUG: {},
     "smart_plug": {},
     "Smart Plug S401": {},
+    "Powerstream Micro Inverter": POWERSTREAM_MICRO_INVERTER_BINARY_SENSOR_DEFINITIONS,
+    "powerstream_micro_inverter": POWERSTREAM_MICRO_INVERTER_BINARY_SENSOR_DEFINITIONS,
 }
 
 # Extra Battery binary sensor definitions
@@ -612,10 +663,20 @@ class EcoFlowBinarySensor(EcoFlowBaseEntity, BinarySensorEntity):
         # Handle derived sensors
         if self._is_derived and self._derive_from and self._derive_condition:
             source_value = self.coordinator.data.get(self._derive_from)
+            if source_value is None and "." in self._derive_from:
+                parts = self._derive_from.split(".", 1)
+                parent = self.coordinator.data.get(parts[0])
+                if isinstance(parent, dict):
+                    source_value = parent.get(parts[1])
             return self._derive_condition(source_value)
 
-        # Handle direct state sensors
+        # Handle direct state sensors (support dotted keys for nested lookup)
         value = self.coordinator.data.get(self._data_key)
+        if value is None and "." in self._data_key:
+            parts = self._data_key.split(".", 1)
+            parent = self.coordinator.data.get(parts[0])
+            if isinstance(parent, dict):
+                value = parent.get(parts[1])
 
         if value is None:
             return None

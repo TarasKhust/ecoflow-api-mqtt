@@ -33,6 +33,7 @@ from homeassistant.util import dt as dt_util
 
 from .const import (
     DEVICE_TYPE_DELTA_2,
+    DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER,
     DEVICE_TYPE_SMART_PLUG,
     DEVICE_TYPE_STREAM_ULTRA_X,
     DOMAIN,
@@ -3169,6 +3170,187 @@ STREAM_ULTRA_X_SENSOR_DEFINITIONS = {
 
 
 # ============================================================================
+# Powerstream Micro Inverter Sensor Definitions
+# Based on EcoFlow Powerstream API (heartbeat 20_1)
+# Units: batTemp 0.1°C, voltages 0.1V, currents 0.1A, invFreq 0.1Hz, permanentWatts 0.1W
+# ============================================================================
+POWERSTREAM_MICRO_INVERTER_SENSOR_DEFINITIONS = {
+    # Battery
+    "battery_level": {
+        "name": "Battery Level",
+        "key": "20_1.batSoc",
+        "unit": PERCENTAGE,
+        "device_class": SensorDeviceClass.BATTERY,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:battery",
+    },
+    "battery_temperature": {
+        "name": "Battery Temperature",
+        "key": "20_1.batTemp",
+        "unit": UnitOfTemperature.CELSIUS,
+        "device_class": SensorDeviceClass.TEMPERATURE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:thermometer",
+        "value_map": lambda x: x / 10 if x is not None else None,
+    },
+    "battery_input_voltage": {
+        "name": "Battery Input Voltage",
+        "key": "20_1.batInputVolt",
+        "unit": UnitOfElectricPotential.VOLT,
+        "device_class": SensorDeviceClass.VOLTAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:flash",
+        "value_map": lambda x: x / 10 if x is not None else None,
+    },
+    "battery_input_current": {
+        "name": "Battery Input Current",
+        "key": "20_1.batInputCur",
+        "unit": UnitOfElectricCurrent.AMPERE,
+        "device_class": SensorDeviceClass.CURRENT,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:current-dc",
+        "value_map": lambda x: x / 10 if x is not None else None,
+    },
+    # PV inputs
+    "pv1_input_voltage": {
+        "name": "PV1 Input Voltage",
+        "key": "20_1.pv1InputVolt",
+        "unit": UnitOfElectricPotential.VOLT,
+        "device_class": SensorDeviceClass.VOLTAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:solar-power",
+        "value_map": lambda x: x / 10 if x is not None else None,
+    },
+    "pv1_input_current": {
+        "name": "PV1 Input Current",
+        "key": "20_1.pv1InputCur",
+        "unit": UnitOfElectricCurrent.AMPERE,
+        "device_class": SensorDeviceClass.CURRENT,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:current-ac",
+        "value_map": lambda x: x / 10 if x is not None else None,
+    },
+    "pv2_input_voltage": {
+        "name": "PV2 Input Voltage",
+        "key": "20_1.pv2InputVolt",
+        "unit": UnitOfElectricPotential.VOLT,
+        "device_class": SensorDeviceClass.VOLTAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:solar-power",
+        "value_map": lambda x: x / 10 if x is not None else None,
+    },
+    "pv2_input_current": {
+        "name": "PV2 Input Current",
+        "key": "20_1.pv2InputCur",
+        "unit": UnitOfElectricCurrent.AMPERE,
+        "device_class": SensorDeviceClass.CURRENT,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:current-ac",
+        "value_map": lambda x: x / 10 if x is not None else None,
+    },
+    # Settings/Status
+    "supply_priority": {
+        "name": "Supply Priority",
+        "key": "20_1.supplyPriority",
+        "device_class": SensorDeviceClass.ENUM,
+        "icon": "mdi:transmission-tower",
+        "options": ["Prioritize Power Supply", "Prioritize Power Storage"],
+        "value_map": {0: "Prioritize Power Supply", 1: "Prioritize Power Storage"},
+    },
+    "discharge_limit": {
+        "name": "Discharge Limit",
+        "key": "20_1.lowerLimit",
+        "unit": PERCENTAGE,
+        "device_class": SensorDeviceClass.BATTERY,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:battery-low",
+    },
+    "charge_limit": {
+        "name": "Charge Limit",
+        "key": "20_1.upperLimit",
+        "unit": PERCENTAGE,
+        "device_class": SensorDeviceClass.BATTERY,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:battery-charging-100",
+    },
+    "inverter_switch": {
+        "name": "Inverter Switch",
+        "key": "20_1.invOnOff",
+        "device_class": SensorDeviceClass.ENUM,
+        "icon": "mdi:power",
+        "options": ["off", "on"],
+        "value_map": {0: "off", 1: "on"},
+    },
+    "led_brightness": {
+        "name": "LED Brightness",
+        "key": "20_1.invBrightness",
+        "unit": None,
+        "device_class": None,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:brightness-6",
+    },
+    "custom_load_power": {
+        "name": "Custom Load Power",
+        "key": "20_1.permanentWatts",
+        "unit": UnitOfPower.WATT,
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:lightning-bolt",
+        "value_map": lambda x: x / 10 if x is not None else None,
+    },
+    "charge_remaining_time": {
+        "name": "Charge Remaining Time",
+        "key": "20_1.chgRemainTime",
+        "unit": UnitOfTime.MINUTES,
+        "device_class": SensorDeviceClass.DURATION,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:battery-charging",
+    },
+    "discharge_remaining_time": {
+        "name": "Discharge Remaining Time",
+        "key": "20_1.dsgRemainTime",
+        "unit": UnitOfTime.MINUTES,
+        "device_class": SensorDeviceClass.DURATION,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:battery-arrow-down",
+    },
+    "feed_in_control": {
+        "name": "Feed-in Control",
+        "key": "20_1.feedProtect",
+        "device_class": SensorDeviceClass.ENUM,
+        "icon": "mdi:transmission-tower-export",
+        "options": ["off", "on"],
+        "value_map": {0: "off", 1: "on"},
+    },
+    "inverter_frequency": {
+        "name": "Inverter Frequency",
+        "key": "20_1.invFreq",
+        "unit": UnitOfFrequency.HERTZ,
+        "device_class": SensorDeviceClass.FREQUENCY,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:sine-wave",
+        "value_map": lambda x: x / 10 if x is not None else None,
+    },
+    "rated_power": {
+        "name": "Rated Power",
+        "key": "20_1.ratedPower",
+        "unit": UnitOfPower.WATT,
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:power-plug",
+    },
+    "wifi_signal_strength": {
+        "name": "WiFi Signal Strength",
+        "key": "20_1.wifiRssi",
+        "unit": "dBm",
+        "device_class": SensorDeviceClass.SIGNAL_STRENGTH,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:wifi",
+    },
+}
+
+
+# ============================================================================
 # Smart Plug S401 Sensor Definitions
 # Based on EcoFlow API documentation for Smart Plug
 # Field prefix: 2_1. (heartbeat data)
@@ -3292,8 +3474,11 @@ DEVICE_SENSOR_MAP = {
     DEVICE_TYPE_STREAM_ULTRA_X: STREAM_ULTRA_X_SENSOR_DEFINITIONS,
     "Stream Ultra X": STREAM_ULTRA_X_SENSOR_DEFINITIONS,
     DEVICE_TYPE_SMART_PLUG: SMART_PLUG_SENSOR_DEFINITIONS,
+    DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER: POWERSTREAM_MICRO_INVERTER_SENSOR_DEFINITIONS,
     "Smart Plug S401": SMART_PLUG_SENSOR_DEFINITIONS,
     "smart_plug": SMART_PLUG_SENSOR_DEFINITIONS,
+    "Powerstream Micro Inverter": POWERSTREAM_MICRO_INVERTER_SENSOR_DEFINITIONS,
+    "powerstream_micro_inverter": POWERSTREAM_MICRO_INVERTER_SENSOR_DEFINITIONS,
 }
 
 
@@ -3457,6 +3642,66 @@ class EcoFlowPowerDifferenceSensor(SensorEntity, EcoFlowBaseEntity):
         self._difference = input_power - output_power
 
 
+def _get_nested_value(data: dict, key: str) -> Any:
+    """Get value from data, supporting dotted keys for nested lookup."""
+    value = data.get(key)
+    if value is None and "." in key:
+        parts = key.split(".", 1)
+        parent = data.get(parts[0])
+        if isinstance(parent, dict):
+            value = parent.get(parts[1])
+    return value
+
+
+class EcoFlowPowerstreamSolarPowerSensor(EcoFlowBaseEntity, SensorEntity):
+    """Combined solar input power sensor for Powerstream (PV1 + PV2).
+
+    Provides power in W for use with IntegrationSensor / Energy Dashboard.
+    Uses pv1InputWatts + pv2InputWatts (0.1W units) or computes from V*I.
+    """
+
+    _attr_device_class = SensorDeviceClass.POWER
+    _attr_native_unit_of_measurement = UnitOfPower.WATT
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_icon = "mdi:solar-power"
+
+    def __init__(
+        self,
+        coordinator: EcoFlowDataCoordinator,
+        entry: ConfigEntry,
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, "combined_solar_power")
+        self._attr_unique_id = f"{entry.entry_id}_combined_solar_power"
+        self._attr_name = "Combined Solar Input Power"
+        self._attr_has_entity_name = True
+        self._sensor_id = "combined_solar_power"
+
+    @property
+    def native_value(self) -> float | None:
+        """Return combined PV1 + PV2 power in watts."""
+        if not self.coordinator.data:
+            return None
+
+        data = self.coordinator.data
+        pv1_w = _get_nested_value(data, "20_1.pv1InputWatts")
+        pv2_w = _get_nested_value(data, "20_1.pv2InputWatts")
+
+        if pv1_w is not None and pv2_w is not None:
+            return round((pv1_w + pv2_w) / 10, 1)
+
+        pv1_v = _get_nested_value(data, "20_1.pv1InputVolt")
+        pv1_i = _get_nested_value(data, "20_1.pv1InputCur")
+        pv2_v = _get_nested_value(data, "20_1.pv2InputVolt")
+        pv2_i = _get_nested_value(data, "20_1.pv2InputCur")
+
+        if all(v is not None for v in [pv1_v, pv1_i, pv2_v, pv2_i]):
+            power = (pv1_v * pv1_i + pv2_v * pv2_i) / 100
+            return round(power, 1)
+
+        return None
+
+
 # ============================================================================
 # Sensor Setup
 # ============================================================================
@@ -3488,6 +3733,16 @@ async def async_setup_entry(
                 sensor_id=sensor_id,
                 sensor_config=sensor_config,
             )
+        )
+
+    is_powerstream = device_type in (
+        DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER,
+        "powerstream_micro_inverter",
+        "Powerstream Micro Inverter",
+    )
+    if is_powerstream:
+        entities.append(
+            EcoFlowPowerstreamSolarPowerSensor(coordinator=coordinator, entry=entry)
         )
 
     # Add MQTT status sensors if using hybrid coordinator
@@ -3543,6 +3798,12 @@ async def async_setup_entry(
                 energy_sensors.append(
                     EcoFlowIntegralEnergySensor(hass, sensor, enabled_default=False)
                 )
+
+        # Powerstream: Combined Solar Input Power -> Energy (for Energy Dashboard)
+        if isinstance(sensor, EcoFlowPowerstreamSolarPowerSensor):
+            energy_sensors.append(
+                EcoFlowIntegralEnergySensor(hass, sensor, enabled_default=True)
+            )
 
     # Add Power Difference Sensor (for HA Energy "Now" tab)
     if total_input_sensor and total_output_sensor:

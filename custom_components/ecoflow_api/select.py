@@ -14,6 +14,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
     DEVICE_TYPE_DELTA_2,
+    DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER,
     DEVICE_TYPE_DELTA_PRO,
     DEVICE_TYPE_DELTA_PRO_3,
     DEVICE_TYPE_SMART_PLUG,
@@ -214,6 +215,21 @@ STREAM_ULTRA_X_SELECT_DEFINITIONS = {
     },
 }
 
+# Powerstream Micro Inverter Select Definitions
+# Uses cmdCode format
+POWERSTREAM_MICRO_INVERTER_SELECT_DEFINITIONS = {
+    "supply_priority": {
+        "name": "Supply Priority",
+        "state_key": "20_1.supplyPriority",
+        "cmd_code": "WN511_SET_SUPPLY_PRIORITY_PACK",
+        "param_key": "supplyPriority",
+        "icon": "mdi:transmission-tower",
+        "options": {
+            "Prioritize Power Supply": 0,
+            "Prioritize Power Storage": 1,
+        },
+    },
+}
 
 # Map device types to select definitions
 DEVICE_SELECT_MAP = {
@@ -225,10 +241,13 @@ DEVICE_SELECT_MAP = {
     "delta_pro": DELTA_PRO_SELECT_DEFINITIONS,
     "delta_2": DELTA_2_SELECT_DEFINITIONS,
     "stream_ultra_x": STREAM_ULTRA_X_SELECT_DEFINITIONS,
+    DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER: POWERSTREAM_MICRO_INVERTER_SELECT_DEFINITIONS,
     # Smart Plug doesn't have select entities (no AC frequency, energy modes, etc.)
     DEVICE_TYPE_SMART_PLUG: {},
     "smart_plug": {},
     "Smart Plug S401": {},
+    "Powerstream Micro Inverter": POWERSTREAM_MICRO_INVERTER_SELECT_DEFINITIONS,
+    "powerstream_micro_inverter": POWERSTREAM_MICRO_INVERTER_SELECT_DEFINITIONS,
 }
 
 
@@ -252,6 +271,11 @@ async def async_setup_entry(
     is_delta_pro = device_type in (DEVICE_TYPE_DELTA_PRO, "delta_pro")
     is_delta_2 = device_type in (DEVICE_TYPE_DELTA_2, "delta_2")
     is_stream = device_type in (DEVICE_TYPE_STREAM_ULTRA_X, "stream_ultra_x")
+    is_powerstream = device_type in (
+        DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER,
+        "powerstream_micro_inverter",
+        "Powerstream Micro Inverter",
+    )
 
     for select_key, select_def in select_definitions.items():
         if is_delta_pro and not select_def.get("is_local"):
@@ -275,6 +299,15 @@ async def async_setup_entry(
         elif is_stream and not select_def.get("is_local"):
             entities.append(
                 EcoFlowStreamSelect(
+                    coordinator=coordinator,
+                    entry=entry,
+                    select_key=select_key,
+                    select_def=select_def,
+                )
+            )
+        elif is_powerstream:
+            entities.append(
+                EcoFlowPowerstreamSelect(
                     coordinator=coordinator,
                     entry=entry,
                     select_key=select_key,
@@ -684,6 +717,84 @@ class EcoFlowStreamSelect(EcoFlowBaseEntity, SelectEntity):
             await self.coordinator.async_send_command(payload)
 
             # Wait for device to apply changes, then refresh
+            await asyncio.sleep(1)
+            await self.coordinator.async_request_refresh()
+        except Exception as err:
+            _LOGGER.error("Failed to set %s to %s: %s", self._select_key, option, err)
+            raise
+
+
+def _get_nested_value(data: dict[str, Any], key: str) -> Any:
+    """Get value from data, supporting dotted keys for nested lookup."""
+    value = data.get(key)
+    if value is None and "." in key:
+        parts = key.split(".", 1)
+        parent = data.get(parts[0])
+        if isinstance(parent, dict):
+            value = parent.get(parts[1])
+    return value
+
+
+class EcoFlowPowerstreamSelect(EcoFlowBaseEntity, SelectEntity):
+    """Representation of a Powerstream Micro Inverter select entity.
+
+    Uses cmdCode format like Smart Plug. State keys use 20_1 prefix.
+    """
+
+    def __init__(
+        self,
+        coordinator: EcoFlowDataCoordinator,
+        entry: ConfigEntry,
+        select_key: str,
+        select_def: dict[str, Any],
+    ) -> None:
+        """Initialize the select entity."""
+        super().__init__(coordinator, select_key)
+        self._select_key = select_key
+        self._select_def = select_def
+        self._attr_unique_id = f"{entry.entry_id}_{select_key}"
+        self._attr_name = select_def["name"]
+        self._attr_has_entity_name = True
+        self._attr_translation_key = select_key
+        self._attr_icon = select_def.get("icon")
+
+        self._options_map = select_def["options"]
+        self._attr_options = list(self._options_map.keys())
+        self._value_to_option = {v: k for k, v in self._options_map.items()}
+
+    @property
+    def current_option(self) -> str | None:
+        """Return the current selected option."""
+        if not self.coordinator.data:
+            return None
+
+        state_key = self._select_def["state_key"]
+        value = _get_nested_value(self.coordinator.data, state_key)
+
+        if value is None:
+            return None
+
+        return self._value_to_option.get(value)
+
+    async def async_select_option(self, option: str) -> None:
+        """Change the selected option using Powerstream cmdCode format."""
+        if option not in self._options_map:
+            _LOGGER.error("Invalid option %s for %s", option, self._select_key)
+            return
+
+        value = self._options_map[option]
+        device_sn = self.coordinator.device_sn
+        cmd_code = self._select_def["cmd_code"]
+        param_key = self._select_def["param_key"]
+
+        payload = {
+            "sn": device_sn,
+            "cmdCode": cmd_code,
+            "params": {param_key: value},
+        }
+
+        try:
+            await self.coordinator.async_send_command(payload)
             await asyncio.sleep(1)
             await self.coordinator.async_request_refresh()
         except Exception as err:

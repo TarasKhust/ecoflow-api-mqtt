@@ -21,6 +21,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import (
     DEFAULT_POWER_STEP,
     DEVICE_TYPE_DELTA_2,
+    DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER,
     DEVICE_TYPE_DELTA_PRO,
     DEVICE_TYPE_DELTA_PRO_3,
     DEVICE_TYPE_SMART_PLUG,
@@ -510,6 +511,62 @@ STREAM_ULTRA_X_NUMBER_DEFINITIONS = {
 }
 
 
+# Powerstream Micro Inverter Number Definitions
+# Uses cmdCode format (same as Smart Plug)
+# permanentWatts: API uses 0.1W units (0-6000 = 0-600W)
+POWERSTREAM_MICRO_INVERTER_NUMBER_DEFINITIONS = {
+    "permanent_watts": {
+        "name": "Custom Load Power",
+        "state_key": "20_1.permanentWatts",
+        "cmd_code": "WN511_SET_PERMANENT_WATTS_PACK",
+        "param_key": "permanentWatts",
+        "min": 0,
+        "max": 600,
+        "step": 10,
+        "unit": UnitOfPower.WATT,
+        "icon": "mdi:lightning-bolt",
+        "mode": NumberMode.SLIDER,
+        "value_map_to_ui": lambda x: round(x / 10) if x is not None else None,
+        "value_map_from_ui": lambda x: int(x * 10) if x is not None else None,
+    },
+    "lower_limit": {
+        "name": "Discharge Limit",
+        "state_key": "20_1.lowerLimit",
+        "cmd_code": "WN511_SET_BAT_LOWER_PACK",
+        "param_key": "lowerLimit",
+        "min": 1,
+        "max": 30,
+        "step": 1,
+        "unit": PERCENTAGE,
+        "icon": "mdi:battery-low",
+        "mode": NumberMode.SLIDER,
+    },
+    "upper_limit": {
+        "name": "Charge Limit",
+        "state_key": "20_1.upperLimit",
+        "cmd_code": "WN511_SET_BAT_UPPER_PACK",
+        "param_key": "upperLimit",
+        "min": 70,
+        "max": 100,
+        "step": 1,
+        "unit": PERCENTAGE,
+        "icon": "mdi:battery-charging-100",
+        "mode": NumberMode.SLIDER,
+    },
+    "inv_brightness": {
+        "name": "LED Brightness",
+        "state_key": "20_1.invBrightness",
+        "cmd_code": "WN511_SET_BRIGHTNESS_PACK",
+        "param_key": "brightness",
+        "min": 0,
+        "max": 1023,
+        "step": 1,
+        "unit": None,
+        "icon": "mdi:brightness-6",
+        "mode": NumberMode.SLIDER,
+    },
+}
+
 # Smart Plug S401 Number Definitions
 # Uses cmdCode format
 # Note: Overload protection (maxWatts) is read-only via Developer API
@@ -543,8 +600,11 @@ DEVICE_NUMBER_MAP = {
     "delta_pro": DELTA_PRO_NUMBER_DEFINITIONS,
     "delta_2": DELTA_2_NUMBER_DEFINITIONS,
     "stream_ultra_x": STREAM_ULTRA_X_NUMBER_DEFINITIONS,
+    DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER: POWERSTREAM_MICRO_INVERTER_NUMBER_DEFINITIONS,
     "smart_plug": SMART_PLUG_NUMBER_DEFINITIONS,
     "Smart Plug S401": SMART_PLUG_NUMBER_DEFINITIONS,
+    "Powerstream Micro Inverter": POWERSTREAM_MICRO_INVERTER_NUMBER_DEFINITIONS,
+    "powerstream_micro_inverter": POWERSTREAM_MICRO_INVERTER_NUMBER_DEFINITIONS,
 }
 
 
@@ -569,6 +629,11 @@ async def async_setup_entry(
     is_delta_2 = device_type in (DEVICE_TYPE_DELTA_2, "delta_2")
     is_stream = device_type in (DEVICE_TYPE_STREAM_ULTRA_X, "stream_ultra_x")
     is_smart_plug = device_type in (DEVICE_TYPE_SMART_PLUG, "smart_plug", "Smart Plug S401")
+    is_powerstream = device_type in (
+        DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER,
+        "powerstream_micro_inverter",
+        "Powerstream Micro Inverter",
+    )
 
     for number_key, number_def in number_definitions.items():
         if is_delta_pro:
@@ -601,6 +666,15 @@ async def async_setup_entry(
         elif is_smart_plug:
             entities.append(
                 EcoFlowSmartPlugNumber(
+                    coordinator=coordinator,
+                    entry=entry,
+                    number_key=number_key,
+                    number_def=number_def,
+                )
+            )
+        elif is_powerstream:
+            entities.append(
+                EcoFlowPowerstreamNumber(
                     coordinator=coordinator,
                     entry=entry,
                     number_key=number_key,
@@ -1041,6 +1115,91 @@ class EcoFlowSmartPlugNumber(EcoFlowBaseEntity, NumberEntity):
             await self.coordinator.async_send_command(payload)
 
             # Wait for device to apply changes, then refresh
+            await asyncio.sleep(1)
+            await self.coordinator.async_request_refresh()
+        except Exception as err:
+            _LOGGER.error("Failed to set %s to %s: %s", self._number_key, value, err)
+            raise
+
+
+def _get_nested_value(data: dict[str, Any], key: str) -> Any:
+    """Get value from data, supporting dotted keys for nested lookup."""
+    value = data.get(key)
+    if value is None and "." in key:
+        parts = key.split(".", 1)
+        parent = data.get(parts[0])
+        if isinstance(parent, dict):
+            value = parent.get(parts[1])
+    return value
+
+
+class EcoFlowPowerstreamNumber(EcoFlowBaseEntity, NumberEntity):
+    """Representation of a Powerstream Micro Inverter number entity.
+
+    Uses cmdCode format like Smart Plug. State keys use 20_1 prefix.
+    """
+
+    def __init__(
+        self,
+        coordinator: EcoFlowDataCoordinator,
+        entry: ConfigEntry,
+        number_key: str,
+        number_def: dict[str, Any],
+    ) -> None:
+        """Initialize the number entity."""
+        super().__init__(coordinator, number_key)
+        self._number_key = number_key
+        self._number_def = number_def
+        self._entry = entry
+        self._attr_unique_id = f"{entry.entry_id}_{number_key}"
+        self._attr_name = number_def["name"]
+        self._attr_has_entity_name = True
+        self._attr_translation_key = number_key
+
+        self._attr_native_min_value = number_def["min"]
+        self._attr_native_max_value = number_def["max"]
+        self._attr_native_step = number_def["step"]
+        self._attr_native_unit_of_measurement = number_def.get("unit")
+        self._attr_mode = number_def.get("mode", NumberMode.AUTO)
+        self._attr_icon = number_def.get("icon")
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the current value."""
+        if not self.coordinator.data:
+            return None
+
+        state_key = self._number_def["state_key"]
+        value = _get_nested_value(self.coordinator.data, state_key)
+
+        if value is None:
+            return None
+
+        if "value_map_to_ui" in self._number_def:
+            value = self._number_def["value_map_to_ui"](value)
+
+        return float(value) if value is not None else None
+
+    async def async_set_native_value(self, value: float) -> None:
+        """Set the value via API."""
+        device_sn = self.coordinator.device_sn
+        cmd_code = self._number_def["cmd_code"]
+        param_key = self._number_def["param_key"]
+
+        api_value = value
+        if "value_map_from_ui" in self._number_def:
+            api_value = self._number_def["value_map_from_ui"](value)
+
+        payload = {
+            "sn": device_sn,
+            "cmdCode": cmd_code,
+            "params": {param_key: int(api_value)},
+        }
+
+        _LOGGER.debug("Sending Powerstream number command: %s", payload)
+
+        try:
+            await self.coordinator.async_send_command(payload)
             await asyncio.sleep(1)
             await self.coordinator.async_request_refresh()
         except Exception as err:

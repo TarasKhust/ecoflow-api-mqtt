@@ -54,6 +54,7 @@ DEVICE_TYPE_DELTA_PRO: Final = "delta_pro"
 DEVICE_TYPE_DELTA_2: Final = "delta_2"
 DEVICE_TYPE_STREAM_ULTRA_X: Final = "stream_ultra_x"
 DEVICE_TYPE_SMART_PLUG: Final = "smart_plug"
+DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER: Final = "powerstream_micro_inverter"
 
 DEVICE_TYPES: Final = {
     DEVICE_TYPE_DELTA_PRO_3: "Delta Pro 3",
@@ -61,6 +62,7 @@ DEVICE_TYPES: Final = {
     DEVICE_TYPE_DELTA_2: "Delta 2",
     DEVICE_TYPE_STREAM_ULTRA_X: "Stream Ultra X",
     DEVICE_TYPE_SMART_PLUG: "Smart Plug S401",
+    DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER: "Powerstream Micro Inverter",
 }
 
 # Delta Pro 3 Commands (from https://developer-eu.ecoflow.com/us/document/deltaPro3)
@@ -2011,4 +2013,246 @@ STREAM_COMMAND_BASE: Final = {
     "dirSrc": 1,
     "dest": 2,
     "needAck": True,
+}
+
+# ============================================================================
+# POWERSTREAM MICRO INVERTER - API Definitions
+# Based on EcoFlow Powerstream API documentation (heartbeat 20_1)
+# HTTP: GET/PUT /iot-open/sign/device/quota, MQTT: param (not params)
+# ============================================================================
+
+# Powerstream Micro Inverter Sensors - quota prefix 20_1
+POWERSTREAM_MICRO_INVERTER_SENSORS: Final = {
+    "20_1.batSoc": {
+        "name": "Battery Level",
+        "unit": "%",
+        "device_class": "battery",
+        "icon": "mdi:battery",
+    },
+    "20_1.batTemp": {
+        "name": "Battery Temperature",
+        "unit": "°C",
+        "device_class": "temperature",
+        "icon": "mdi:thermometer",
+    },
+    "20_1.batInputVolt": {
+        "name": "Battery Input Voltage",
+        "unit": "V",
+        "device_class": "voltage",
+        "icon": "mdi:flash",
+    },
+    "20_1.batInputCur": {
+        "name": "Battery Input Current",
+        "unit": "A",
+        "device_class": "current",
+        "icon": "mdi:current-dc",
+    },
+    "20_1.pv1InputVolt": {
+        "name": "PV1 Input Voltage",
+        "unit": "V",
+        "device_class": "voltage",
+        "icon": "mdi:solar-power",
+    },
+    "20_1.pv1InputCur": {
+        "name": "PV1 Input Current",
+        "unit": "A",
+        "device_class": "current",
+        "icon": "mdi:current-ac",
+    },
+    "20_1.pv2InputVolt": {
+        "name": "PV2 Input Voltage",
+        "unit": "V",
+        "device_class": "voltage",
+        "icon": "mdi:solar-power",
+    },
+    "20_1.pv2InputCur": {
+        "name": "PV2 Input Current",
+        "unit": "A",
+        "device_class": "current",
+        "icon": "mdi:current-ac",
+    },
+    "20_1.supplyPriority": {
+        "name": "Supply Priority",
+        "unit": None,
+        "device_class": "enum",
+        "icon": "mdi:transmission-tower",
+        "options": ["Prioritize Power Supply", "Prioritize Power Storage"],
+        "value_map": {0: "Prioritize Power Supply", 1: "Prioritize Power Storage"},
+    },
+    "20_1.lowerLimit": {
+        "name": "Discharge Limit",
+        "unit": "%",
+        "device_class": "battery",
+        "icon": "mdi:battery-low",
+    },
+    "20_1.upperLimit": {
+        "name": "Charge Limit",
+        "unit": "%",
+        "device_class": "battery",
+        "icon": "mdi:battery-charging-100",
+    },
+    "20_1.invOnOff": {
+        "name": "Inverter Switch",
+        "unit": None,
+        "device_class": "enum",
+        "icon": "mdi:power",
+        "options": ["off", "on"],
+        "value_map": {0: "off", 1: "on"},
+    },
+    "20_1.invBrightness": {
+        "name": "LED Brightness",
+        "unit": None,
+        "device_class": None,
+        "icon": "mdi:brightness-6",
+    },
+    "20_1.permanentWatts": {
+        "name": "Custom Load Power",
+        "unit": "W",
+        "device_class": "power",
+        "icon": "mdi:lightning-bolt",
+    },
+    "20_1.chgRemainTime": {
+        "name": "Charge Remaining Time",
+        "unit": "min",
+        "device_class": "duration",
+        "icon": "mdi:battery-charging",
+    },
+    "20_1.dsgRemainTime": {
+        "name": "Discharge Remaining Time",
+        "unit": "min",
+        "device_class": "duration",
+        "icon": "mdi:battery-arrow-down",
+    },
+    "20_1.feedProtect": {
+        "name": "Feed-in Control",
+        "unit": None,
+        "device_class": "enum",
+        "icon": "mdi:transmission-tower-export",
+        "options": ["off", "on"],
+        "value_map": {0: "off", 1: "on"},
+    },
+    "20_1.invFreq": {
+        "name": "Inverter Frequency",
+        "unit": "Hz",
+        "device_class": "frequency",
+        "icon": "mdi:sine-wave",
+    },
+    "20_1.ratedPower": {
+        "name": "Rated Power",
+        "unit": "W",
+        "device_class": "power",
+        "icon": "mdi:power-plug",
+    },
+    "20_1.wifiRssi": {
+        "name": "WiFi Signal Strength",
+        "unit": "dBm",
+        "device_class": "signal_strength",
+        "icon": "mdi:wifi",
+    },
+}
+
+# Powerstream Micro Inverter Switches - uses cmdCode format (like Smart Plug)
+# Note: invOnOff switch omitted - no documented set command in API
+POWERSTREAM_MICRO_INVERTER_SWITCHES: Final = {}
+
+# Powerstream Micro Inverter Numbers - adjustable values
+POWERSTREAM_MICRO_INVERTER_NUMBERS: Final = {
+    "permanent_watts": {
+        "name": "Custom Load Power",
+        "state_key": "20_1.permanentWatts",
+        "cmd_code": "WN511_SET_PERMANENT_WATTS_PACK",
+        "param_key": "permanentWatts",
+        "min": 0,
+        "max": 6000,
+        "step": 10,
+        "unit": "W",
+        "icon": "mdi:lightning-bolt",
+    },
+    "lower_limit": {
+        "name": "Discharge Limit",
+        "state_key": "20_1.lowerLimit",
+        "cmd_code": "WN511_SET_BAT_LOWER_PACK",
+        "param_key": "lowerLimit",
+        "min": 1,
+        "max": 30,
+        "step": 1,
+        "unit": "%",
+        "icon": "mdi:battery-low",
+    },
+    "upper_limit": {
+        "name": "Charge Limit",
+        "state_key": "20_1.upperLimit",
+        "cmd_code": "WN511_SET_BAT_UPPER_PACK",
+        "param_key": "upperLimit",
+        "min": 70,
+        "max": 100,
+        "step": 1,
+        "unit": "%",
+        "icon": "mdi:battery-charging-100",
+    },
+    "inv_brightness": {
+        "name": "LED Brightness",
+        "state_key": "20_1.invBrightness",
+        "cmd_code": "WN511_SET_BRIGHTNESS_PACK",
+        "param_key": "brightness",
+        "min": 0,
+        "max": 1023,
+        "step": 1,
+        "unit": None,
+        "icon": "mdi:brightness-6",
+    },
+}
+
+# Powerstream Micro Inverter Selects
+POWERSTREAM_MICRO_INVERTER_SELECTS: Final = {
+    "supply_priority": {
+        "name": "Supply Priority",
+        "state_key": "20_1.supplyPriority",
+        "cmd_code": "WN511_SET_SUPPLY_PRIORITY_PACK",
+        "param_key": "supplyPriority",
+        "icon": "mdi:transmission-tower",
+        "options": {
+            "Prioritize Power Supply": 0,
+            "Prioritize Power Storage": 1,
+        },
+    },
+}
+
+# Powerstream Micro Inverter Binary Sensors
+POWERSTREAM_MICRO_INVERTER_BINARY_SENSORS: Final = {
+    "20_1.feedProtect": {
+        "name": "Feed-in Control",
+        "device_class": "power",
+        "icon": "mdi:transmission-tower-export",
+    },
+    "20_1.pv1CtrlMpptOffFlag": {
+        "name": "PV1 On/Off",
+        "device_class": "power",
+        "icon": "mdi:solar-power",
+    },
+    "20_1.pv2CtrlMpptOffFlag": {
+        "name": "PV2 On/Off",
+        "device_class": "power",
+        "icon": "mdi:solar-power",
+    },
+    "20_1.batOffFlag": {
+        "name": "Battery On/Off",
+        "device_class": "power",
+        "icon": "mdi:battery",
+    },
+    "20_1.llcOffFlag": {
+        "name": "LLC On/Off",
+        "device_class": "power",
+        "icon": "mdi:power",
+    },
+    "20_1.acOffFlag": {
+        "name": "INV On/Off",
+        "device_class": "power",
+        "icon": "mdi:power-socket",
+    },
+    "20_1.invOnOff": {
+        "name": "Micro-inverter Switch",
+        "device_class": "power",
+        "icon": "mdi:power",
+    },
 }
