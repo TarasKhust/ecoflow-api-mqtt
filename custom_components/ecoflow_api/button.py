@@ -119,7 +119,7 @@ class EcoFlowButton(EcoFlowBaseEntity, ButtonEntity):
             "cmdFunc": 254,
             "dest": 2,
             "needAck": True,
-            "params": {command_key: 1},
+            "params": {command_key: True},
         }
 
         try:
