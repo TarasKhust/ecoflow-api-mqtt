@@ -3032,6 +3032,8 @@ STREAM_ULTRA_X_SENSOR_DEFINITIONS = {
     "battery_level": {
         "name": "Battery Level",
         "key": "cmsBattSoc",
+        "fallback_key": "actSoc",
+        "fallback_on_zero": True,
         "unit": PERCENTAGE,
         "device_class": SensorDeviceClass.BATTERY,
         "state_class": SensorStateClass.MEASUREMENT,
@@ -3075,6 +3077,8 @@ STREAM_ULTRA_X_SENSOR_DEFINITIONS = {
     "system_load_power": {
         "name": "System Load Power",
         "key": "powGetSysLoad",
+        "fallback_key": "outputWatts",
+        "fallback_on_zero": True,
         "unit": UnitOfPower.WATT,
         "device_class": SensorDeviceClass.POWER,
         "state_class": SensorStateClass.MEASUREMENT,
@@ -3100,6 +3104,7 @@ STREAM_ULTRA_X_SENSOR_DEFINITIONS = {
     "battery_power": {
         "name": "Battery Power",
         "key": "powGetBpCms",
+        "fallback_key": "powGetBpCms",
         "unit": UnitOfPower.WATT,
         "device_class": SensorDeviceClass.POWER,
         "state_class": SensorStateClass.MEASUREMENT,
@@ -3873,7 +3878,11 @@ class EcoFlowSensor(EcoFlowBaseEntity, SensorEntity):
                 value = parent.get(parts[1])
 
         # Try fallback key if primary key has no data
-        if value is None or (isinstance(value, list) and all(v == 0 for v in value)):
+        # Also try fallback when value is 0/0.0 and fallback_on_zero is set
+        should_fallback = (value is None or 
+            (isinstance(value, list) and all(v == 0 for v in value)) or
+            (self._sensor_config.get("fallback_on_zero") and value == 0.0))
+        if should_fallback:
             fallback_key = self._sensor_config.get("fallback_key")
             if fallback_key:
                 value = self.coordinator.data.get(fallback_key)
