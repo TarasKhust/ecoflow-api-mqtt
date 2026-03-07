@@ -21,6 +21,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from .const import (
     DEFAULT_POWER_STEP,
     DEVICE_TYPE_DELTA_2,
+    DEVICE_TYPE_DELTA_2_MAX,
     DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER,
     DEVICE_TYPE_DELTA_PRO,
     DEVICE_TYPE_DELTA_PRO_3,
@@ -470,6 +471,19 @@ DELTA_2_NUMBER_DEFINITIONS = {
 }
 
 # ============================================================================
+# DELTA 2 MAX - Number Definitions
+# Based on Delta 2 but with higher AC charging power max (2400W vs 1200W)
+# ============================================================================
+
+# Create Delta 2 Max definitions by copying Delta 2 and adjusting ac_charging_power
+DELTA_2_MAX_NUMBER_DEFINITIONS = {
+    key: (
+        {**value, "max": 2400} if key == "ac_charging_power" else value
+    )
+    for key, value in DELTA_2_NUMBER_DEFINITIONS.items()
+}
+
+# ============================================================================
 # STREAM ULTRA X - Number Definitions
 # Based on EcoFlow Developer API documentation for STREAM system
 # ============================================================================
@@ -595,10 +609,13 @@ DEVICE_NUMBER_MAP = {
     DEVICE_TYPE_DELTA_PRO_3: DELTA_PRO_3_NUMBER_DEFINITIONS,
     DEVICE_TYPE_DELTA_PRO: DELTA_PRO_NUMBER_DEFINITIONS,
     DEVICE_TYPE_DELTA_2: DELTA_2_NUMBER_DEFINITIONS,
+    DEVICE_TYPE_DELTA_2_MAX: DELTA_2_MAX_NUMBER_DEFINITIONS,
     DEVICE_TYPE_STREAM_ULTRA_X: STREAM_ULTRA_X_NUMBER_DEFINITIONS,
     "delta_pro_3": DELTA_PRO_3_NUMBER_DEFINITIONS,
     "delta_pro": DELTA_PRO_NUMBER_DEFINITIONS,
     "delta_2": DELTA_2_NUMBER_DEFINITIONS,
+    "delta_2_max": DELTA_2_MAX_NUMBER_DEFINITIONS,
+    "Delta 2 Max": DELTA_2_MAX_NUMBER_DEFINITIONS,
     "stream_ultra_x": STREAM_ULTRA_X_NUMBER_DEFINITIONS,
     DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER: POWERSTREAM_MICRO_INVERTER_NUMBER_DEFINITIONS,
     "smart_plug": SMART_PLUG_NUMBER_DEFINITIONS,
@@ -626,7 +643,10 @@ async def async_setup_entry(
 
     # Check device type for proper class selection
     is_delta_pro = device_type in (DEVICE_TYPE_DELTA_PRO, "delta_pro")
-    is_delta_2 = device_type in (DEVICE_TYPE_DELTA_2, "delta_2")
+    is_delta_2 = device_type in (
+        DEVICE_TYPE_DELTA_2, "delta_2",
+        DEVICE_TYPE_DELTA_2_MAX, "delta_2_max", "Delta 2 Max",
+    )
     is_stream = device_type in (DEVICE_TYPE_STREAM_ULTRA_X, "stream_ultra_x")
     is_smart_plug = device_type in (DEVICE_TYPE_SMART_PLUG, "smart_plug", "Smart Plug S401")
     is_powerstream = device_type in (

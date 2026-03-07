@@ -52,6 +52,7 @@ DEFAULT_POWER_STEP: Final = 100
 DEVICE_TYPE_DELTA_PRO_3: Final = "delta_pro_3"
 DEVICE_TYPE_DELTA_PRO: Final = "delta_pro"
 DEVICE_TYPE_DELTA_2: Final = "delta_2"
+DEVICE_TYPE_DELTA_2_MAX: Final = "delta_2_max"
 DEVICE_TYPE_STREAM_ULTRA_X: Final = "stream_ultra_x"
 DEVICE_TYPE_SMART_PLUG: Final = "smart_plug"
 DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER: Final = "powerstream_micro_inverter"
@@ -60,6 +61,7 @@ DEVICE_TYPES: Final = {
     DEVICE_TYPE_DELTA_PRO_3: "Delta Pro 3",
     DEVICE_TYPE_DELTA_PRO: "Delta Pro",
     DEVICE_TYPE_DELTA_2: "Delta 2",
+    DEVICE_TYPE_DELTA_2_MAX: "Delta 2 Max",
     DEVICE_TYPE_STREAM_ULTRA_X: "Stream Ultra X",
     DEVICE_TYPE_SMART_PLUG: "Smart Plug S401",
     DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER: "Powerstream Micro Inverter",
