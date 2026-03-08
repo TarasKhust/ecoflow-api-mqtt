@@ -14,6 +14,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
     DEVICE_TYPE_DELTA_2,
+    DEVICE_TYPE_DELTA_2_MAX,
     DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER,
     DEVICE_TYPE_DELTA_PRO,
     DEVICE_TYPE_DELTA_PRO_3,
@@ -261,6 +262,10 @@ DELTA_2_SWITCH_DEFINITIONS = {
     },
 }
 
+# Delta 2 Max uses the same switch definitions as Delta 2
+# (identical API format and switch keys)
+DELTA_2_MAX_SWITCH_DEFINITIONS = DELTA_2_SWITCH_DEFINITIONS
+
 # ============================================================================
 # STREAM ULTRA X - Switch Definitions
 # Based on EcoFlow Developer API documentation for STREAM system
@@ -329,6 +334,7 @@ DEVICE_SWITCH_MAP = {
     DEVICE_TYPE_DELTA_PRO_ULTRA: DELTA_PRO_ULTRA_SWITCH_DEFINITIONS,
     DEVICE_TYPE_DELTA_PRO: DELTA_PRO_SWITCH_DEFINITIONS,
     DEVICE_TYPE_DELTA_2: DELTA_2_SWITCH_DEFINITIONS,
+    DEVICE_TYPE_DELTA_2_MAX: DELTA_2_MAX_SWITCH_DEFINITIONS,
     DEVICE_TYPE_STREAM_ULTRA_X: STREAM_ULTRA_X_SWITCH_DEFINITIONS,
     DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER: POWERSTREAM_MICRO_INVERTER_SWITCH_DEFINITIONS,
     DEVICE_TYPE_SMART_PLUG: SMART_PLUG_SWITCH_DEFINITIONS,
@@ -337,6 +343,8 @@ DEVICE_SWITCH_MAP = {
     "Delta Pro Ultra": DELTA_PRO_ULTRA_SWITCH_DEFINITIONS,
     "delta_pro": DELTA_PRO_SWITCH_DEFINITIONS,
     "delta_2": DELTA_2_SWITCH_DEFINITIONS,
+    "delta_2_max": DELTA_2_MAX_SWITCH_DEFINITIONS,
+    "Delta 2 Max": DELTA_2_MAX_SWITCH_DEFINITIONS,
     "stream_ultra_x": STREAM_ULTRA_X_SWITCH_DEFINITIONS,
     "powerstream_micro_inverter": POWERSTREAM_MICRO_INVERTER_SWITCH_DEFINITIONS,
     "Powerstream Micro Inverter": POWERSTREAM_MICRO_INVERTER_SWITCH_DEFINITIONS,
@@ -363,7 +371,10 @@ async def async_setup_entry(
 
     # Check device type for proper class selection
     is_delta_pro = device_type in (DEVICE_TYPE_DELTA_PRO, "delta_pro")
-    is_delta_2 = device_type in (DEVICE_TYPE_DELTA_2, "delta_2")
+    is_delta_2 = device_type in (
+        DEVICE_TYPE_DELTA_2, "delta_2",
+        DEVICE_TYPE_DELTA_2_MAX, "delta_2_max", "Delta 2 Max",
+    )
     is_stream = device_type in (DEVICE_TYPE_STREAM_ULTRA_X, "stream_ultra_x")
     is_smart_plug = device_type in (DEVICE_TYPE_SMART_PLUG, "smart_plug", "Smart Plug S401")
 

@@ -16,6 +16,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
     DEVICE_TYPE_DELTA_2,
+    DEVICE_TYPE_DELTA_2_MAX,
     DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER,
     DEVICE_TYPE_DELTA_PRO,
     DEVICE_TYPE_DELTA_PRO_3,
@@ -337,6 +338,10 @@ DELTA_2_BINARY_SENSOR_DEFINITIONS = {
     },
 }
 
+# Delta 2 Max uses the same binary sensor definitions as Delta 2
+# (identical quota keys and API format)
+DELTA_2_MAX_BINARY_SENSOR_DEFINITIONS = DELTA_2_BINARY_SENSOR_DEFINITIONS
+
 # ============================================================================
 # STREAM ULTRA X Binary Sensor Definitions
 # ============================================================================
@@ -475,12 +480,15 @@ DEVICE_BINARY_SENSOR_MAP = {
     DEVICE_TYPE_DELTA_PRO_ULTRA: DELTA_PRO_ULTRA_BINARY_SENSOR_DEFINITIONS,
     DEVICE_TYPE_DELTA_PRO: DELTA_PRO_BINARY_SENSOR_DEFINITIONS,
     DEVICE_TYPE_DELTA_2: DELTA_2_BINARY_SENSOR_DEFINITIONS,
+    DEVICE_TYPE_DELTA_2_MAX: DELTA_2_MAX_BINARY_SENSOR_DEFINITIONS,
     DEVICE_TYPE_STREAM_ULTRA_X: STREAM_ULTRA_X_BINARY_SENSOR_DEFINITIONS,
     "delta_pro_3": DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS,
     "delta_pro_ultra": DELTA_PRO_ULTRA_BINARY_SENSOR_DEFINITIONS,
     "Delta Pro Ultra": DELTA_PRO_ULTRA_BINARY_SENSOR_DEFINITIONS,
     "delta_pro": DELTA_PRO_BINARY_SENSOR_DEFINITIONS,
     "delta_2": DELTA_2_BINARY_SENSOR_DEFINITIONS,
+    "delta_2_max": DELTA_2_MAX_BINARY_SENSOR_DEFINITIONS,
+    "Delta 2 Max": DELTA_2_MAX_BINARY_SENSOR_DEFINITIONS,
     "stream_ultra_x": STREAM_ULTRA_X_BINARY_SENSOR_DEFINITIONS,
     DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER: POWERSTREAM_MICRO_INVERTER_BINARY_SENSOR_DEFINITIONS,
     # Smart Plug doesn't have binary sensors (no battery, charging states, etc.)
