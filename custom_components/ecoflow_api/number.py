@@ -605,8 +605,118 @@ SMART_PLUG_NUMBER_DEFINITIONS = {
 }
 
 
-# Delta Pro Ultra uses the same API format as Delta Pro 3 (YJ751 cmdCode)
-DELTA_PRO_ULTRA_NUMBER_DEFINITIONS = DELTA_PRO_3_NUMBER_DEFINITIONS
+# Delta Pro Ultra number definitions
+# Uses cmdCode format (YJ751_PD_*) with hs_yj751_* state keys
+DELTA_PRO_ULTRA_NUMBER_DEFINITIONS = {
+    "max_charge_level": {
+        "name": "Max Charge Level",
+        "state_key": "hs_yj751_pd_app_set_info_addr.chgMaxSoc",
+        "cmd_code": "YJ751_PD_CHG_SOC_MAX_SET",
+        "param_key": "maxChgSoc",
+        "min": 50,
+        "max": 100,
+        "step": 1,
+        "unit": PERCENTAGE,
+        "icon": "mdi:battery-charging-100",
+        "mode": NumberMode.SLIDER,
+    },
+    "min_discharge_level": {
+        "name": "Min Discharge Level",
+        "state_key": "hs_yj751_pd_app_set_info_addr.dsgMinSoc",
+        "cmd_code": "YJ751_PD_DSG_SOC_MIN_SET",
+        "param_key": "minDsgSoc",
+        "min": 0,
+        "max": 30,
+        "step": 1,
+        "unit": PERCENTAGE,
+        "icon": "mdi:battery-10",
+        "mode": NumberMode.SLIDER,
+    },
+    "device_standby_time": {
+        "name": "Device Standby Time",
+        "state_key": "hs_yj751_pd_app_set_info_addr.powerStandbyMins",
+        "cmd_code": "YJ751_PD_POWER_STANDBY_SET",
+        "param_key": "powerStandbyMin",
+        "min": 0,
+        "max": 1440,
+        "step": 30,
+        "unit": UnitOfTime.MINUTES,
+        "icon": "mdi:timer",
+        "mode": NumberMode.BOX,
+    },
+    "screen_standby_time": {
+        "name": "Screen Standby Time",
+        "state_key": "hs_yj751_pd_app_set_info_addr.screenStandbySec",
+        "cmd_code": "YJ751_PD_SCREEN_STANDBY_SET",
+        "param_key": "screenStandbySec",
+        "min": 0,
+        "max": 3600,
+        "step": 30,
+        "unit": UnitOfTime.SECONDS,
+        "icon": "mdi:monitor-off",
+        "mode": NumberMode.BOX,
+    },
+    "ac_standby_time": {
+        "name": "AC Standby Time",
+        "state_key": "hs_yj751_pd_app_set_info_addr.acStandbyMins",
+        "cmd_code": "YJ751_PD_AC_STANDBY_SET",
+        "param_key": "acStandbyMin",
+        "min": 0,
+        "max": 720,
+        "step": 30,
+        "unit": UnitOfTime.MINUTES,
+        "icon": "mdi:timer",
+        "mode": NumberMode.BOX,
+    },
+    "dc_standby_time": {
+        "name": "DC Standby Time",
+        "state_key": "hs_yj751_pd_app_set_info_addr.dcStandbyMins",
+        "cmd_code": "YJ751_PD_DC_STANDBY_SET",
+        "param_key": "dcStandbyMin",
+        "min": 0,
+        "max": 720,
+        "step": 30,
+        "unit": UnitOfTime.MINUTES,
+        "icon": "mdi:timer",
+        "mode": NumberMode.BOX,
+    },
+    "ac_charging_power_c20": {
+        "name": "AC Charging Power (C20)",
+        "state_key": "hs_yj751_pd_app_set_info_addr.chgC20SetWatts",
+        "cmd_code": "YJ751_PD_AC_CHG_SET",
+        "param_key": "chgC20Watts",
+        "min": 200,
+        "max": 1800,
+        "step": 100,
+        "unit": UnitOfPower.WATT,
+        "icon": "mdi:lightning-bolt",
+        "mode": NumberMode.SLIDER,
+    },
+    "ac_charging_power_5p8": {
+        "name": "AC Charging Power (POWER IN/OUT)",
+        "state_key": "hs_yj751_pd_app_set_info_addr.chg5p8SetWatts",
+        "cmd_code": "YJ751_PD_AC_CHG_SET",
+        "param_key": "chg5p8Watts",
+        "min": 200,
+        "max": 3900,
+        "step": 100,
+        "unit": UnitOfPower.WATT,
+        "icon": "mdi:lightning-bolt",
+        "mode": NumberMode.SLIDER,
+    },
+    "ac_always_on_min_soc": {
+        "name": "AC Always On Min SOC",
+        "state_key": "hs_yj751_pd_app_set_info_addr.acOftenOpenMinSoc",
+        "cmd_code": "YJ751_PD_AC_OFTEN_OPEN_SET",
+        "param_key": "acOftenOpenMinSoc",
+        "min": 0,
+        "max": 100,
+        "step": 1,
+        "unit": PERCENTAGE,
+        "icon": "mdi:battery-lock",
+        "mode": NumberMode.SLIDER,
+    },
+}
 
 
 # Map device types to number definitions
@@ -662,9 +772,19 @@ async def async_setup_entry(
         "powerstream_micro_inverter",
         "Powerstream Micro Inverter",
     )
+    is_delta_pro_ultra = device_type in (DEVICE_TYPE_DELTA_PRO_ULTRA, "delta_pro_ultra", "Delta Pro Ultra")
 
     for number_key, number_def in number_definitions.items():
-        if is_delta_pro:
+        if is_delta_pro_ultra:
+            entities.append(
+                EcoFlowDeltaProUltraNumber(
+                    coordinator=coordinator,
+                    entry=entry,
+                    number_key=number_key,
+                    number_def=number_def,
+                )
+            )
+        elif is_delta_pro:
             entities.append(
                 EcoFlowDeltaProNumber(
                     coordinator=coordinator,
@@ -1232,4 +1352,74 @@ class EcoFlowPowerstreamNumber(EcoFlowBaseEntity, NumberEntity):
             await self.coordinator.async_request_refresh()
         except Exception as err:
             _LOGGER.error("Failed to set %s to %s: %s", self._number_key, value, err)
+            raise
+
+
+class EcoFlowDeltaProUltraNumber(EcoFlowBaseEntity, NumberEntity):
+    """EcoFlow Delta Pro Ultra number entity using cmdCode format (YJ751_PD_*)."""
+
+    def __init__(
+        self,
+        coordinator: EcoFlowDataCoordinator,
+        entry: ConfigEntry,
+        number_key: str,
+        number_def: dict[str, Any],
+    ) -> None:
+        """Initialize the number entity."""
+        super().__init__(coordinator, number_key)
+        self._number_key = number_key
+        self._number_def = number_def
+        self._entry = entry
+        self._attr_unique_id = f"{entry.entry_id}_{number_key}"
+        self._attr_name = number_def["name"]
+        self._attr_has_entity_name = True
+        self._attr_translation_key = number_key
+
+        self._attr_native_min_value = number_def["min"]
+        self._attr_native_max_value = number_def["max"]
+        self._attr_native_step = number_def["step"]
+        self._attr_native_unit_of_measurement = number_def.get("unit")
+        self._attr_icon = number_def.get("icon")
+        self._attr_mode = number_def.get("mode", NumberMode.AUTO)
+
+    @property
+    def native_value(self) -> float | None:
+        """Return the current value."""
+        if not self.coordinator.data:
+            return None
+
+        state_key = self._number_def["state_key"]
+        value = self.coordinator.data.get(state_key)
+
+        if value is None:
+            return None
+
+        try:
+            return float(value)
+        except (ValueError, TypeError):
+            return None
+
+    async def async_set_native_value(self, value: float) -> None:
+        """Set value using Delta Pro Ultra cmdCode format."""
+        device_sn = self.coordinator.device_sn
+        cmd_code = self._number_def["cmd_code"]
+        param_key = self._number_def["param_key"]
+
+        value = max(self._number_def["min"], min(self._number_def["max"], value))
+        int_value = int(value)
+
+        payload = {
+            "sn": device_sn,
+            "cmdCode": cmd_code,
+            "params": {param_key: int_value},
+        }
+
+        _LOGGER.debug("Sending Delta Pro Ultra number command: %s", payload)
+
+        try:
+            await self.coordinator.async_send_command(payload)
+            await asyncio.sleep(1)
+            await self.coordinator.async_request_refresh()
+        except Exception as err:
+            _LOGGER.error("Failed to set %s to %s: %s", self._number_key, int_value, err)
             raise

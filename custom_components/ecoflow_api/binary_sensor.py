@@ -470,8 +470,80 @@ POWERSTREAM_MICRO_INVERTER_BINARY_SENSOR_DEFINITIONS = {
 }
 
 
-# Delta Pro Ultra uses the same API format as Delta Pro 3 (YJ751 cmdCode)
-DELTA_PRO_ULTRA_BINARY_SENSOR_DEFINITIONS = DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS
+# Delta Pro Ultra binary sensor definitions
+# Uses hs_yj751_* state keys from API
+DELTA_PRO_ULTRA_BINARY_SENSOR_DEFINITIONS = {
+    "is_charging": {
+        "name": "Charging",
+        "key": "isCharging",
+        "device_class": BinarySensorDeviceClass.BATTERY_CHARGING,
+        "icon_on": "mdi:battery-charging",
+        "icon_off": "mdi:battery",
+        "derived": True,
+        "derive_from": "hs_yj751_pd_appshow_addr.wattsInSum",
+        "derive_condition": lambda v: v is not None and v > 10,
+    },
+    "is_discharging": {
+        "name": "Discharging",
+        "key": "isDischarging",
+        "device_class": BinarySensorDeviceClass.POWER,
+        "icon_on": "mdi:battery-arrow-down",
+        "icon_off": "mdi:battery",
+        "derived": True,
+        "derive_from": "hs_yj751_pd_appshow_addr.wattsOutSum",
+        "derive_condition": lambda v: v is not None and v > 10,
+    },
+    "battery_low": {
+        "name": "Battery Low",
+        "key": "batteryLow",
+        "device_class": BinarySensorDeviceClass.BATTERY,
+        "icon_on": "mdi:battery-alert",
+        "icon_off": "mdi:battery",
+        "derived": True,
+        "derive_from": "hs_yj751_pd_appshow_addr.soc",
+        "derive_condition": lambda v: v is not None and v < 20,
+    },
+    "battery_full": {
+        "name": "Battery Full",
+        "key": "batteryFull",
+        "device_class": BinarySensorDeviceClass.BATTERY,
+        "icon_on": "mdi:battery-check",
+        "icon_off": "mdi:battery",
+        "derived": True,
+        "derive_from": "hs_yj751_pd_appshow_addr.soc",
+        "derive_condition": lambda v: v is not None and v >= 100,
+    },
+    "solar_hv_connected": {
+        "name": "Solar HV Connected",
+        "key": "solarHvConnected",
+        "device_class": BinarySensorDeviceClass.PLUG,
+        "icon_on": "mdi:solar-power",
+        "icon_off": "mdi:solar-power-variant-outline",
+        "derived": True,
+        "derive_from": "hs_yj751_pd_appshow_addr.inHvMpptPwr",
+        "derive_condition": lambda v: v is not None and v > 0,
+    },
+    "solar_lv_connected": {
+        "name": "Solar LV Connected",
+        "key": "solarLvConnected",
+        "device_class": BinarySensorDeviceClass.PLUG,
+        "icon_on": "mdi:solar-power",
+        "icon_off": "mdi:solar-power-variant-outline",
+        "derived": True,
+        "derive_from": "hs_yj751_pd_appshow_addr.inLvMpptPwr",
+        "derive_condition": lambda v: v is not None and v > 0,
+    },
+    "ac_in_connected": {
+        "name": "AC Input Connected",
+        "key": "acInConnected",
+        "device_class": BinarySensorDeviceClass.PLUG,
+        "icon_on": "mdi:power-plug",
+        "icon_off": "mdi:power-plug-off",
+        "derived": True,
+        "derive_from": "hs_yj751_pd_appshow_addr.inAcC20Pwr",
+        "derive_condition": lambda v: v is not None and v > 0,
+    },
+}
 
 
 # Map device types to binary sensor definitions

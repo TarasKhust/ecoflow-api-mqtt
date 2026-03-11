@@ -324,8 +324,67 @@ SMART_PLUG_SWITCH_DEFINITIONS = {
 }
 
 
-# Delta Pro Ultra uses the same API format as Delta Pro 3 (YJ751 cmdCode)
-DELTA_PRO_ULTRA_SWITCH_DEFINITIONS = DELTA_PRO_3_SWITCH_DEFINITIONS
+# Delta Pro Ultra switch definitions
+# Uses cmdCode format (YJ751_PD_*) with hs_yj751_* state keys
+DELTA_PRO_ULTRA_SWITCH_DEFINITIONS = {
+    "ac_output": {
+        "name": "AC Output",
+        "state_key": "hs_yj751_pd_app_set_info_addr.acOftenOpenFlg",
+        "cmd_code": "YJ751_PD_AC_DSG_SET",
+        "params_on": {"enable": 1},
+        "params_off": {"enable": 0},
+        "value_on": 1,
+        "value_off": 0,
+        "icon_on": "mdi:power-plug",
+        "icon_off": "mdi:power-plug-off",
+        "device_class": SwitchDeviceClass.OUTLET,
+    },
+    "dc_output": {
+        "name": "DC Output",
+        "state_key": "hs_yj751_pd_appshow_addr.showFlag",
+        "cmd_code": "YJ751_PD_DC_SWITCH_SET",
+        "param_key": "enable",
+        "value_on": 1,
+        "value_off": 0,
+        "icon_on": "mdi:current-dc",
+        "icon_off": "mdi:current-dc",
+        "device_class": SwitchDeviceClass.OUTLET,
+        "bit_field": 5,
+    },
+    "battery_heating": {
+        "name": "Battery Heating",
+        "state_key": "hs_yj751_pd_app_set_info_addr.bmsModeSet",
+        "cmd_code": "YJ751_PD_BP_HEAT_SET",
+        "param_key": "enBpHeat",
+        "value_on": 1,
+        "value_off": 0,
+        "icon_on": "mdi:heat-wave",
+        "icon_off": "mdi:snowflake",
+        "device_class": SwitchDeviceClass.SWITCH,
+    },
+    "wireless_4g": {
+        "name": "4G Switch",
+        "state_key": "hs_yj751_pd_appshow_addr.wireless4gOn",
+        "cmd_code": "YJ751_PD_4G_SWITCH_SET",
+        "param_key": "en4GOpen",
+        "value_on": 1,
+        "value_off": 0,
+        "icon_on": "mdi:signal-4g",
+        "icon_off": "mdi:signal-off",
+        "device_class": SwitchDeviceClass.SWITCH,
+    },
+    "ac_always_on": {
+        "name": "AC Always On",
+        "state_key": "hs_yj751_pd_app_set_info_addr.acOftenOpenFlg",
+        "cmd_code": "YJ751_PD_AC_OFTEN_OPEN_SET",
+        "param_key": "acOftenOpen",
+        "value_on": 1,
+        "value_off": 0,
+        "icon_on": "mdi:power-plug-battery",
+        "icon_off": "mdi:power-plug-off",
+        "device_class": SwitchDeviceClass.SWITCH,
+    },
+}
 
 
 # Map device types to switch definitions
@@ -377,9 +436,19 @@ async def async_setup_entry(
     )
     is_stream = device_type in (DEVICE_TYPE_STREAM_ULTRA_X, "stream_ultra_x")
     is_smart_plug = device_type in (DEVICE_TYPE_SMART_PLUG, "smart_plug", "Smart Plug S401")
+    is_delta_pro_ultra = device_type in (DEVICE_TYPE_DELTA_PRO_ULTRA, "delta_pro_ultra", "Delta Pro Ultra")
 
     for switch_key, switch_def in switch_definitions.items():
-        if is_smart_plug:
+        if is_delta_pro_ultra:
+            entities.append(
+                EcoFlowDeltaProUltraSwitch(
+                    coordinator=coordinator,
+                    entry=entry,
+                    switch_key=switch_key,
+                    switch_def=switch_def,
+                )
+            )
+        elif is_smart_plug:
             entities.append(
                 EcoFlowSmartPlugSwitch(
                     coordinator=coordinator,
@@ -894,6 +963,94 @@ class EcoFlowSmartPlugSwitch(EcoFlowBaseEntity, SwitchEntity):
             await self.coordinator.async_send_command(payload)
 
             # Wait for device to apply changes, then refresh
+            await asyncio.sleep(3)
+            await self.coordinator.async_request_refresh()
+        except Exception as err:
+            _LOGGER.error("Failed to set %s to %s: %s", self._switch_key, state, err)
+            raise
+
+
+class EcoFlowDeltaProUltraSwitch(EcoFlowBaseEntity, SwitchEntity):
+    """EcoFlow Delta Pro Ultra switch using cmdCode format (YJ751_PD_*)."""
+
+    def __init__(
+        self,
+        coordinator: EcoFlowDataCoordinator,
+        entry: ConfigEntry,
+        switch_key: str,
+        switch_def: dict[str, Any],
+    ) -> None:
+        """Initialize the switch."""
+        super().__init__(coordinator, switch_key)
+        self._switch_key = switch_key
+        self._switch_def = switch_def
+        self._attr_unique_id = f"{entry.entry_id}_{switch_key}"
+        self._attr_name = switch_def["name"]
+        self._attr_has_entity_name = True
+        self._attr_translation_key = switch_key
+        self._attr_device_class = switch_def.get("device_class")
+
+    @property
+    def is_on(self) -> bool | None:
+        """Return true if switch is on."""
+        if not self.coordinator.data:
+            return None
+
+        state_key = self._switch_def["state_key"]
+        value = self.coordinator.data.get(state_key)
+
+        if value is None:
+            return None
+
+        # Handle showFlag bitmask fields
+        bit_field = self._switch_def.get("bit_field")
+        if bit_field is not None:
+            try:
+                return bool(int(value) & (1 << bit_field))
+            except (ValueError, TypeError):
+                return None
+
+        return bool(value)
+
+    @property
+    def icon(self) -> str | None:
+        """Return the icon to use in the frontend."""
+        if self.is_on:
+            return self._switch_def.get("icon_on")
+        return self._switch_def.get("icon_off")
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Turn the switch on."""
+        await self._send_command(True)
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        """Turn the switch off."""
+        await self._send_command(False)
+
+    async def _send_command(self, state: bool) -> None:
+        """Send command using Delta Pro Ultra cmdCode format."""
+        device_sn = self.coordinator.device_sn
+        cmd_code = self._switch_def["cmd_code"]
+
+        if state and "params_on" in self._switch_def:
+            params = dict(self._switch_def["params_on"])
+        elif not state and "params_off" in self._switch_def:
+            params = dict(self._switch_def["params_off"])
+        else:
+            param_key = self._switch_def["param_key"]
+            value = self._switch_def.get("value_on", 1) if state else self._switch_def.get("value_off", 0)
+            params = {param_key: value}
+
+        payload = {
+            "sn": device_sn,
+            "cmdCode": cmd_code,
+            "params": params,
+        }
+
+        _LOGGER.debug("Sending Delta Pro Ultra switch command: %s", payload)
+
+        try:
+            await self.coordinator.async_send_command(payload)
             await asyncio.sleep(3)
             await self.coordinator.async_request_refresh()
         except Exception as err:
