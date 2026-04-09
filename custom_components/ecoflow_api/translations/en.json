@@ -61,6 +61,18 @@
           "device_type": "Select your device model"
         }
       },
+      "river3plus_account": {
+        "title": "River 3 Plus App Account",
+        "description": "River 3 Plus uses EcoFlow app-authenticated MQTT polling. Enter the same email and password you use in the EcoFlow mobile app.",
+        "data": {
+          "app_username": "EcoFlow App Email",
+          "app_password": "EcoFlow App Password"
+        },
+        "data_description": {
+          "app_username": "Email address used to sign in to the EcoFlow mobile app",
+          "app_password": "Password used to sign in to the EcoFlow mobile app"
+        }
+      },
       "reauth_confirm": {
         "title": "Re-authenticate EcoFlow API",
         "description": "Please enter your updated API credentials",
@@ -88,10 +100,14 @@
         "description": "Configure update interval for sensor data polling.\n\n**Note:** Lower intervals provide faster updates but may increase API usage.",
         "data": {
           "update_interval": "Update Interval",
+          "app_username": "EcoFlow App Email",
+          "app_password": "EcoFlow App Password",
           "diagnostic_mode": "Diagnostic mode"
         },
         "data_description": {
           "update_interval": "How often to refresh sensor data from the EcoFlow API",
+          "app_username": "Email address used to sign in to the EcoFlow mobile app (required for River 3 Plus)",
+          "app_password": "Password used to sign in to the EcoFlow mobile app (required for River 3 Plus)",
           "diagnostic_mode": "Enable diagnostic mode to collect raw data for debugging (increases memory usage)"
         }
       }

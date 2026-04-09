@@ -18,6 +18,8 @@ from homeassistant.helpers.selector import (
 from .api import EcoFlowApiClient, EcoFlowApiError, EcoFlowAuthError
 from .const import (
     CONF_ACCESS_KEY,
+    CONF_APP_PASSWORD,
+    CONF_APP_USERNAME,
     CONF_DEVICE_SN,
     CONF_DEVICE_TYPE,
     CONF_MQTT_ENABLED,
@@ -28,6 +30,7 @@ from .const import (
     CONF_UPDATE_INTERVAL,
     DEFAULT_UPDATE_INTERVAL,
     DEVICE_TYPE_DELTA_PRO_3,
+    DEVICE_TYPE_RIVER3PLUS,
     DEVICE_TYPES,
     DOMAIN,
     OPTS_DIAGNOSTIC_MODE,
@@ -36,6 +39,11 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _should_skip_rest_verification(device_type: str) -> bool:
+    """Return True when a device type should not be probed via REST quota API."""
+    return device_type == DEVICE_TYPE_RIVER3PLUS
 
 # Step 1: API credentials with region selection
 STEP_CREDENTIALS_SCHEMA = vol.Schema(
@@ -65,6 +73,13 @@ STEP_MQTT_SCHEMA = vol.Schema(
     }
 )
 
+STEP_RIVER3PLUS_ACCOUNT_SCHEMA = vol.Schema(
+    {
+        vol.Required(CONF_APP_USERNAME): str,
+        vol.Required(CONF_APP_PASSWORD): str,
+    }
+)
+
 
 class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """Handle a config flow for EcoFlow API.
@@ -84,6 +99,40 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         self._region: str = REGION_EU
         self._devices: list[dict[str, Any]] = []
         self._client: EcoFlowApiClient | None = None
+        self._pending_entry_data: dict[str, Any] | None = None
+
+    def _stash_pending_entry(
+        self,
+        access_key: str,
+        secret_key: str,
+        device_sn: str,
+        device_type: str,
+        region: str,
+    ) -> None:
+        """Store a partially built entry before the River 3 Plus app step."""
+        self._pending_entry_data = {
+            CONF_ACCESS_KEY: access_key,
+            CONF_SECRET_KEY: secret_key,
+            CONF_DEVICE_SN: device_sn,
+            CONF_DEVICE_TYPE: device_type,
+            CONF_REGION: region,
+        }
+
+    async def _async_validate_river3plus_app_credentials(
+        self, app_username: str, app_password: str
+    ) -> None:
+        """Validate EcoFlow app credentials for River 3 Plus MQTT access."""
+        if not self._pending_entry_data:
+            raise RuntimeError("River 3 Plus entry data is missing")
+
+        session = async_get_clientsession(self.hass)
+        client = EcoFlowApiClient(
+            access_key=self._pending_entry_data[CONF_ACCESS_KEY],
+            secret_key=self._pending_entry_data[CONF_SECRET_KEY],
+            session=session,
+            region=self._pending_entry_data[CONF_REGION],
+        )
+        await client.get_app_mqtt_credentials(app_username, app_password)
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -218,25 +267,34 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 )
 
                 # Try to verify device access (non-blocking)
-                try:
-                    quota = await client.get_device_quota(device_sn)
-                    _LOGGER.info("Device verification successful: %s", quota)
-                except EcoFlowApiError as err:
-                    _LOGGER.warning(
-                        "Device verification failed (will proceed anyway): %s", err
+                if _should_skip_rest_verification(device_type):
+                    _LOGGER.info(
+                        "Skipping REST verification for MQTT-only device type %s",
+                        device_type,
                     )
+                else:
+                    try:
+                        quota = await client.get_device_quota(device_sn)
+                        _LOGGER.info("Device verification successful: %s", quota)
+                    except EcoFlowApiError as err:
+                        _LOGGER.warning(
+                            "Device verification failed (will proceed anyway): %s", err
+                        )
 
                 # Create entry
                 device_name = DEVICE_TYPES.get(device_type, device_type)
+                self._stash_pending_entry(
+                    access_key=access_key,
+                    secret_key=secret_key,
+                    device_sn=device_sn,
+                    device_type=device_type,
+                    region=region,
+                )
+                if device_type == DEVICE_TYPE_RIVER3PLUS:
+                    return await self.async_step_river3plus_account()
                 return self.async_create_entry(
                     title=f"EcoFlow {device_name} ({device_sn[-4:]})",
-                    data={
-                        CONF_ACCESS_KEY: access_key,
-                        CONF_SECRET_KEY: secret_key,
-                        CONF_DEVICE_SN: device_sn,
-                        CONF_DEVICE_TYPE: device_type,
-                        CONF_REGION: region,
-                    },
+                    data=self._pending_entry_data,
                 )
 
             except EcoFlowAuthError as err:
@@ -283,9 +341,14 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             # Try to verify device access (non-blocking - just warn if fails)
             try:
-                if self._client:
+                if self._client and not _should_skip_rest_verification(device_type):
                     quota = await self._client.get_device_quota(device_sn)
                     _LOGGER.info("Device verification successful: %s", quota)
+                elif _should_skip_rest_verification(device_type):
+                    _LOGGER.info(
+                        "Skipping REST verification for MQTT-only device type %s",
+                        device_type,
+                    )
             except EcoFlowApiError as err:
                 _LOGGER.warning(
                     "Device verification failed (will proceed anyway): %s", err
@@ -295,15 +358,18 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             if not errors:
                 device_name = DEVICE_TYPES.get(device_type, device_type)
+                self._stash_pending_entry(
+                    access_key=self._access_key,
+                    secret_key=self._secret_key,
+                    device_sn=device_sn,
+                    device_type=device_type,
+                    region=self._region,
+                )
+                if device_type == DEVICE_TYPE_RIVER3PLUS:
+                    return await self.async_step_river3plus_account()
                 return self.async_create_entry(
                     title=f"EcoFlow {device_name} ({device_sn[-4:]})",
-                    data={
-                        CONF_ACCESS_KEY: self._access_key,
-                        CONF_SECRET_KEY: self._secret_key,
-                        CONF_DEVICE_SN: device_sn,
-                        CONF_DEVICE_TYPE: device_type,
-                        CONF_REGION: self._region,
-                    },
+                    data=self._pending_entry_data,
                 )
 
         # Build device options for selector
@@ -378,9 +444,14 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             # Try to verify device access (non-blocking - just warn if fails)
             try:
-                if self._client:
+                if self._client and not _should_skip_rest_verification(device_type):
                     quota = await self._client.get_device_quota(device_sn)
                     _LOGGER.info("Device verification successful: %s", quota)
+                elif _should_skip_rest_verification(device_type):
+                    _LOGGER.info(
+                        "Skipping REST verification for MQTT-only device type %s",
+                        device_type,
+                    )
             except EcoFlowApiError as err:
                 _LOGGER.warning(
                     "Device verification failed (will proceed anyway): %s", err
@@ -390,19 +461,69 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             if not errors:
                 device_name = DEVICE_TYPES.get(device_type, device_type)
+                self._stash_pending_entry(
+                    access_key=self._access_key,
+                    secret_key=self._secret_key,
+                    device_sn=device_sn,
+                    device_type=device_type,
+                    region=self._region,
+                )
+                if device_type == DEVICE_TYPE_RIVER3PLUS:
+                    return await self.async_step_river3plus_account()
                 return self.async_create_entry(
                     title=f"EcoFlow {device_name} ({device_sn[-4:]})",
-                    data={
-                        CONF_ACCESS_KEY: self._access_key,
-                        CONF_SECRET_KEY: self._secret_key,
-                        CONF_DEVICE_SN: device_sn,
-                        CONF_DEVICE_TYPE: device_type,
-                    },
+                    data=self._pending_entry_data,
                 )
 
         return self.async_show_form(
             step_id="manual_device",
             data_schema=STEP_MANUAL_DEVICE_SCHEMA,
+            errors=errors,
+        )
+
+    async def async_step_river3plus_account(
+        self, user_input: dict[str, Any] | None = None
+    ) -> FlowResult:
+        """Collect EcoFlow app credentials for River 3 Plus MQTT polling."""
+        errors: dict[str, str] = {}
+
+        if user_input is not None:
+            try:
+                await self._async_validate_river3plus_app_credentials(
+                    user_input[CONF_APP_USERNAME],
+                    user_input[CONF_APP_PASSWORD],
+                )
+                if not self._pending_entry_data:
+                    raise RuntimeError("River 3 Plus entry data is missing")
+
+                entry_data = {
+                    **self._pending_entry_data,
+                    CONF_APP_USERNAME: user_input[CONF_APP_USERNAME],
+                    CONF_APP_PASSWORD: user_input[CONF_APP_PASSWORD],
+                }
+                device_name = DEVICE_TYPES.get(
+                    entry_data[CONF_DEVICE_TYPE], entry_data[CONF_DEVICE_TYPE]
+                )
+                return self.async_create_entry(
+                    title=f"EcoFlow {device_name} ({entry_data[CONF_DEVICE_SN][-4:]})",
+                    data=entry_data,
+                )
+            except EcoFlowAuthError as err:
+                _LOGGER.error("River 3 Plus app authentication failed: %s", err)
+                errors["base"] = "invalid_auth"
+            except EcoFlowApiError as err:
+                _LOGGER.error("River 3 Plus app credential validation failed: %s", err)
+                errors["base"] = "cannot_connect"
+            except Exception as err:
+                _LOGGER.exception(
+                    "Unexpected exception validating River 3 Plus app credentials: %s",
+                    err,
+                )
+                errors["base"] = "unknown"
+
+        return self.async_show_form(
+            step_id="river3plus_account",
+            data_schema=STEP_RIVER3PLUS_ACCOUNT_SCHEMA,
             errors=errors,
         )
 
@@ -520,45 +641,66 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         # Get current device options
         diagnostic_mode = self.config_entry.options.get(OPTS_DIAGNOSTIC_MODE, False)
+        device_type = self.config_entry.data.get(CONF_DEVICE_TYPE)
+        app_username = self.config_entry.options.get(
+            CONF_APP_USERNAME, self.config_entry.data.get(CONF_APP_USERNAME, "")
+        )
+        app_password = self.config_entry.options.get(
+            CONF_APP_PASSWORD, self.config_entry.data.get(CONF_APP_PASSWORD, "")
+        )
+
+        schema: dict[Any, Any] = {
+            vol.Required(
+                CONF_UPDATE_INTERVAL,
+                default=current_interval,
+            ): vol.In(
+                {
+                    5: "5 seconds (Fast)",
+                    10: "10 seconds",
+                    15: "15 seconds (Recommended)",
+                    30: "30 seconds",
+                    60: "60 seconds (Slow)",
+                }
+            ),
+        }
+
+        if device_type == DEVICE_TYPE_RIVER3PLUS:
+            schema[vol.Required(
+                CONF_APP_USERNAME,
+                description={"suggested_value": app_username},
+                default=app_username,
+            )] = str
+            schema[vol.Required(
+                CONF_APP_PASSWORD,
+                description={"suggested_value": app_password},
+                default=app_password,
+            )] = str
+        else:
+            schema[vol.Optional(
+                CONF_MQTT_ENABLED,
+                default=mqtt_enabled,
+            )] = bool
+            schema[vol.Optional(
+                CONF_MQTT_USERNAME,
+                description={
+                    "suggested_value": mqtt_username,
+                    "description": "EcoFlow account email OR access_key (leave empty to use access_key from main config)",
+                },
+            )] = str
+            schema[vol.Optional(
+                CONF_MQTT_PASSWORD,
+                description={
+                    "suggested_value": mqtt_password,
+                    "description": "EcoFlow account password OR secret_key (leave empty to use secret_key from main config)",
+                },
+            )] = str
+
+        schema[vol.Optional(
+            OPTS_DIAGNOSTIC_MODE,
+            default=diagnostic_mode,
+        )] = bool
 
         return self.async_show_form(
             step_id="init",
-            data_schema=vol.Schema(
-                {
-                    vol.Required(
-                        CONF_UPDATE_INTERVAL,
-                        default=current_interval,
-                    ): vol.In(
-                        {
-                            5: "5 seconds (Fast)",
-                            10: "10 seconds",
-                            15: "15 seconds (Recommended)",
-                            30: "30 seconds",
-                            60: "60 seconds (Slow)",
-                        }
-                    ),
-                    vol.Optional(
-                        CONF_MQTT_ENABLED,
-                        default=mqtt_enabled,
-                    ): bool,
-                    vol.Optional(
-                        CONF_MQTT_USERNAME,
-                        description={
-                            "suggested_value": mqtt_username,
-                            "description": "EcoFlow account email OR access_key (leave empty to use access_key from main config)",
-                        },
-                    ): str,
-                    vol.Optional(
-                        CONF_MQTT_PASSWORD,
-                        description={
-                            "suggested_value": mqtt_password,
-                            "description": "EcoFlow account password OR secret_key (leave empty to use secret_key from main config)",
-                        },
-                    ): str,
-                    vol.Optional(
-                        OPTS_DIAGNOSTIC_MODE,
-                        default=diagnostic_mode,
-                    ): bool,
-                }
-            ),
+            data_schema=vol.Schema(schema),
         )

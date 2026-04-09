@@ -36,6 +36,7 @@ from .const import (
     DEVICE_TYPE_DELTA_2_MAX,
     DEVICE_TYPE_DELTA_PRO_ULTRA,
     DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER,
+    DEVICE_TYPE_RIVER3PLUS,
     DEVICE_TYPE_SMART_PLUG,
     DEVICE_TYPE_STREAM_ULTRA_X,
     DOMAIN,
@@ -3027,6 +3028,38 @@ DELTA_2_MAX_SENSOR_DEFINITIONS = DELTA_2_SENSOR_DEFINITIONS
 
 
 # ============================================================================
+# River 3 Plus - MQTT Protobuf Sensor Definitions
+# ============================================================================
+
+RIVER3PLUS_SENSOR_DEFINITIONS = {
+    "battery_level": {
+        "name": "Battery SOC",
+        "key": "battery_level",
+        "unit": PERCENTAGE,
+        "device_class": SensorDeviceClass.BATTERY,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:battery",
+    },
+    "temperature": {
+        "name": "Temperature",
+        "key": "temperature",
+        "unit": UnitOfTemperature.CELSIUS,
+        "device_class": SensorDeviceClass.TEMPERATURE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:thermometer",
+    },
+    "ac_in_power": {
+        "name": "AC Input Power",
+        "key": "ac_in_power",
+        "unit": UnitOfPower.WATT,
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:power-plug",
+    },
+}
+
+
+# ============================================================================
 # STREAM ULTRA X - Sensor Definitions
 # Based on EcoFlow Developer API documentation for STREAM system (BKW)
 # ============================================================================
@@ -4016,6 +4049,8 @@ DEVICE_SENSOR_MAP = {
     DEVICE_TYPE_DELTA_2: DELTA_2_SENSOR_DEFINITIONS,
     DEVICE_TYPE_DELTA_2_MAX: DELTA_2_MAX_SENSOR_DEFINITIONS,
     "delta_2_max": DELTA_2_MAX_SENSOR_DEFINITIONS,
+    DEVICE_TYPE_RIVER3PLUS: RIVER3PLUS_SENSOR_DEFINITIONS,
+    "River 3 Plus": RIVER3PLUS_SENSOR_DEFINITIONS,
     DEVICE_TYPE_STREAM_ULTRA_X: STREAM_ULTRA_X_SENSOR_DEFINITIONS,
     "Stream Ultra X": STREAM_ULTRA_X_SENSOR_DEFINITIONS,
     DEVICE_TYPE_SMART_PLUG: SMART_PLUG_SENSOR_DEFINITIONS,

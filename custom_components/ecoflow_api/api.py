@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import hashlib
 import hmac
 import logging
@@ -314,6 +315,105 @@ class EcoFlowApiClient:
         )
 
         return result
+
+    async def app_login(self, email: str, password: str) -> dict[str, Any]:
+        """Log in with EcoFlow app credentials.
+
+        River 3 Plus MQTT polling requires app-authenticated MQTT credentials;
+        developer-key MQTT credentials connect successfully but do not return
+        the `thing/property/get_reply` payloads this device uses.
+        """
+        payload = {
+            "appVersion": "4.1.2.02",
+            "email": email,
+            "os": "android",
+            "osVersion": "30",
+            "password": base64.b64encode(password.encode("utf-8")).decode("ascii"),
+            "scene": "IOT_APP",
+            "userType": "ECOFLOW",
+        }
+        url = f"{self._base_url}/auth/login"
+        headers = {
+            "Accept": "application/json",
+            "Content-Type": "application/json",
+            "Host": self._base_url.removeprefix("https://"),
+            "lang": "en-us",
+            "platform": "android",
+            "sysversion": "11",
+            "version": "4.1.2.02",
+            "phonemodel": "SM-X200",
+            "user-agent": "okhttp/3.14.9",
+        }
+
+        try:
+            async with asyncio.timeout(API_TIMEOUT):
+                async with self._session.post(
+                    url, headers=headers, json=payload
+                ) as response:
+                    result = await self._handle_response(response)
+        except asyncio.TimeoutError as err:
+            raise EcoFlowConnectionError(
+                f"Timeout connecting to EcoFlow app login API: {err}"
+            ) from err
+        except aiohttp.ClientError as err:
+            raise EcoFlowConnectionError(
+                f"Error connecting to EcoFlow app login API: {err}"
+            ) from err
+
+        token = result.get("token")
+        user = result.get("user", {})
+        user_id = user.get("userId")
+        if not token or not user_id:
+            raise EcoFlowAuthError("EcoFlow app login did not return token/userId")
+
+        return {
+            "token": token,
+            "userId": str(user_id),
+        }
+
+    async def get_app_mqtt_credentials(
+        self, email: str, password: str
+    ) -> dict[str, Any]:
+        """Get app-authenticated MQTT credentials for River 3 Plus."""
+        login = await self.app_login(email, password)
+        token = login["token"]
+        user_id = login["userId"]
+
+        url = f"{self._base_url}/iot-auth/app/certification?userId={user_id}"
+        headers = {
+            "Accept": "application/json",
+            "Authorization": f"Bearer {token}",
+            "Host": self._base_url.removeprefix("https://"),
+            "lang": "en-us",
+            "platform": "android",
+            "sysversion": "11",
+            "version": "4.1.2.02",
+            "phonemodel": "SM-X200",
+            "user-agent": "okhttp/3.14.9",
+        }
+
+        try:
+            async with asyncio.timeout(API_TIMEOUT):
+                async with self._session.get(url, headers=headers) as response:
+                    result = await self._handle_response(response)
+        except asyncio.TimeoutError as err:
+            raise EcoFlowConnectionError(
+                f"Timeout connecting to EcoFlow app MQTT API: {err}"
+            ) from err
+        except aiohttp.ClientError as err:
+            raise EcoFlowConnectionError(
+                f"Error connecting to EcoFlow app MQTT API: {err}"
+            ) from err
+
+        if not result.get("certificateAccount") or not result.get(
+            "certificatePassword"
+        ):
+            raise EcoFlowAuthError("EcoFlow app MQTT credentials are incomplete")
+
+        return {
+            **result,
+            "userId": user_id,
+        }
 
     async def get_device_list(self) -> list[dict[str, Any]]:
         """Get list of all devices associated with the account.
