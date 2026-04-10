@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 import logging
+import math
 import struct
 from typing import Any
 
@@ -141,16 +142,16 @@ class River3PlusProtoDecoder:
         total_output_power = self._read_float(payload, 4)
         ac_input_power = self._read_float(payload, 54)
 
-        if total_input_power is not None:
+        if total_input_power is not None and 0 <= total_input_power <= 10000:
             metrics["pow_in_sum_w"] = round(total_input_power, 1)
-        if total_output_power is not None:
+        if total_output_power is not None and 0 <= total_output_power <= 10000:
             metrics["pow_out_sum_w"] = round(total_output_power, 1)
 
         # Field 54 is the real AC input power. Field 28 in BMS packets is
         # remaining time and must not be interpreted as watts.
         if ac_input_power is None:
             ac_input_power = total_input_power
-        if ac_input_power is not None:
+        if ac_input_power is not None and 0 <= ac_input_power <= 10000:
             metrics["ac_in_power"] = round(ac_input_power, 1)
 
         return metrics
@@ -168,17 +169,17 @@ class River3PlusProtoDecoder:
         ac_input_current = self._read_float(payload, 223)
         ac_output_current = self._read_float(payload, 224)
 
-        if pcs_dc_temperature is not None:
+        if pcs_dc_temperature is not None and -50 <= pcs_dc_temperature <= 150:
             metrics["temp_pcs_dc"] = round(pcs_dc_temperature, 2)
-        if pcs_ac_temperature is not None:
+        if pcs_ac_temperature is not None and -50 <= pcs_ac_temperature <= 150:
             metrics["temp_pcs_ac"] = round(pcs_ac_temperature, 2)
-        if ac_input_voltage is not None:
+        if ac_input_voltage is not None and 0 <= ac_input_voltage <= 300:
             metrics["ac_in_voltage"] = round(ac_input_voltage, 2)
-        if ac_output_voltage is not None:
+        if ac_output_voltage is not None and 0 <= ac_output_voltage <= 300:
             metrics["ac_out_voltage"] = round(ac_output_voltage, 2)
-        if ac_input_current is not None:
+        if ac_input_current is not None and 0 <= ac_input_current <= 100:
             metrics["ac_in_current"] = round(ac_input_current, 3)
-        if ac_output_current is not None:
+        if ac_output_current is not None and 0 <= ac_output_current <= 100:
             metrics["ac_out_current"] = round(ac_output_current, 3)
 
         return metrics
@@ -263,6 +264,8 @@ class River3PlusProtoDecoder:
                 continue
 
             if wire_type == 1:
+                if index + 8 > len(payload):
+                    raise ValueError("truncated fixed64")
                 value = struct.unpack("<d", payload[index : index + 8])[0]
                 fields.append((field_number, wire_type, value))
                 index += 8
@@ -270,12 +273,16 @@ class River3PlusProtoDecoder:
 
             if wire_type == 2:
                 length, index = self._read_varint(payload, index)
+                if index + length > len(payload):
+                    raise ValueError("truncated length-delimited field")
                 value = payload[index : index + length]
                 fields.append((field_number, wire_type, value))
                 index += length
                 continue
 
             if wire_type == 5:
+                if index + 4 > len(payload):
+                    raise ValueError("truncated fixed32")
                 value = struct.unpack("<f", payload[index : index + 4])[0]
                 fields.append((field_number, wire_type, value))
                 index += 4
@@ -316,5 +323,7 @@ class River3PlusProtoDecoder:
         """Return a field as a float when possible."""
         value = payload.get(field_number)
         if isinstance(value, (int, float)):
-            return float(value)
+            converted = float(value)
+            if math.isfinite(converted):
+                return converted
         return None

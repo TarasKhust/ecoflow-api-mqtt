@@ -118,6 +118,7 @@ class River3PlusCoordinator(EcoFlowDataCoordinator):
         self._user_id: str | None = None
         self._connected_event = asyncio.Event()
         self._reply_event: asyncio.Event | None = None
+        self._get_reply_topic: str | None = None
 
     def _raise_read_only(self) -> None:
         """Reject command paths for River 3 Plus."""
@@ -309,12 +310,10 @@ class River3PlusCoordinator(EcoFlowDataCoordinator):
             )
             return
 
-        client.subscribe(
-            [
-                (f"/app/{self._user_id}/{self.device_sn}/thing/property/get_reply", 1),
-                (f"/app/device/property/{self.device_sn}", 1),
-            ]
+        self._get_reply_topic = (
+            f"/app/{self._user_id}/{self.device_sn}/thing/property/get_reply"
         )
+        client.subscribe(self._get_reply_topic, qos=1)
         self.hass.loop.call_soon_threadsafe(self._connected_event.set)
 
     def _on_paho_disconnect(
@@ -334,6 +333,9 @@ class River3PlusCoordinator(EcoFlowDataCoordinator):
         msg: mqtt.MQTTMessage,
     ) -> None:
         """Decode protobuf replies from the River 3 Plus."""
+        if msg.topic != self._get_reply_topic:
+            return
+
         try:
             decoded = self._device.decode_packet(bytes(msg.payload))
             if not decoded:
