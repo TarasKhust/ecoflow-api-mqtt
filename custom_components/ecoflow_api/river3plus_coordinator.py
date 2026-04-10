@@ -119,6 +119,12 @@ class River3PlusCoordinator(EcoFlowDataCoordinator):
         self._connected_event = asyncio.Event()
         self._reply_event: asyncio.Event | None = None
 
+    def _raise_read_only(self) -> None:
+        """Reject command paths for River 3 Plus."""
+        raise RuntimeError(
+            f"River 3 Plus [{self.device_sn[-4:]}] is read-only in this integration"
+        )
+
     async def async_setup(self) -> bool:
         """Fetch app MQTT credentials and connect the MQTT client."""
         if not self._app_username or not self._app_password:
@@ -180,6 +186,54 @@ class River3PlusCoordinator(EcoFlowDataCoordinator):
             self._paho_client = None
         self._mqtt_connected = False
         self._connected_event.clear()
+
+    async def async_send_command(self, command: dict) -> bool:
+        """Block command writes for River 3 Plus."""
+        self._raise_read_only()
+
+    async def async_set_ac_charging_power(self, power: int) -> None:
+        """Block command writes for River 3 Plus."""
+        self._raise_read_only()
+
+    async def async_set_max_charge_level(self, level: int) -> None:
+        """Block command writes for River 3 Plus."""
+        self._raise_read_only()
+
+    async def async_set_min_discharge_level(self, level: int) -> None:
+        """Block command writes for River 3 Plus."""
+        self._raise_read_only()
+
+    async def async_set_ac_output(self, enabled: bool) -> None:
+        """Block command writes for River 3 Plus."""
+        self._raise_read_only()
+
+    async def async_set_dc_output(self, enabled: bool) -> None:
+        """Block command writes for River 3 Plus."""
+        self._raise_read_only()
+
+    async def async_set_12v_dc_output(self, enabled: bool) -> None:
+        """Block command writes for River 3 Plus."""
+        self._raise_read_only()
+
+    async def async_set_beep(self, enabled: bool) -> None:
+        """Block command writes for River 3 Plus."""
+        self._raise_read_only()
+
+    async def async_set_x_boost(self, enabled: bool) -> None:
+        """Block command writes for River 3 Plus."""
+        self._raise_read_only()
+
+    async def async_set_ac_standby_time(self, minutes: int) -> None:
+        """Block command writes for River 3 Plus."""
+        self._raise_read_only()
+
+    async def async_set_dc_standby_time(self, minutes: int) -> None:
+        """Block command writes for River 3 Plus."""
+        self._raise_read_only()
+
+    async def async_set_lcd_standby_time(self, seconds: int) -> None:
+        """Block command writes for River 3 Plus."""
+        self._raise_read_only()
 
     async def _async_update_data(self) -> dict[str, Any]:
         """Poll River 3 Plus state through MQTT `thing/property/get`."""

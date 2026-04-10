@@ -187,6 +187,24 @@
       "pow_in_sum_w": {
         "name": "Total Input Power"
       },
+      "temp_pcs_dc": {
+        "name": "PCS DC Temperature"
+      },
+      "temp_pcs_ac": {
+        "name": "PCS AC Temperature"
+      },
+      "ac_in_voltage": {
+        "name": "AC Input Voltage"
+      },
+      "ac_out_voltage": {
+        "name": "AC Output Voltage"
+      },
+      "ac_in_current": {
+        "name": "AC Input Current"
+      },
+      "ac_out_current": {
+        "name": "AC Output Current"
+      },
       "pow_get_ac_in": {
         "name": "AC Input Power"
       },
