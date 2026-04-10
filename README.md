@@ -1,5 +1,3 @@
-# This fork adds the support for River 3 Plus but nothing has been tested yet. Use with caution.
-
 # EcoFlow API Integration for Home Assistant
 
 [![hacs_badge](https://img.shields.io/badge/HACS-Custom-orange.svg)](https://github.com/hacs/integration)
