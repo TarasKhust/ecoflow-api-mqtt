@@ -442,6 +442,68 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "icon": "mdi:battery-charging",
     },
     # ============================================================================
+    # Per-port electrical telemetry (exposed by EcoFlow API 2026-04 onwards)
+    # ============================================================================
+    "plug_in_info_4p81_vol": {
+        "name": "4.8V Port 1 Voltage",
+        "key": "plugInInfo4p81Vol",
+        "unit": UnitOfElectricPotential.VOLT,
+        "device_class": SensorDeviceClass.VOLTAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:flash",
+    },
+    "plug_in_info_4p81_amp": {
+        "name": "4.8V Port 1 Current",
+        "key": "plugInInfo4p81Amp",
+        "unit": UnitOfElectricCurrent.AMPERE,
+        "device_class": SensorDeviceClass.CURRENT,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:current-dc",
+    },
+    "plug_in_info_4p81_err_code": {
+        "name": "4.8V Port 1 Error Code",
+        "key": "plugInInfo4p81ErrCode",
+        "unit": None,
+        "device_class": None,
+        "state_class": None,
+        "icon": "mdi:alert-circle",
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "plug_in_info_4p82_vol": {
+        "name": "4.8V Port 2 Voltage",
+        "key": "plugInInfo4p82Vol",
+        "unit": UnitOfElectricPotential.VOLT,
+        "device_class": SensorDeviceClass.VOLTAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:flash",
+    },
+    "plug_in_info_4p82_amp": {
+        "name": "4.8V Port 2 Current",
+        "key": "plugInInfo4p82Amp",
+        "unit": UnitOfElectricCurrent.AMPERE,
+        "device_class": SensorDeviceClass.CURRENT,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:current-dc",
+    },
+    "plug_in_info_4p82_err_code": {
+        "name": "4.8V Port 2 Error Code",
+        "key": "plugInInfo4p82ErrCode",
+        "unit": None,
+        "device_class": None,
+        "state_class": None,
+        "icon": "mdi:alert-circle",
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    "plug_in_info_5p8_err_code": {
+        "name": "5.8V Port Error Code",
+        "key": "plugInInfo5p8ErrCode",
+        "unit": None,
+        "device_class": None,
+        "state_class": None,
+        "icon": "mdi:alert-circle",
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
+    # ============================================================================
     # POWER - Output
     # ============================================================================
     "pow_out_sum_w": {
@@ -489,6 +551,38 @@ DELTA_PRO_3_SENSOR_DEFINITIONS = {
         "key": "powGet24v",
         "unit": UnitOfPower.WATT,
         "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:current-dc",
+    },
+    "plug_in_info_12v_vol": {
+        "name": "12V DC Output Voltage",
+        "key": "plugInInfo12vVol",
+        "unit": UnitOfElectricPotential.VOLT,
+        "device_class": SensorDeviceClass.VOLTAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:flash",
+    },
+    "plug_in_info_12v_amp": {
+        "name": "12V DC Output Current",
+        "key": "plugInInfo12vAmp",
+        "unit": UnitOfElectricCurrent.AMPERE,
+        "device_class": SensorDeviceClass.CURRENT,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:current-dc",
+    },
+    "plug_in_info_24v_vol": {
+        "name": "24V DC Output Voltage",
+        "key": "plugInInfo24vVol",
+        "unit": UnitOfElectricPotential.VOLT,
+        "device_class": SensorDeviceClass.VOLTAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:flash",
+    },
+    "plug_in_info_24v_amp": {
+        "name": "24V DC Output Current",
+        "key": "plugInInfo24vAmp",
+        "unit": UnitOfElectricCurrent.AMPERE,
+        "device_class": SensorDeviceClass.CURRENT,
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:current-dc",
     },
@@ -4394,6 +4488,12 @@ class EcoFlowSensor(EcoFlowBaseEntity, SensorEntity):
         self._attr_device_class = sensor_config.get("device_class")
         self._attr_state_class = sensor_config.get("state_class")
         self._attr_icon = sensor_config.get("icon")
+
+        # Optional entity category (e.g. diagnostic) — lets definitions hide
+        # low-level data like error codes behind HA's diagnostic section.
+        entity_category = sensor_config.get("entity_category")
+        if entity_category is not None:
+            self._attr_entity_category = entity_category
 
         # For ENUM sensors, set options
         if sensor_config.get("device_class") == SensorDeviceClass.ENUM:
