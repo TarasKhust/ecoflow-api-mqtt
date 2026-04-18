@@ -23,6 +23,12 @@ from .mqtt_client import EcoFlowMQTTClient
 
 _LOGGER = logging.getLogger(__name__)
 
+# Force MQTT reconnect if no message arrives for this many seconds while the
+# connection is reported as alive. EcoFlow's broker sometimes stalls pushes
+# without disconnecting the TCP socket, so paho's reconnect logic never fires.
+MQTT_SILENCE_THRESHOLD = 180
+MQTT_WATCHDOG_INTERVAL = 60
+
 
 class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
     """Hybrid coordinator using both REST API and MQTT.
@@ -84,7 +90,15 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         # Track last REST update time for interval verification
         self._last_rest_update: float | None = None
 
-        
+        # Track last MQTT message time for watchdog-based silent-drop detection.
+        # EcoFlow broker occasionally throttles clients without sending a disconnect,
+        # so paho's own reconnect does not trigger. The watchdog forces a reconnect
+        # when no message arrives for longer than MQTT_SILENCE_THRESHOLD seconds.
+        self._last_mqtt_message_time: float | None = None
+        self._mqtt_watchdog_timer: asyncio.TimerHandle | None = None
+        self._mqtt_watchdog_task: asyncio.Task | None = None
+        self._shutting_down = False
+
         # Timer for periodic REST updates (independent of MQTT)
         self._rest_update_timer: asyncio.TimerHandle | None = None
         
@@ -163,6 +177,8 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                 self._mqtt_connected = True
                 self._use_mqtt = True
                 self._logged_mqtt_connected = True
+                self._last_mqtt_message_time = time.time()
+                self._schedule_mqtt_watchdog()
                 _LOGGER.info(
                     "✅ MQTT connected to broker for device %s (hybrid mode: MQTT + REST every %ds)",
                     self.device_sn[-4:],
@@ -183,10 +199,25 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
 
     async def async_shutdown(self) -> None:
         """Shut down the coordinator."""
+        self._shutting_down = True
+
         # Cancel REST update timer
         if self._rest_update_timer:
             self._rest_update_timer.cancel()
             self._rest_update_timer = None
+
+        # Cancel MQTT watchdog timer and await any in-flight tick so it cannot
+        # race with the MQTT client teardown below.
+        if self._mqtt_watchdog_timer:
+            self._mqtt_watchdog_timer.cancel()
+            self._mqtt_watchdog_timer = None
+        if self._mqtt_watchdog_task and not self._mqtt_watchdog_task.done():
+            self._mqtt_watchdog_task.cancel()
+            try:
+                await self._mqtt_watchdog_task
+            except (asyncio.CancelledError, Exception):
+                pass
+        self._mqtt_watchdog_task = None
 
         # Disconnect MQTT
         if self._mqtt_client:
@@ -271,6 +302,62 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             self._schedule_rest_update()
 
 
+    def _schedule_mqtt_watchdog(self) -> None:
+        """Schedule next MQTT silence check."""
+        if self._shutting_down:
+            return
+        if self._mqtt_watchdog_timer:
+            self._mqtt_watchdog_timer.cancel()
+
+        def _fire() -> None:
+            if self._shutting_down:
+                return
+            if not self.hass.loop.is_running() or self.hass.loop.is_closed():
+                return
+            self._mqtt_watchdog_task = self.hass.async_create_task(
+                self._mqtt_watchdog_tick()
+            )
+
+        self._mqtt_watchdog_timer = self.hass.loop.call_later(
+            MQTT_WATCHDOG_INTERVAL, _fire
+        )
+
+    async def _mqtt_watchdog_tick(self) -> None:
+        """Force MQTT reconnect if the broker has gone silent while connected."""
+        try:
+            if self._shutting_down:
+                return
+            if not self._mqtt_client or not self._mqtt_connected:
+                return
+
+            last = self._last_mqtt_message_time
+            if last is None:
+                return
+
+            silence = time.time() - last
+            if silence < MQTT_SILENCE_THRESHOLD:
+                return
+
+            _LOGGER.warning(
+                "⚠️ MQTT silent for %.0fs on device %s (threshold=%ds) — forcing reconnect",
+                silence,
+                self.device_sn[-4:],
+                MQTT_SILENCE_THRESHOLD,
+            )
+
+            try:
+                await self._mqtt_client.async_disconnect()
+            except Exception as err:
+                _LOGGER.debug("MQTT disconnect during watchdog recovery: %s", err)
+
+            if self._shutting_down:
+                return
+            self._mqtt_connected = False
+            await self._async_setup_mqtt()
+        finally:
+            if not self._shutting_down:
+                self._schedule_mqtt_watchdog()
+
     def _handle_mqtt_status(self, connected: bool) -> None:
         """Handle MQTT connection status change.
 
@@ -282,6 +369,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
 
         if connected and not was_connected:
             self._mqtt_reconnect_count += 1
+            self._last_mqtt_message_time = time.time()
             if self._mqtt_reconnect_count > 1:
                 _LOGGER.info(
                     "🔄 MQTT reconnected for device %s (reconnect #%d)",
@@ -308,6 +396,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             # MQTT client already extracts params from quota topic
             # So payload here is the actual device data
             mqtt_data = payload
+            self._last_mqtt_message_time = time.time()
             
             # Debug logging (only if logger level is DEBUG)
             if _LOGGER.isEnabledFor(logging.DEBUG):
