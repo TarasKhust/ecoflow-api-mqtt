@@ -749,10 +749,11 @@ class EcoFlowBinarySensor(EcoFlowBaseEntity, BinarySensorEntity):
             return None
 
         # Handle derived sensors
-        if self._is_derived and self._derive_from and self._derive_condition:
-            source_value = self.coordinator.data.get(self._derive_from)
-            if source_value is None and "." in self._derive_from:
-                parts = self._derive_from.split(".", 1)
+        if self._is_derived and self._derive_condition:
+            source_key = self._derive_from or self._data_key
+            source_value = self.coordinator.data.get(source_key)
+            if source_value is None and "." in source_key:
+                parts = source_key.split(".", 1)
                 parent = self.coordinator.data.get(parts[0])
                 if isinstance(parent, dict):
                     source_value = parent.get(parts[1])

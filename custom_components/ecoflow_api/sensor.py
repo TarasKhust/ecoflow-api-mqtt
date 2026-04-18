@@ -1679,8 +1679,8 @@ DELTA_2_SENSOR_DEFINITIONS = {
         "device_class": SensorDeviceClass.ENUM,
         "state_class": None,
         "icon": "mdi:battery-sync",
-        "options": ["not_charging", "charging"],
-        "value_map": {0: "not_charging", 1: "charging"},
+        "options": ["not_charging", "charging", "discharging", "unknown"],
+        "value_map": {0: "not_charging", 1: "charging", 2: "discharging", "default": "unknown"},
     },
     "bms_target_soc": {
         "name": "Battery Target SOC",
@@ -2022,8 +2022,8 @@ DELTA_2_SENSOR_DEFINITIONS = {
         "device_class": SensorDeviceClass.ENUM,
         "state_class": None,
         "icon": "mdi:battery-charging",
-        "options": ["not_charging", "charging"],
-        "value_map": {0: "not_charging", 1: "charging"},
+        "options": ["not_charging", "charging", "discharging", "unknown"],
+        "value_map": {0: "not_charging", 1: "charging", 2: "discharging", "default": "unknown"},
     },
     "ems_chg_cmd": {
         "name": "EMS Charge Command",
