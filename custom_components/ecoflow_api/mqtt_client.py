@@ -46,6 +46,8 @@ class EcoFlowMQTTClient:
         on_message_callback: Callable[[dict[str, Any]], None] | None = None,
         on_status_callback: Callable[[bool], None] | None = None,
         certificate_account: str | None = None,
+        on_auth_failure_callback: Callable[[int], None] | None = None,
+        loop: asyncio.AbstractEventLoop | None = None,
     ) -> None:
         """Initialize MQTT client.
 
@@ -56,16 +58,24 @@ class EcoFlowMQTTClient:
             on_message_callback: Callback function for received messages
             on_status_callback: Callback function for connection status changes (True=connected)
             certificate_account: Certificate account/user_id for topics (if None, uses username)
+            on_auth_failure_callback: Called with the MQTT CONNACK code when the broker
+                rejects our credentials (rc=4 bad creds, rc=5 not authorized). The
+                coordinator uses this signal to re-fetch fresh credentials from the
+                EcoFlow API after maintenance-window rotations.
+            loop: Event loop to dispatch ACK futures on (required for ACK tracking).
         """
         self.username = username
         self.password = password
         self.device_sn = device_sn
         self.on_message_callback = on_message_callback
         self.on_status_callback = on_status_callback
+        self.on_auth_failure_callback = on_auth_failure_callback
+        self._loop = loop
 
         self._client: mqtt.Client | None = None
         self._connected = False
         self._reconnect_task: asyncio.Task | None = None
+        self._pending_acks: dict[int, asyncio.Future[dict[str, Any]]] = {}
         
         # MQTT topics (correct format: /open/${certificateAccount}/${sn}/...)
         # certificateAccount is typically the user_id (not email)
@@ -148,7 +158,11 @@ class EcoFlowMQTTClient:
         self._connected = False
         _LOGGER.info("Disconnected from MQTT broker for device %s", self.device_sn)
 
-    async def async_publish_command(self, command: dict[str, Any]) -> bool:
+    async def async_publish_command(
+        self,
+        command: dict[str, Any],
+        ack_timeout: float | None = None,
+    ) -> bool:
         """Publish command to device via MQTT set topic.
 
         Ensures the payload has required MQTT fields (id, version) that
@@ -156,14 +170,21 @@ class EcoFlowMQTTClient:
 
         Args:
             command: Command payload (REST or MQTT format)
+            ack_timeout: If set, wait up to this many seconds for a matching
+                ``set_reply`` message. Returns False when the timeout elapses
+                or the reply indicates failure — letting the caller fall back
+                to the REST API.
 
         Returns:
-            True if published successfully, False otherwise
+            True if the command was published (and acknowledged when
+            ``ack_timeout`` was provided), False otherwise.
         """
         if not self._connected or not self._client:
             _LOGGER.warning("Cannot publish command: MQTT not connected")
             return False
 
+        ack_future: asyncio.Future[dict[str, Any]] | None = None
+        cmd_id: int | None = None
         try:
             # Ensure MQTT-required fields are present
             mqtt_command = dict(command)
@@ -181,6 +202,11 @@ class EcoFlowMQTTClient:
                 if "timestamp" not in mqtt_command:
                     mqtt_command["timestamp"] = int(time.time() * 1000)
 
+            cmd_id = int(mqtt_command["id"])
+            if ack_timeout is not None and self._loop is not None:
+                ack_future = self._loop.create_future()
+                self._pending_acks[cmd_id] = ack_future
+
             payload = json.dumps(mqtt_command)
             _LOGGER.debug(
                 "MQTT publish to %s: %s",
@@ -189,15 +215,47 @@ class EcoFlowMQTTClient:
             )
             result = self._client.publish(self._set_topic, payload, qos=1)
 
-            if result.rc == mqtt.MQTT_ERR_SUCCESS:
-                return True
-            else:
+            if result.rc != mqtt.MQTT_ERR_SUCCESS:
                 _LOGGER.error("Failed to publish command: rc=%s", result.rc)
                 return False
+
+            if ack_future is None:
+                return True
+
+            try:
+                reply = await asyncio.wait_for(ack_future, timeout=ack_timeout)
+            except asyncio.TimeoutError:
+                _LOGGER.warning(
+                    "MQTT command %s for %s timed out after %.1fs (no set_reply); "
+                    "falling back to REST",
+                    cmd_id,
+                    self.device_sn[-4:],
+                    ack_timeout,
+                )
+                return False
+
+            # Stream Ultra X: {"result": 0} success, non-zero = failure.
+            # Delta Pro 3: {"configOk": true}. Delta 2/Plug: {"ack": 0}.
+            if (
+                reply.get("result") == 0
+                or reply.get("configOk") is True
+                or reply.get("ack") == 0
+            ):
+                return True
+            _LOGGER.warning(
+                "MQTT command %s for %s rejected by device: %s",
+                cmd_id,
+                self.device_sn[-4:],
+                reply,
+            )
+            return False
 
         except Exception as err:
             _LOGGER.error("Error publishing command: %s", err)
             return False
+        finally:
+            if cmd_id is not None:
+                self._pending_acks.pop(cmd_id, None)
 
     def _on_connect(
         self,
@@ -256,6 +314,15 @@ class EcoFlowMQTTClient:
                 self._quota_topic,
             )
 
+            # rc=4 (bad credentials) / rc=5 (not authorized) typically mean the broker
+            # rotated credentials on us (e.g. EcoFlow maintenance window). Let the
+            # coordinator decide whether to re-fetch them from the REST API.
+            if rc in (4, 5) and self.on_auth_failure_callback is not None:
+                try:
+                    self.on_auth_failure_callback(rc)
+                except Exception as err:
+                    _LOGGER.error("MQTT auth-failure callback raised: %s", err)
+
     def _on_disconnect(
         self,
         client: mqtt.Client,
@@ -264,6 +331,19 @@ class EcoFlowMQTTClient:
     ) -> None:
         """Handle MQTT disconnection."""
         self._connected = False
+
+        # Fail any in-flight ACK waiters so their callers can fall back to REST
+        # rather than blocking for the full timeout.
+        if self._pending_acks and self._loop is not None:
+            pending = list(self._pending_acks.values())
+            self._pending_acks.clear()
+            for future in pending:
+                if not future.done():
+                    self._loop.call_soon_threadsafe(
+                        lambda f=future: (
+                            not f.done() and f.cancel()
+                        )
+                    )
 
         # MQTT disconnect reason codes
         disconnect_reasons = {
@@ -332,6 +412,18 @@ class EcoFlowMQTTClient:
                     _LOGGER.debug("Command reply OK for %s (id=%s): %s", self.device_sn[-4:], reply_id, reply_data)
                 else:
                     _LOGGER.warning("Command reply for %s (id=%s): %s", self.device_sn[-4:], reply_id, payload)
+
+                # Resolve a pending ACK future (if any) so async_publish_command can
+                # distinguish real success from a silently-dropped publish. This runs
+                # in paho's thread, so hop back onto the main loop.
+                if isinstance(reply_id, int) and self._loop is not None:
+                    future = self._pending_acks.get(reply_id)
+                    if future is not None and not future.done():
+                        self._loop.call_soon_threadsafe(
+                            lambda f=future, d=reply_data: (
+                                not f.done() and f.set_result(d)
+                            )
+                        )
                 
             else:
                 # Unknown topic
