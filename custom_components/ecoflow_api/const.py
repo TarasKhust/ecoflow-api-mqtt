@@ -9,6 +9,8 @@ CONF_ACCESS_KEY: Final = "access_key"
 CONF_SECRET_KEY: Final = "secret_key"
 CONF_DEVICE_SN: Final = "device_sn"
 CONF_DEVICE_TYPE: Final = "device_type"
+CONF_APP_USERNAME: Final = "app_username"
+CONF_APP_PASSWORD: Final = "app_password"
 CONF_UPDATE_INTERVAL: Final = "update_interval"
 CONF_MQTT_ENABLED: Final = "mqtt_enabled"
 CONF_MQTT_USERNAME: Final = "mqtt_username"
@@ -54,6 +56,7 @@ DEVICE_TYPE_DELTA_PRO_ULTRA: Final = "delta_pro_ultra"
 DEVICE_TYPE_DELTA_PRO: Final = "delta_pro"
 DEVICE_TYPE_DELTA_2: Final = "delta_2"
 DEVICE_TYPE_DELTA_2_MAX: Final = "delta_2_max"
+DEVICE_TYPE_RIVER3PLUS: Final = "river3plus"
 DEVICE_TYPE_STREAM_ULTRA_X: Final = "stream_ultra_x"
 DEVICE_TYPE_SMART_PLUG: Final = "smart_plug"
 DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER: Final = "powerstream_micro_inverter"
@@ -64,6 +67,7 @@ DEVICE_TYPES: Final = {
     DEVICE_TYPE_DELTA_PRO: "Delta Pro",
     DEVICE_TYPE_DELTA_2: "Delta 2",
     DEVICE_TYPE_DELTA_2_MAX: "Delta 2 Max",
+    DEVICE_TYPE_RIVER3PLUS: "River 3 Plus",
     DEVICE_TYPE_STREAM_ULTRA_X: "Stream Ultra X",
     DEVICE_TYPE_SMART_PLUG: "Smart Plug S401",
     DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER: "Powerstream Micro Inverter",

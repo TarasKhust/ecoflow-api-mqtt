@@ -36,6 +36,7 @@ from .const import (
     DEVICE_TYPE_DELTA_2_MAX,
     DEVICE_TYPE_DELTA_PRO_ULTRA,
     DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER,
+    DEVICE_TYPE_RIVER3PLUS,
     DEVICE_TYPE_SMART_PLUG,
     DEVICE_TYPE_STREAM_ULTRA_X,
     DOMAIN,
@@ -3121,6 +3122,102 @@ DELTA_2_MAX_SENSOR_DEFINITIONS = DELTA_2_SENSOR_DEFINITIONS
 
 
 # ============================================================================
+# River 3 Plus - MQTT Protobuf Sensor Definitions
+# ============================================================================
+
+RIVER3PLUS_SENSOR_DEFINITIONS = {
+    "battery_level": {
+        "name": "Battery SOC",
+        "key": "battery_level",
+        "unit": PERCENTAGE,
+        "device_class": SensorDeviceClass.BATTERY,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:battery",
+    },
+    "temperature": {
+        "name": "Temperature",
+        "key": "temperature",
+        "unit": UnitOfTemperature.CELSIUS,
+        "device_class": SensorDeviceClass.TEMPERATURE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:thermometer",
+    },
+    "ac_in_power": {
+        "name": "AC Input Power",
+        "key": "ac_in_power",
+        "unit": UnitOfPower.WATT,
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:power-plug",
+    },
+    "pow_in_sum_w": {
+        "name": "Total Input Power",
+        "key": "pow_in_sum_w",
+        "unit": UnitOfPower.WATT,
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:transmission-tower-import",
+    },
+    "pow_out_sum_w": {
+        "name": "Total Output Power",
+        "key": "pow_out_sum_w",
+        "unit": UnitOfPower.WATT,
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:transmission-tower-export",
+    },
+    "temp_pcs_dc": {
+        "name": "PCS DC Temperature",
+        "key": "temp_pcs_dc",
+        "unit": UnitOfTemperature.CELSIUS,
+        "device_class": SensorDeviceClass.TEMPERATURE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:thermometer",
+    },
+    "temp_pcs_ac": {
+        "name": "PCS AC Temperature",
+        "key": "temp_pcs_ac",
+        "unit": UnitOfTemperature.CELSIUS,
+        "device_class": SensorDeviceClass.TEMPERATURE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:thermometer",
+    },
+    "ac_in_voltage": {
+        "name": "AC Input Voltage",
+        "key": "ac_in_voltage",
+        "unit": UnitOfElectricPotential.VOLT,
+        "device_class": SensorDeviceClass.VOLTAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:sine-wave",
+    },
+    "ac_out_voltage": {
+        "name": "AC Output Voltage",
+        "key": "ac_out_voltage",
+        "unit": UnitOfElectricPotential.VOLT,
+        "device_class": SensorDeviceClass.VOLTAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:sine-wave",
+    },
+    "ac_in_current": {
+        "name": "AC Input Current",
+        "key": "ac_in_current",
+        "unit": UnitOfElectricCurrent.AMPERE,
+        "device_class": SensorDeviceClass.CURRENT,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:current-ac",
+    },
+    "ac_out_current": {
+        "name": "AC Output Current",
+        "key": "ac_out_current",
+        "unit": UnitOfElectricCurrent.AMPERE,
+        "device_class": SensorDeviceClass.CURRENT,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:current-ac",
+    },
+}
+
+
+# ============================================================================
 # STREAM ULTRA X - Sensor Definitions
 # Based on EcoFlow Developer API documentation for STREAM system (BKW)
 # ============================================================================
@@ -4110,6 +4207,8 @@ DEVICE_SENSOR_MAP = {
     DEVICE_TYPE_DELTA_2: DELTA_2_SENSOR_DEFINITIONS,
     DEVICE_TYPE_DELTA_2_MAX: DELTA_2_MAX_SENSOR_DEFINITIONS,
     "delta_2_max": DELTA_2_MAX_SENSOR_DEFINITIONS,
+    DEVICE_TYPE_RIVER3PLUS: RIVER3PLUS_SENSOR_DEFINITIONS,
+    "River 3 Plus": RIVER3PLUS_SENSOR_DEFINITIONS,
     DEVICE_TYPE_STREAM_ULTRA_X: STREAM_ULTRA_X_SENSOR_DEFINITIONS,
     "Stream Ultra X": STREAM_ULTRA_X_SENSOR_DEFINITIONS,
     DEVICE_TYPE_SMART_PLUG: SMART_PLUG_SENSOR_DEFINITIONS,

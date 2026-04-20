@@ -20,6 +20,8 @@ from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from .api import EcoFlowApiClient
 from .const import (
     CONF_ACCESS_KEY,
+    CONF_APP_PASSWORD,
+    CONF_APP_USERNAME,
     CONF_DEVICE_SN,
     CONF_DEVICE_TYPE,
     CONF_MQTT_ENABLED,
@@ -29,12 +31,14 @@ from .const import (
     CONF_SECRET_KEY,
     CONF_UPDATE_INTERVAL,
     DEFAULT_UPDATE_INTERVAL,
+    DEVICE_TYPE_RIVER3PLUS,
     DOMAIN,
     REGION_EU,
 )
 from .coordinator import EcoFlowDataCoordinator
 from .hybrid_coordinator import EcoFlowHybridCoordinator
 from .migrations import async_migrate_entry
+from .river3plus_coordinator import River3PlusCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -79,6 +83,39 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         or entry.data.get(CONF_UPDATE_INTERVAL)
         or DEFAULT_UPDATE_INTERVAL
     )
+
+    device_type = entry.data.get(CONF_DEVICE_TYPE, "unknown")
+
+    if device_type == DEVICE_TYPE_RIVER3PLUS:
+        _LOGGER.info(
+            "Creating River 3 Plus MQTT-only coordinator for device %s",
+            entry.data[CONF_DEVICE_SN],
+        )
+        coordinator = River3PlusCoordinator(
+            hass=hass,
+            client=client,
+            device_sn=entry.data[CONF_DEVICE_SN],
+            update_interval=update_interval,
+            config_entry=entry,
+            app_username=entry.options.get(
+                CONF_APP_USERNAME, entry.data.get(CONF_APP_USERNAME)
+            ),
+            app_password=entry.options.get(
+                CONF_APP_PASSWORD, entry.data.get(CONF_APP_PASSWORD)
+            ),
+        )
+        if not await coordinator.async_setup():
+            return False
+
+        await coordinator.async_config_entry_first_refresh()
+        hass.data[DOMAIN][entry.entry_id] = coordinator
+        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+        _LOGGER.info(
+            "🔋 EcoFlow API integration ready for River 3 Plus device %s",
+            entry.data[CONF_DEVICE_SN],
+        )
+        return True
 
     # Get MQTT settings from options
     mqtt_enabled = entry.options.get(CONF_MQTT_ENABLED, False)
@@ -126,7 +163,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             hass=hass,
             client=client,
             device_sn=entry.data[CONF_DEVICE_SN],
-            device_type=entry.data.get(CONF_DEVICE_TYPE, "unknown"),
+            device_type=device_type,
             update_interval=update_interval,
             config_entry=entry,
             mqtt_username=mqtt_username,
@@ -144,7 +181,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             hass=hass,
             client=client,
             device_sn=entry.data[CONF_DEVICE_SN],
-            device_type=entry.data.get(CONF_DEVICE_TYPE, "unknown"),
+            device_type=device_type,
             update_interval=update_interval,
             config_entry=entry,
         )
@@ -187,7 +224,9 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """
     # Shutdown MQTT if hybrid coordinator
     coordinator = hass.data[DOMAIN].get(entry.entry_id)
-    if coordinator and isinstance(coordinator, EcoFlowHybridCoordinator):
+    if coordinator and isinstance(
+        coordinator, (EcoFlowHybridCoordinator, River3PlusCoordinator)
+    ):
         await coordinator.async_shutdown()
         _LOGGER.info("Shut down MQTT for device %s", entry.data[CONF_DEVICE_SN])
 
