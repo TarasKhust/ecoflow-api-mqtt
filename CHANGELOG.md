@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.5] - 2026-04-20
+
+### 🐛 Bug Fixes
+
+- **Fixed AC2 switch validation error on Stream Ultra X (follow-up to issue #45)** —
+  EcoFlow's BKW docs specify that in multi-device BKW systems AC1 and AC2
+  relays can live on different physical devices, so sending
+  `cfgRelay{2,3}Onoff` to a device that does not own the corresponding relay
+  is rejected by the REST API with validation error 8524. The integration
+  now skips creating a Stream Ultra X switch entity if the device's
+  `/quota/all` response does not include the corresponding `relay2Onoff` /
+  `relay3Onoff` / `feedGridMode` key, so no-op switches never reach the UI.
+  A full multi-device BKW topology (main SN + relay routing) will follow as
+  a separate enhancement.
+
+---
+
 ## [1.10.4] - 2026-04-20
 
 ### 🐛 Bug Fixes

@@ -476,6 +476,21 @@ async def async_setup_entry(
                 )
             )
         elif is_stream:
+            # In multi-device BKW systems AC1 and AC2 relays can live on
+            # different physical devices (see issue #45 and EcoFlow BKW docs).
+            # If this device's quota does not report the relay's state key,
+            # sending cfgRelay{2,3}Onoff here would be rejected by the REST
+            # API with validation error 8524 — so we skip creating the entity.
+            state_key = switch_def.get("state_key")
+            quota = coordinator.data or {}
+            if state_key and state_key not in quota:
+                _LOGGER.debug(
+                    "Skipping Stream switch %s for %s: %s not in quota",
+                    switch_key,
+                    coordinator.device_sn[-4:],
+                    state_key,
+                )
+                continue
             entities.append(
                 EcoFlowStreamSwitch(
                     coordinator=coordinator,
