@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.4] - 2026-04-20
+
+### 🐛 Bug Fixes
+
+- **Fixed Stream Ultra X "Unknown" entities after EcoFlow maintenance (issue #45)** —
+  MQTT credentials are now automatically re-fetched from the EcoFlow REST API
+  when the broker rejects the stored credentials (CONNACK rc=4 / rc=5), with a
+  5-minute cooldown to avoid hammering the API. Previously the integration
+  stayed stuck on stale credentials after EcoFlow rotated them during their
+  maintenance window.
+- **Fixed AC1 Switch silent failure on Stream Ultra X** — switch commands with
+  `needAck` now wait up to 5s for a matching `set_reply` MQTT message. If no
+  ACK arrives (broker silently dropped the publish), the hybrid coordinator
+  falls back to the REST API instead of reporting success while the device
+  ignored the command.
+- **Faster broker-stall recovery for Stream series** — MQTT silence threshold
+  lowered from 180s to 90s specifically for Stream Ultra X, matching the
+  broker's observed stall behaviour during EcoFlow maintenance windows.
+
+---
+
 ## [1.8.4] - 2026-02-08
 
 ### 🐛 Bug Fixes

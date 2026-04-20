@@ -17,6 +17,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from .api import EcoFlowApiClient, EcoFlowApiError
+from .const import DEVICE_TYPE_STREAM_ULTRA_X
 from .coordinator import EcoFlowDataCoordinator
 from .data_holder import BoundFifoList
 from .mqtt_client import EcoFlowMQTTClient
@@ -27,7 +28,17 @@ _LOGGER = logging.getLogger(__name__)
 # connection is reported as alive. EcoFlow's broker sometimes stalls pushes
 # without disconnecting the TCP socket, so paho's reconnect logic never fires.
 MQTT_SILENCE_THRESHOLD = 180
+# Stream Ultra X devices have shown silent broker stalls during EcoFlow
+# maintenance windows (see issue #45 — 2026-04-20). Catch them faster.
+MQTT_SILENCE_THRESHOLD_STREAM = 90
 MQTT_WATCHDOG_INTERVAL = 60
+
+# Rate limit on credential re-fetches triggered by broker auth failures,
+# so a persistently-wrong credential does not hammer the REST API.
+MQTT_CREDENTIAL_REFRESH_COOLDOWN = 300
+# Per-command ACK timeout for MQTT set_reply. If the device does not confirm
+# within this window the hybrid coordinator falls back to the REST API.
+MQTT_COMMAND_ACK_TIMEOUT = 5.0
 
 
 class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
@@ -86,6 +97,14 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         self._mqtt_connected = False
         self._use_mqtt = False
         self._mqtt_reconnect_count = 0
+        self._last_credential_refresh: float = 0.0
+        self._credential_refresh_task: asyncio.Task | None = None
+        # Stream series is more sensitive to broker stalls after EcoFlow maintenance.
+        self._mqtt_silence_threshold = (
+            MQTT_SILENCE_THRESHOLD_STREAM
+            if device_type == DEVICE_TYPE_STREAM_ULTRA_X
+            else MQTT_SILENCE_THRESHOLD
+        )
 
         # Track last REST update time for interval verification
         self._last_rest_update: float | None = None
@@ -168,6 +187,8 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                 on_message_callback=self._handle_mqtt_message,
                 on_status_callback=self._handle_mqtt_status,
                 certificate_account=self.certificate_account,
+                on_auth_failure_callback=self._handle_mqtt_auth_failure,
+                loop=self.hass.loop,
             )
             
             # Try to connect
@@ -219,6 +240,15 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                 pass
         self._mqtt_watchdog_task = None
 
+        # Cancel any in-flight credential refresh
+        if self._credential_refresh_task and not self._credential_refresh_task.done():
+            self._credential_refresh_task.cancel()
+            try:
+                await self._credential_refresh_task
+            except (asyncio.CancelledError, Exception):
+                pass
+        self._credential_refresh_task = None
+
         # Disconnect MQTT
         if self._mqtt_client:
             await self._mqtt_client.async_disconnect()
@@ -243,10 +273,18 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             command.get("params", {}),
         )
 
-        # Try MQTT first (faster, real-time)
+        # Try MQTT first (faster, real-time). Commands with ``needAck`` expect a
+        # set_reply — wait for it so we can distinguish real success from a
+        # broker that ACKed the publish but never delivered it to the device
+        # (observed on Stream Ultra X during EcoFlow maintenance; see issue #45).
         if self._mqtt_connected and self._mqtt_client:
+            ack_timeout = (
+                MQTT_COMMAND_ACK_TIMEOUT if command.get("needAck") else None
+            )
             try:
-                success = await self._mqtt_client.async_publish_command(command)
+                success = await self._mqtt_client.async_publish_command(
+                    command, ack_timeout=ack_timeout
+                )
                 if success:
                     _LOGGER.debug("Command sent via MQTT for %s", self.device_sn[-4:])
                     return True
@@ -335,14 +373,14 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                 return
 
             silence = time.time() - last
-            if silence < MQTT_SILENCE_THRESHOLD:
+            if silence < self._mqtt_silence_threshold:
                 return
 
             _LOGGER.warning(
                 "⚠️ MQTT silent for %.0fs on device %s (threshold=%ds) — forcing reconnect",
                 silence,
                 self.device_sn[-4:],
-                MQTT_SILENCE_THRESHOLD,
+                self._mqtt_silence_threshold,
             )
 
             try:
@@ -381,6 +419,95 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                 "⚠️ MQTT disconnected for device %s, commands will use REST API fallback",
                 self.device_sn[-4:],
             )
+
+    def _handle_mqtt_auth_failure(self, rc: int) -> None:
+        """Broker rejected our MQTT credentials — schedule a refresh.
+
+        Runs in paho's thread, so we bounce the actual work onto the main loop.
+        Rate-limited to avoid hammering the EcoFlow REST API when credentials
+        are genuinely invalid (e.g. API keys revoked).
+        """
+        if self._shutting_down:
+            return
+        self.hass.loop.call_soon_threadsafe(self._schedule_credential_refresh, rc)
+
+    def _schedule_credential_refresh(self, rc: int) -> None:
+        """Kick off credential re-fetch if not already running and not rate-limited."""
+        if self._shutting_down:
+            return
+        if self._credential_refresh_task and not self._credential_refresh_task.done():
+            return
+
+        now = time.time()
+        if now - self._last_credential_refresh < MQTT_CREDENTIAL_REFRESH_COOLDOWN:
+            _LOGGER.debug(
+                "Skipping MQTT credential refresh for %s (cooldown; last=%.0fs ago, rc=%d)",
+                self.device_sn[-4:],
+                now - self._last_credential_refresh,
+                rc,
+            )
+            return
+
+        _LOGGER.warning(
+            "🔑 MQTT broker rejected credentials (rc=%d) for %s — refreshing from REST API",
+            rc,
+            self.device_sn[-4:],
+        )
+        self._last_credential_refresh = now
+        self._credential_refresh_task = self.hass.async_create_task(
+            self._async_refresh_mqtt_credentials()
+        )
+
+    async def _async_refresh_mqtt_credentials(self) -> None:
+        """Fetch fresh MQTT credentials and reconnect the client.
+
+        EcoFlow rotates broker credentials during maintenance windows; without
+        this, the integration is stuck with stale credentials until the user
+        manually reloads it (see issue #45).
+        """
+        try:
+            creds = await self.client.get_mqtt_credentials()
+        except Exception as err:
+            _LOGGER.error(
+                "Failed to refresh MQTT credentials for %s: %s",
+                self.device_sn[-4:],
+                err,
+            )
+            return
+
+        new_account = creds.get("certificateAccount")
+        new_password = creds.get("certificatePassword")
+        if not new_account or not new_password:
+            _LOGGER.error(
+                "MQTT credential refresh for %s returned empty values",
+                self.device_sn[-4:],
+            )
+            return
+
+        unchanged = (
+            new_account == self.mqtt_username
+            and new_password == self.mqtt_password
+        )
+        self.mqtt_username = new_account
+        self.mqtt_password = new_password
+        self.certificate_account = new_account
+
+        if self._mqtt_client:
+            try:
+                await self._mqtt_client.async_disconnect()
+            except Exception as err:
+                _LOGGER.debug("Error disconnecting stale MQTT client: %s", err)
+            self._mqtt_client = None
+
+        self._mqtt_connected = False
+        if unchanged:
+            _LOGGER.warning(
+                "MQTT credential refresh for %s returned the same values — "
+                "broker rejection is not a rotation. Will retry on next cooldown.",
+                self.device_sn[-4:],
+            )
+
+        await self._async_setup_mqtt()
 
     def _handle_mqtt_message(self, payload: dict[str, Any]) -> None:
         """Handle MQTT message from device.
