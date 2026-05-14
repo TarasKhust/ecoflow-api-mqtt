@@ -21,6 +21,7 @@ from .const import (
     DEVICE_TYPE_DELTA_PRO,
     DEVICE_TYPE_DELTA_PRO_3,
     DEVICE_TYPE_DELTA_PRO_ULTRA,
+    DEVICE_TYPE_RIVER3PLUS,
     DEVICE_TYPE_SMART_PLUG,
     DEVICE_TYPE_STREAM_ULTRA_X,
     DOMAIN,
@@ -563,6 +564,9 @@ DEVICE_BINARY_SENSOR_MAP = {
     "Delta 2 Max": DELTA_2_MAX_BINARY_SENSOR_DEFINITIONS,
     "stream_ultra_x": STREAM_ULTRA_X_BINARY_SENSOR_DEFINITIONS,
     DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER: POWERSTREAM_MICRO_INVERTER_BINARY_SENSOR_DEFINITIONS,
+    DEVICE_TYPE_RIVER3PLUS: {},
+    "river3plus": {},
+    "River 3 Plus": {},
     # Smart Plug doesn't have binary sensors (no battery, charging states, etc.)
     DEVICE_TYPE_SMART_PLUG: {},
     "smart_plug": {},
