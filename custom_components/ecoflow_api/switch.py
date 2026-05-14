@@ -279,6 +279,8 @@ STREAM_ULTRA_X_SWITCH_DEFINITIONS = {
         "param_key": "cfgRelay2Onoff",
         "icon_on": "mdi:power-socket",
         "icon_off": "mdi:power-socket-off",
+        "value_on": True,
+        "value_off": False,
         "device_class": SwitchDeviceClass.OUTLET,
     },
     "ac2_output": {
@@ -287,6 +289,8 @@ STREAM_ULTRA_X_SWITCH_DEFINITIONS = {
         "param_key": "cfgRelay3Onoff",
         "icon_on": "mdi:power-socket",
         "icon_off": "mdi:power-socket-off",
+        "value_on": True,
+        "value_off": False,
         "device_class": SwitchDeviceClass.OUTLET,
     },
     "feed_in_control": {
