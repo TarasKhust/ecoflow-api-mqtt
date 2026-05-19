@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.6-alpha.1] - 2026-05-19
+
+### Experimental
+
+- Added a disabled-by-default Stream/BKW `Experimental Base Load Power` number
+  entity for issue #49. It uses `powGetSysLoad` as the displayed state when
+  available and sends the unconfirmed candidate parameter `cfgPowGetSysLoad` so
+  community testers can validate whether EcoFlow accepts this payload for Base
+  Load Power.
+- Added extra DEBUG logging for Stream/BKW base-load candidate fields in MQTT
+  updates (`powGetSysLoad`, `powGetSysLoadFromPv`, grid power fields, and
+  `feedGridMode`) to help compare EcoFlow app changes with HA logs.
+
+### Notes
+
+- This is a prerelease alpha for tester feedback only. EcoFlow's public
+  STREAM/BKW docs currently document `cfgFeedGridMode` for feed-in on/off, but
+  do not document the 0-800 W Base Load Power write command.
+
+---
+
 ## [1.10.5] - 2026-04-20
 
 ### 🐛 Bug Fixes

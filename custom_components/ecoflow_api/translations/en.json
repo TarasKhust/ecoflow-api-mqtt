@@ -446,6 +446,9 @@
       },
       "ble_standby_time": {
         "name": "Bluetooth Standby Time"
+      },
+      "experimental_base_load_power": {
+        "name": "Experimental Base Load Power"
       }
     },
     "select": {

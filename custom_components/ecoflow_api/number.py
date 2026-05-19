@@ -16,6 +16,7 @@ from homeassistant.const import (
     UnitOfTime,
 )
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
@@ -490,6 +491,31 @@ DELTA_2_MAX_NUMBER_DEFINITIONS = {
 # ============================================================================
 
 STREAM_ULTRA_X_NUMBER_DEFINITIONS = {
+    # Experimental alpha entity for issue #49.
+    #
+    # EcoFlow's public STREAM/BKW docs expose powGetSysLoad as a read/state
+    # field but do not document the matching write parameter for Base Load
+    # Power / Energy delivery strategy periods. This candidate follows the
+    # documented STREAM naming pattern used by other setters:
+    #   backupReverseSoc -> cfgBackupReverseSoc
+    #   feedGridMode -> cfgFeedGridMode
+    #
+    # It is disabled by default so community testers can opt in and validate or
+    # reject the payload without affecting normal installs.
+    "experimental_base_load_power": {
+        "name": "Experimental Base Load Power",
+        "state_key": "powGetSysLoad",
+        "param_key": "cfgPowGetSysLoad",
+        "min": 0,
+        "max": 800,
+        "step": 10,
+        "unit": UnitOfPower.WATT,
+        "icon": "mdi:transmission-tower-export",
+        "mode": NumberMode.SLIDER,
+        "entity_category": EntityCategory.CONFIG,
+        "entity_registry_enabled_default": False,
+        "experimental": True,
+    },
     "backup_reserve_level": {
         "name": "Backup Reserve Level",
         "state_key": "backupReverseSoc",
@@ -1138,6 +1164,10 @@ class EcoFlowStreamNumber(EcoFlowBaseEntity, NumberEntity):
         self._attr_native_unit_of_measurement = number_def.get("unit")
         self._attr_icon = number_def.get("icon")
         self._attr_mode = number_def.get("mode", NumberMode.AUTO)
+        self._attr_entity_category = number_def.get("entity_category")
+        self._attr_entity_registry_enabled_default = number_def.get(
+            "entity_registry_enabled_default", True
+        )
 
     @property
     def native_value(self) -> float | None:
@@ -1161,6 +1191,9 @@ class EcoFlowStreamNumber(EcoFlowBaseEntity, NumberEntity):
         device_sn = self.coordinator.device_sn
         param_key = self._number_def["param_key"]
 
+        # Clamp value to min/max limits
+        value = max(self._number_def["min"], min(self._number_def["max"], value))
+
         # Convert to int for API
         int_value = int(value)
 
@@ -1175,6 +1208,17 @@ class EcoFlowStreamNumber(EcoFlowBaseEntity, NumberEntity):
             "needAck": True,
             "params": {param_key: int_value},
         }
+
+        if self._number_def.get("experimental"):
+            _LOGGER.warning(
+                "Sending experimental Stream number command for %s: %s=%s. "
+                "This alpha payload is not confirmed by EcoFlow documentation; "
+                "please report success/failure and the device log in issue #49.",
+                self._number_key,
+                param_key,
+                int_value,
+            )
+            _LOGGER.debug("Experimental Stream command payload: %s", payload)
 
         try:
             await self.coordinator.async_send_command(payload)
