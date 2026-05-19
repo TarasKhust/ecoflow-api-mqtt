@@ -37,6 +37,7 @@ from .const import (
     DEVICE_TYPE_DELTA_PRO_ULTRA,
     DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER,
     DEVICE_TYPE_SMART_PLUG,
+    DEVICE_TYPE_STREAM_MICRO_INVERTER,
     DEVICE_TYPE_STREAM_ULTRA_X,
     DOMAIN,
 )
@@ -3456,6 +3457,110 @@ POWERSTREAM_MICRO_INVERTER_SENSOR_DEFINITIONS = {
 
 
 # ============================================================================
+# Stream Microinverter Sensor Definitions
+# Based on telemetry reported in issue #53. Values appear as top-level quota keys.
+# ============================================================================
+STREAM_MICRO_INVERTER_SENSOR_DEFINITIONS = {
+    "solar_power_pv1": {
+        "name": "PV1 Solar Power",
+        "key": "powGetPv",
+        "unit": UnitOfPower.WATT,
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:solar-power",
+    },
+    "solar_power_pv2": {
+        "name": "PV2 Solar Power",
+        "key": "powGetPv2",
+        "unit": UnitOfPower.WATT,
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:solar-power",
+    },
+    "solar_power_pv3": {
+        "name": "PV3 Solar Power",
+        "key": "powGetPv3",
+        "unit": UnitOfPower.WATT,
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:solar-power",
+    },
+    "solar_power_pv4": {
+        "name": "PV4 Solar Power",
+        "key": "powGetPv4",
+        "unit": UnitOfPower.WATT,
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:solar-power",
+    },
+    "grid_connection_power": {
+        "name": "Grid Connection Power",
+        "key": "gridConnectionPower",
+        "unit": UnitOfPower.WATT,
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:transmission-tower-export",
+    },
+    "grid_connection_voltage": {
+        "name": "Grid Connection Voltage",
+        "key": "gridConnectionVol",
+        "unit": UnitOfElectricPotential.VOLT,
+        "device_class": SensorDeviceClass.VOLTAGE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:sine-wave",
+    },
+    "grid_connection_frequency": {
+        "name": "Grid Connection Frequency",
+        "key": "gridConnectionFreq",
+        "unit": UnitOfFrequency.HERTZ,
+        "device_class": SensorDeviceClass.FREQUENCY,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:sine-wave",
+    },
+    "grid_connection_status": {
+        "name": "Grid Connection Status",
+        "key": "gridConnectionSta",
+        "unit": None,
+        "device_class": None,
+        "state_class": None,
+        "icon": "mdi:transmission-tower",
+    },
+    "feed_in_power_limit": {
+        "name": "Feed-in Power Limit",
+        "key": "feedGridModePowLimit",
+        "unit": UnitOfPower.WATT,
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:transmission-tower-export",
+    },
+    "feed_in_power_max": {
+        "name": "Feed-in Power Max",
+        "key": "feedGridModePowMax",
+        "unit": UnitOfPower.WATT,
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:transmission-tower-export",
+    },
+    "inverter_temperature": {
+        "name": "Inverter Temperature",
+        "key": "invNtcTemp3",
+        "unit": UnitOfTemperature.CELSIUS,
+        "device_class": SensorDeviceClass.TEMPERATURE,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:thermometer",
+    },
+    "wifi_signal_strength": {
+        "name": "WiFi Signal Strength",
+        "key": "moduleWifiRssi",
+        "unit": "dBm",
+        "device_class": SensorDeviceClass.SIGNAL_STRENGTH,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:wifi",
+    },
+}
+
+
+# ============================================================================
 # Smart Plug S401 Sensor Definitions
 # Based on EcoFlow API documentation for Smart Plug
 # Field prefix: 2_1. (heartbeat data)
@@ -4118,13 +4223,16 @@ DEVICE_SENSOR_MAP = {
     DEVICE_TYPE_DELTA_2_MAX: DELTA_2_MAX_SENSOR_DEFINITIONS,
     "delta_2_max": DELTA_2_MAX_SENSOR_DEFINITIONS,
     DEVICE_TYPE_STREAM_ULTRA_X: STREAM_ULTRA_X_SENSOR_DEFINITIONS,
+    DEVICE_TYPE_STREAM_MICRO_INVERTER: STREAM_MICRO_INVERTER_SENSOR_DEFINITIONS,
     "Stream Ultra X": STREAM_ULTRA_X_SENSOR_DEFINITIONS,
+    "Stream Microinverter": STREAM_MICRO_INVERTER_SENSOR_DEFINITIONS,
     DEVICE_TYPE_SMART_PLUG: SMART_PLUG_SENSOR_DEFINITIONS,
     DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER: POWERSTREAM_MICRO_INVERTER_SENSOR_DEFINITIONS,
     "Smart Plug S401": SMART_PLUG_SENSOR_DEFINITIONS,
     "smart_plug": SMART_PLUG_SENSOR_DEFINITIONS,
     "Powerstream Micro Inverter": POWERSTREAM_MICRO_INVERTER_SENSOR_DEFINITIONS,
     "powerstream_micro_inverter": POWERSTREAM_MICRO_INVERTER_SENSOR_DEFINITIONS,
+    "stream_micro_inverter": STREAM_MICRO_INVERTER_SENSOR_DEFINITIONS,
 }
 
 

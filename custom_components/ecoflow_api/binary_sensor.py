@@ -22,6 +22,7 @@ from .const import (
     DEVICE_TYPE_DELTA_PRO_3,
     DEVICE_TYPE_DELTA_PRO_ULTRA,
     DEVICE_TYPE_SMART_PLUG,
+    DEVICE_TYPE_STREAM_MICRO_INVERTER,
     DEVICE_TYPE_STREAM_ULTRA_X,
     DOMAIN,
 )
@@ -29,6 +30,14 @@ from .coordinator import EcoFlowDataCoordinator
 from .entity import EcoFlowBaseEntity
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def _as_float(value: Any) -> float | None:
+    """Convert telemetry values to float for derived binary sensors."""
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
 
 
 # Binary sensor definitions for Delta Pro 3
@@ -469,6 +478,40 @@ POWERSTREAM_MICRO_INVERTER_BINARY_SENSOR_DEFINITIONS = {
     },
 }
 
+STREAM_MICRO_INVERTER_BINARY_SENSOR_DEFINITIONS = {
+    "solar_generating": {
+        "name": "Solar Generating",
+        "key": "powGetPv",
+        "device_class": BinarySensorDeviceClass.POWER,
+        "icon_on": "mdi:solar-power",
+        "icon_off": "mdi:solar-power-variant-outline",
+        "derived": True,
+        "derive_condition": lambda v: (value := _as_float(v)) is not None
+        and value > 10,
+    },
+    "grid_feeding": {
+        "name": "Grid Feeding",
+        "key": "gridConnectionPower",
+        "device_class": BinarySensorDeviceClass.POWER,
+        "icon_on": "mdi:transmission-tower-export",
+        "icon_off": "mdi:transmission-tower",
+        "derived": True,
+        "derive_condition": lambda v: (value := _as_float(v)) is not None
+        and value > 10,
+    },
+    "grid_connected": {
+        "name": "Grid Connected",
+        "key": "gridConnectionSta",
+        "device_class": BinarySensorDeviceClass.CONNECTIVITY,
+        "icon_on": "mdi:transmission-tower",
+        "icon_off": "mdi:transmission-tower-off",
+        "derived": True,
+        "derive_condition": lambda v: v is not None
+        and "DISCONNECT" not in str(v).upper()
+        and str(v).upper() not in ("0", "FALSE", "OFF", "UNKNOWN"),
+    },
+}
+
 
 # Delta Pro Ultra binary sensor definitions
 # Uses hs_yj751_* state keys from API
@@ -554,6 +597,7 @@ DEVICE_BINARY_SENSOR_MAP = {
     DEVICE_TYPE_DELTA_2: DELTA_2_BINARY_SENSOR_DEFINITIONS,
     DEVICE_TYPE_DELTA_2_MAX: DELTA_2_MAX_BINARY_SENSOR_DEFINITIONS,
     DEVICE_TYPE_STREAM_ULTRA_X: STREAM_ULTRA_X_BINARY_SENSOR_DEFINITIONS,
+    DEVICE_TYPE_STREAM_MICRO_INVERTER: STREAM_MICRO_INVERTER_BINARY_SENSOR_DEFINITIONS,
     "delta_pro_3": DELTA_PRO_3_BINARY_SENSOR_DEFINITIONS,
     "delta_pro_ultra": DELTA_PRO_ULTRA_BINARY_SENSOR_DEFINITIONS,
     "Delta Pro Ultra": DELTA_PRO_ULTRA_BINARY_SENSOR_DEFINITIONS,
@@ -562,6 +606,8 @@ DEVICE_BINARY_SENSOR_MAP = {
     "delta_2_max": DELTA_2_MAX_BINARY_SENSOR_DEFINITIONS,
     "Delta 2 Max": DELTA_2_MAX_BINARY_SENSOR_DEFINITIONS,
     "stream_ultra_x": STREAM_ULTRA_X_BINARY_SENSOR_DEFINITIONS,
+    "stream_micro_inverter": STREAM_MICRO_INVERTER_BINARY_SENSOR_DEFINITIONS,
+    "Stream Microinverter": STREAM_MICRO_INVERTER_BINARY_SENSOR_DEFINITIONS,
     DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER: POWERSTREAM_MICRO_INVERTER_BINARY_SENSOR_DEFINITIONS,
     # Smart Plug doesn't have binary sensors (no battery, charging states, etc.)
     DEVICE_TYPE_SMART_PLUG: {},

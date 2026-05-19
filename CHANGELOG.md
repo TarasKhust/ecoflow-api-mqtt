@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.8-alpha.1] - 2026-05-19
+
+### Added
+
+- **Experimental Stream Microinverter support (issue #53)** - added a dedicated
+  `Stream Microinverter` device type with initial telemetry mappings for PV
+  string power (`powGetPv` / `powGetPv2` / `powGetPv3` / `powGetPv4`), grid
+  connection power/voltage/frequency/status, feed-in power limit fields,
+  inverter temperature, and Wi-Fi RSSI.
+- **Stream Microinverter binary diagnostics** - added derived solar generating,
+  grid feeding, and grid connected binary sensors for first-round validation.
+
+### Notes
+
+- Control entities are intentionally disabled for this first alpha until the
+  exact Stream Microinverter command payloads are confirmed from user debug
+  data.
+
+---
+
 ## [1.10.7] - 2026-05-19
 
 ### Bug Fixes
