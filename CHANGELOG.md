@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.7] - 2026-05-19
+
+### Bug Fixes
+
+- **Fixed Delta Pro Ultra System Mode enum state after toggling AC Output
+  (issue #51)** - `sysWordMode` values now map numeric API states
+  (`0` / `1` / `2` / `3`) to valid Home Assistant enum options instead of
+  exposing raw `0`, which Home Assistant rejected as an invalid enum state.
+- **Improved enum value mapping for numeric strings** - sensor `value_map`
+  definitions now also handle API values such as `"0"` in addition to numeric
+  `0`.
+
+---
+
 ## [1.10.6] - 2026-05-14
 
 ### 🐛 Bug Fixes
