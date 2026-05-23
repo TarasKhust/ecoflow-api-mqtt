@@ -5,6 +5,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
+from datetime import datetime
 from typing import Any
 
 from homeassistant.components.number import NumberEntity, NumberMode
@@ -493,19 +494,17 @@ DELTA_2_MAX_NUMBER_DEFINITIONS = {
 STREAM_ULTRA_X_NUMBER_DEFINITIONS = {
     # Experimental alpha entity for issue #49.
     #
-    # EcoFlow's public STREAM/BKW docs expose powGetSysLoad as a read/state
-    # field but do not document the matching write parameter for Base Load
-    # Power / Energy delivery strategy periods. This candidate follows the
-    # documented STREAM naming pattern used by other setters:
-    #   backupReverseSoc -> cfgBackupReverseSoc
-    #   feedGridMode -> cfgFeedGridMode
+    # Tester feedback in issue #49 showed powGetSysLoad is live output, not the
+    # configured base-load setpoint. The EcoFlow app publishes the configured
+    # schedule as dayResidentLoadList.load[].loadPower. This alpha preserves the
+    # existing schedule windows and only changes their loadPower values.
     #
     # It is disabled by default so community testers can opt in and validate or
     # reject the payload without affecting normal installs.
     "experimental_base_load_power": {
         "name": "Experimental Base Load Power",
-        "state_key": "powGetSysLoad",
-        "param_key": "cfgPowGetSysLoad",
+        "state_key": "dayResidentLoadList",
+        "param_key": "cfgDayResidentLoadList",
         "min": 0,
         "max": 800,
         "step": 10,
@@ -515,6 +514,7 @@ STREAM_ULTRA_X_NUMBER_DEFINITIONS = {
         "entity_category": EntityCategory.CONFIG,
         "entity_registry_enabled_default": False,
         "experimental": True,
+        "resident_load_schedule": True,
     },
     "backup_reserve_level": {
         "name": "Backup Reserve Level",
@@ -550,6 +550,87 @@ STREAM_ULTRA_X_NUMBER_DEFINITIONS = {
         "mode": NumberMode.SLIDER,
     },
 }
+
+
+def _resident_load_entries(schedule: Any) -> list[dict[str, Any]]:
+    """Return load entries from a Stream resident load schedule."""
+    if not isinstance(schedule, dict):
+        return []
+
+    load_entries = schedule.get("load")
+    if not isinstance(load_entries, list):
+        return []
+
+    return [entry for entry in load_entries if isinstance(entry, dict)]
+
+
+def _minute_in_schedule(start_min: int, end_min: int, current_min: int) -> bool:
+    """Return whether current_min falls inside a schedule window."""
+    if start_min == end_min:
+        return True
+    if start_min < end_min:
+        return start_min <= current_min < end_min
+    return current_min >= start_min or current_min < end_min
+
+
+def _extract_resident_load_power(
+    schedule: Any, current_min: int | None = None
+) -> float | None:
+    """Extract the configured Stream base-load power from a schedule."""
+    load_entries = _resident_load_entries(schedule)
+    load_powers = [
+        entry.get("loadPower")
+        for entry in load_entries
+        if entry.get("loadPower") is not None
+    ]
+
+    if not load_powers:
+        return None
+
+    numeric_powers: list[float] = []
+    for power in load_powers:
+        try:
+            numeric_powers.append(float(power))
+        except (TypeError, ValueError):
+            return None
+
+    if len(set(numeric_powers)) == 1:
+        return numeric_powers[0]
+
+    if current_min is None:
+        now = datetime.now()
+        current_min = now.hour * 60 + now.minute
+
+    for entry in load_entries:
+        try:
+            start_min = int(entry["startMin"])
+            end_min = int(entry["endMin"])
+            power = float(entry["loadPower"])
+        except (KeyError, TypeError, ValueError):
+            continue
+
+        if _minute_in_schedule(start_min, end_min, current_min):
+            return power
+
+    return None
+
+
+def _with_resident_load_power(schedule: Any, load_power: int) -> dict[str, Any]:
+    """Return a copy of schedule with every load entry set to load_power."""
+    if not isinstance(schedule, dict):
+        raise ValueError("Stream base-load schedule is unavailable")
+
+    load_entries = _resident_load_entries(schedule)
+    if not load_entries:
+        raise ValueError(
+            "Stream base-load schedule has no periods; configure one in the EcoFlow app first"
+        )
+
+    updated_schedule = dict(schedule)
+    updated_schedule["load"] = [
+        {**entry, "loadPower": load_power} for entry in load_entries
+    ]
+    return updated_schedule
 
 
 # Powerstream Micro Inverter Number Definitions
@@ -915,6 +996,9 @@ class EcoFlowNumber(EcoFlowBaseEntity, NumberEntity):
         state_key = self._number_def["state_key"]
         value = self.coordinator.data.get(state_key)
 
+        if self._number_def.get("resident_load_schedule"):
+            return _extract_resident_load_power(value)
+
         if value is None:
             return None
 
@@ -1190,12 +1274,23 @@ class EcoFlowStreamNumber(EcoFlowBaseEntity, NumberEntity):
         """Set new value using Stream API format."""
         device_sn = self.coordinator.device_sn
         param_key = self._number_def["param_key"]
+        state_key = self._number_def["state_key"]
 
         # Clamp value to min/max limits
         value = max(self._number_def["min"], min(self._number_def["max"], value))
 
         # Convert to int for API
         int_value = int(value)
+
+        params: dict[str, Any]
+        if self._number_def.get("resident_load_schedule"):
+            params = {
+                param_key: _with_resident_load_power(
+                    self.coordinator.data.get(state_key), int_value
+                )
+            }
+        else:
+            params = {param_key: int_value}
 
         # Build command payload according to Stream API format
         payload = {
@@ -1206,7 +1301,7 @@ class EcoFlowStreamNumber(EcoFlowBaseEntity, NumberEntity):
             "dirSrc": 1,
             "dest": 2,
             "needAck": True,
-            "params": {param_key: int_value},
+            "params": params,
         }
 
         if self._number_def.get("experimental"):

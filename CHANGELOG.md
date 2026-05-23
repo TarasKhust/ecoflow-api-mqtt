@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.6-alpha.2] - 2026-05-23
+
+### Experimental
+
+- Updated the disabled-by-default Stream/BKW `Experimental Base Load Power`
+  number based on tester feedback in issue #49. It now reads the configured
+  schedule from `dayResidentLoadList.load[].loadPower` instead of the live
+  output field `powGetSysLoad`.
+- The alpha write candidate now preserves the existing schedule windows and
+  sends updated `loadPower` values via `cfgDayResidentLoadList`.
+
+### Notes
+
+- This is still a validation alpha. Multi-period schedules cannot be represented
+  perfectly by a single Home Assistant number entity, so the entity shows the
+  current active period's `loadPower` when schedule periods use different
+  values. Setting the number updates all existing schedule periods to the same
+  load power.
+- If no schedule period exists yet, create one in the EcoFlow app first.
+
+---
+
 ## [1.10.6-alpha.1] - 2026-05-19
 
 ### Experimental
