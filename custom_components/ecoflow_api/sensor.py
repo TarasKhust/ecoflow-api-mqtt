@@ -4061,7 +4061,14 @@ DELTA_PRO_ULTRA_SENSOR_DEFINITIONS = {
         "device_class": SensorDeviceClass.ENUM,
         "state_class": None,
         "icon": "mdi:cog",
-        "options": ["default", "self_powered", "scheduled", "tou"],
+        "options": ["default", "self_powered", "scheduled", "tou", "unknown"],
+        "value_map": {
+            0: "default",
+            1: "self_powered",
+            2: "scheduled",
+            3: "tou",
+            "default": "unknown",
+        },
     },
     "sys_err_code": {
         "name": "System Error Code",
@@ -4605,8 +4612,15 @@ class EcoFlowSensor(EcoFlowBaseEntity, SensorEntity):
             if callable(value_map):
                 return value_map(value)
             # If value_map is a dict, use it for ENUM mapping
-            elif isinstance(value_map, dict) and isinstance(value, (int, float)):
-                return value_map.get(int(value), value_map.get("default", str(value)))
+            elif isinstance(value_map, dict):
+                if isinstance(value, (int, float)):
+                    return value_map.get(
+                        int(value), value_map.get("default", str(value))
+                    )
+                if isinstance(value, str) and value.isdigit():
+                    return value_map.get(
+                        int(value), value_map.get("default", value)
+                    )
 
         # Handle resvInfo array decoding for Extra Battery sensors
         if "resvInfo" in api_key and isinstance(value, list):

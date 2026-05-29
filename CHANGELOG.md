@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.12] - 2026-05-29
+
+### 🔧 Consolidation
+
+- Consolidated `main` onto a single release line. This build brings together
+  the previously branch-only fixes: Stream AC relay command values (#50),
+  Delta Pro telemetry scaling (#54), Stream Base Load Power control (#49), and
+  the Delta Pro Ultra system mode fix (#51, detailed under 1.10.7 below).
+
+---
+
 ## [1.10.11] - 2026-05-29
 
 ### 🎉 New Features
@@ -60,6 +71,20 @@ This release also includes the Delta Pro telemetry scaling fix from v1.10.9
   > ⚠️ Existing long-term statistics for these sensors recorded before this
   > release contain a 1000× (voltage/current) or 10× (solar power)
   > discontinuity and may need a manual statistics purge.
+
+---
+
+## [1.10.7] - 2026-05-19
+
+### Bug Fixes
+
+- **Fixed Delta Pro Ultra System Mode enum state after toggling AC Output
+  (issue #51)** - `sysWordMode` values now map numeric API states
+  (`0` / `1` / `2` / `3`) to valid Home Assistant enum options instead of
+  exposing raw `0`, which Home Assistant rejected as an invalid enum state.
+- **Improved enum value mapping for numeric strings** - sensor `value_map`
+  definitions now also handle API values such as `"0"` in addition to numeric
+  `0`.
 
 ---
 
