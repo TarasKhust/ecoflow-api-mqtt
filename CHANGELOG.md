@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.11] - 2026-05-29
+
+### 🎉 New Features
+
+- **Base Load Power control for Stream Ultra X / AC Pro (issue #49)** —
+  Added a **Base Load Power** number entity (0–800 W) that sets the feed-in /
+  base-load setpoint via the device's `dayResidentLoadList` schedule
+  (`cfgDayResidentLoadList`), replacing the need to manage it through the
+  EcoFlow app. Confirmed working by community testers (graduated from the
+  `v1.10.6-alpha.x` builds).
+  - Reads the configured setpoint from `dayResidentLoadList.load[].loadPower`
+    (`powGetSysLoad` is live output, not the setpoint).
+  - Writing preserves the existing schedule windows and only updates their
+    `loadPower` values.
+  - **Disabled by default** — it writes to the device and only applies when a
+    base-load schedule exists, so enable it explicitly under the device's
+    entity list.
+
+  > ℹ️ **Multi-period limitation:** a single Home Assistant number cannot
+  > represent a multi-period schedule, so changing it applies the same value to
+  > **all** configured periods. To use different values per time window, edit the
+  > schedule in the EcoFlow app.
+
+### 🔧 Technical
+
+- Added DEBUG-level "changed fields" MQTT logging in the hybrid coordinator to
+  make future field reverse-engineering easier.
+
+This release also includes the Delta Pro telemetry scaling fix from v1.10.9
+(issue #54).
+
+---
+
 ## [1.10.9] - 2026-05-29
 
 ### 🐛 Bug Fixes

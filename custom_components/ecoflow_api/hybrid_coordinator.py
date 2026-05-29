@@ -40,6 +40,18 @@ MQTT_CREDENTIAL_REFRESH_COOLDOWN = 300
 # within this window the hybrid coordinator falls back to the REST API.
 MQTT_COMMAND_ACK_TIMEOUT = 5.0
 
+# Fields that help reverse-engineer STREAM/BKW Base Load Power writes for
+# issue #49. EcoFlow documents powGetSysLoad as a read/state field; these logs
+# make it easier for alpha testers to compare app changes against MQTT updates.
+STREAM_BASE_LOAD_DEBUG_FIELDS = (
+    "powGetSysLoad",
+    "powGetSysLoadFromPv",
+    "powGetSysGrid",
+    "gridConnectionPower",
+    "sysGridConnectionPower",
+    "feedGridMode",
+)
+
 
 class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
     """Hybrid coordinator using both REST API and MQTT.
@@ -524,11 +536,17 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             # So payload here is the actual device data
             mqtt_data = payload
             self._last_mqtt_message_time = time.time()
+            previous_data = self._merge_data()
             
             # Debug logging (only if logger level is DEBUG)
             if _LOGGER.isEnabledFor(logging.DEBUG):
                 timestamp = datetime.now().strftime("%H:%M:%S")
                 fields_count = len(mqtt_data)
+                changed_fields = []
+                for key, new_value in mqtt_data.items():
+                    old_value = previous_data.get(key)
+                    if old_value != new_value:
+                        changed_fields.append((key, old_value, new_value))
                 
                 _LOGGER.debug(
                     "⚡ [%s] MQTT message for %s: %d fields updated",
@@ -546,6 +564,36 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                             "   Fields: %s ... (+%d more)",
                             ", ".join(field_names[:10]),
                             fields_count - 10
+                        )
+
+                if changed_fields:
+                    _LOGGER.debug(
+                        "MQTT [%s] changed fields for %s (%d total):",
+                        timestamp,
+                        self.device_sn[-4:],
+                        len(changed_fields),
+                    )
+                    for key, old_val, new_val in changed_fields[:20]:
+                        old_str = str(old_val)[:80] if old_val is not None else "None"
+                        new_str = str(new_val)[:80] if new_val is not None else "None"
+                        _LOGGER.debug("   - %s: %s -> %s", key, old_str, new_str)
+                    if len(changed_fields) > 20:
+                        _LOGGER.debug(
+                            "   ... and %d more changed fields",
+                            len(changed_fields) - 20,
+                        )
+
+                if self.device_type == DEVICE_TYPE_STREAM_ULTRA_X:
+                    stream_debug_values = {
+                        key: mqtt_data[key]
+                        for key in STREAM_BASE_LOAD_DEBUG_FIELDS
+                        if key in mqtt_data
+                    }
+                    if stream_debug_values:
+                        _LOGGER.debug(
+                            "STREAM base-load candidate fields for %s: %s",
+                            self.device_sn[-4:],
+                            stream_debug_values,
                         )
             
             # Store MQTT message in diagnostic mode
