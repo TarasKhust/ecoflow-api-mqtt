@@ -3212,6 +3212,25 @@ STREAM_ULTRA_X_SENSOR_DEFINITIONS = {
         # Positive = charging, Negative = discharging
     },
     # ============================================================================
+    # AC OUTPUT PORTS (Schuko plugs) - live per-plug consumption
+    # ============================================================================
+    "ac_plug1_power": {
+        "name": "AC Plug 1 Power",
+        "key": "powGetSchuko1",
+        "unit": UnitOfPower.WATT,
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:power-socket-de",
+    },
+    "ac_plug2_power": {
+        "name": "AC Plug 2 Power",
+        "key": "powGetSchuko2",
+        "unit": UnitOfPower.WATT,
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:power-socket-de",
+    },
+    # ============================================================================
     # SYSTEM STATUS
     # ============================================================================
     "feed_in_mode": {
