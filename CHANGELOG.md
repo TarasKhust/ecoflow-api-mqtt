@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.13-alpha.1] - 2026-05-29
+
+### 🧪 Experimental (multi-device BKW routing, issue #48)
+
+- **Route STREAM/BKW control commands to the main device SN.** Per the official
+  EcoFlow STREAM docs, in a multi-device BKW system every control command must
+  target the main (master) device's SN. The integration now resolves it on
+  setup via `GET /iot-open/sign/device/system/main/sn` and routes commands
+  (AC1/AC2 switches, backup reserve, operating mode, feed-in, base load) there,
+  while still reading state from the configured device's SN.
+  - Two-SN model: command SN (main) drives the MQTT `/set` + `/set_reply` topics
+    and the REST write; state SN (configured) drives `/quota` + `/status`.
+  - Single-device systems and any resolution failure fall back to the configured
+    SN, so there is **no behavior change** outside multi-device BKW.
+
+  > 🧪 **Pre-release.** This is largely defensive doc-compliance and could not be
+  > verified locally (no multi-device hardware). Testing goal is **no regression**
+  > on existing single-/master-device setups; multi-device confirmation welcome.
+  > Scope limited to command routing — a non-main device that does not report
+  > relay state will still not expose AC switches.
+
+---
+
 ## [1.10.12] - 2026-05-29
 
 ### 🔧 Consolidation

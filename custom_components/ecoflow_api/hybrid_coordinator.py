@@ -75,9 +75,10 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         mqtt_password: str | None = None,
         mqtt_enabled: bool = True,
         certificate_account: str | None = None,
+        command_sn: str | None = None,
     ) -> None:
         """Initialize hybrid coordinator.
-        
+
         Args:
             hass: Home Assistant instance
             client: EcoFlow API client
@@ -89,6 +90,8 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             mqtt_password: MQTT password (certificatePassword from API)
             mqtt_enabled: Whether to enable MQTT
             certificate_account: Certificate account for MQTT topics (same as username)
+            command_sn: Main device SN to route commands to (multi-device BKW);
+                defaults to ``device_sn`` for single-device systems.
         """
         super().__init__(
             hass=hass,
@@ -97,6 +100,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             device_type=device_type,
             update_interval=update_interval,
             config_entry=config_entry,
+            command_sn=command_sn,
         )
         
         self.mqtt_enabled = mqtt_enabled
@@ -201,6 +205,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                 certificate_account=self.certificate_account,
                 on_auth_failure_callback=self._handle_mqtt_auth_failure,
                 loop=self.hass.loop,
+                command_sn=self.command_sn,
             )
             
             # Try to connect
@@ -278,9 +283,14 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         Returns:
             True if command sent successfully
         """
+        # Route control commands to the main device SN (multi-device BKW). The
+        # MQTT /set + /set_reply topics are already bound to command_sn at client
+        # creation, so only the payload SN needs aligning here.
+        if isinstance(command, dict):
+            command["sn"] = self.command_sn
         _LOGGER.debug(
             "Sending command for %s: mqtt=%s, params=%s",
-            self.device_sn[-4:],
+            self.command_sn[-4:],
             "connected" if self._mqtt_connected else "disconnected",
             command.get("params", {}),
         )
@@ -306,14 +316,14 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                 _LOGGER.warning("MQTT command error for %s: %s, falling back to REST API", self.device_sn[-4:], err)
 
         # Fallback to REST API (raises on failure)
-        _LOGGER.debug("Sending command via REST API for %s", self.device_sn[-4:])
+        _LOGGER.debug("Sending command via REST API for %s", self.command_sn[-4:])
         result = await self.client.set_device_quota(
-            device_sn=self.device_sn,
+            device_sn=self.command_sn,
             cmd_code=command,
         )
         _LOGGER.debug(
             "Command sent via REST API for %s: response=%s",
-            self.device_sn[-4:],
+            self.command_sn[-4:],
             result,
         )
         return True

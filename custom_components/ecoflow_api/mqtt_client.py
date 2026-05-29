@@ -48,13 +48,14 @@ class EcoFlowMQTTClient:
         certificate_account: str | None = None,
         on_auth_failure_callback: Callable[[int], None] | None = None,
         loop: asyncio.AbstractEventLoop | None = None,
+        command_sn: str | None = None,
     ) -> None:
         """Initialize MQTT client.
 
         Args:
             username: EcoFlow account username/email (for MQTT authentication)
             password: EcoFlow account password (for MQTT authentication)
-            device_sn: Device serial number
+            device_sn: Device serial number (state source: /quota, /status topics)
             on_message_callback: Callback function for received messages
             on_status_callback: Callback function for connection status changes (True=connected)
             certificate_account: Certificate account/user_id for topics (if None, uses username)
@@ -63,10 +64,15 @@ class EcoFlowMQTTClient:
                 coordinator uses this signal to re-fetch fresh credentials from the
                 EcoFlow API after maintenance-window rotations.
             loop: Event loop to dispatch ACK futures on (required for ACK tracking).
+            command_sn: SN for the command topics (/set, /set_reply). In a
+                multi-device STREAM/BKW system, control commands and their ACKs
+                must use the main device SN, while state is still read from
+                device_sn's topics. Defaults to device_sn.
         """
         self.username = username
         self.password = password
         self.device_sn = device_sn
+        self.command_sn = command_sn or device_sn
         self.on_message_callback = on_message_callback
         self.on_status_callback = on_status_callback
         self.on_auth_failure_callback = on_auth_failure_callback
@@ -76,15 +82,17 @@ class EcoFlowMQTTClient:
         self._connected = False
         self._reconnect_task: asyncio.Task | None = None
         self._pending_acks: dict[int, asyncio.Future[dict[str, Any]]] = {}
-        
+
         # MQTT topics (correct format: /open/${certificateAccount}/${sn}/...)
         # certificateAccount is typically the user_id (not email)
         # If not provided, try using username (but this might not work)
+        # State topics use device_sn; command topics use command_sn (main device
+        # in multi-device BKW systems, otherwise identical to device_sn).
         self._certificate_account = certificate_account or username
         self._quota_topic = f"/open/{self._certificate_account}/{device_sn}/quota"
         self._status_topic = f"/open/{self._certificate_account}/{device_sn}/status"
-        self._set_topic = f"/open/{self._certificate_account}/{device_sn}/set"
-        self._set_reply_topic = f"/open/{self._certificate_account}/{device_sn}/set_reply"
+        self._set_topic = f"/open/{self._certificate_account}/{self.command_sn}/set"
+        self._set_reply_topic = f"/open/{self._certificate_account}/{self.command_sn}/set_reply"
         
     @property
     def is_connected(self) -> bool:

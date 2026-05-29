@@ -29,6 +29,7 @@ from .const import (
     CONF_SECRET_KEY,
     CONF_UPDATE_INTERVAL,
     DEFAULT_UPDATE_INTERVAL,
+    DEVICE_TYPE_STREAM_ULTRA_X,
     DOMAIN,
     REGION_EU,
 )
@@ -79,6 +80,35 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         or entry.data.get(CONF_UPDATE_INTERVAL)
         or DEFAULT_UPDATE_INTERVAL
     )
+
+    # Resolve the command-routing SN. For multi-device STREAM/BKW systems the
+    # EcoFlow API requires control commands to target the main (master) device's
+    # SN, even when the user added a non-main unit (issue #48). State is still
+    # read from the configured device's SN. For all other devices, and on any
+    # resolution failure, this falls back to the configured SN (no behavior
+    # change). Resolved before the coordinator/MQTT client so the command topics
+    # bind to the main SN.
+    configured_sn = entry.data[CONF_DEVICE_SN]
+    device_type = entry.data.get(CONF_DEVICE_TYPE, "unknown")
+    command_sn = configured_sn
+    if device_type == DEVICE_TYPE_STREAM_ULTRA_X:
+        try:
+            main_sn = await client.get_main_device_sn(configured_sn)
+            if main_sn and main_sn != configured_sn:
+                command_sn = main_sn
+                _LOGGER.info(
+                    "BKW multi-device system: routing commands to main device "
+                    "SN %s (state read from %s)",
+                    main_sn[-4:],
+                    configured_sn[-4:],
+                )
+        except Exception as err:
+            _LOGGER.warning(
+                "Could not resolve BKW main device SN for %s (%s); routing "
+                "commands to the configured SN",
+                configured_sn[-4:],
+                err,
+            )
 
     # Get MQTT settings from options
     mqtt_enabled = entry.options.get(CONF_MQTT_ENABLED, False)
@@ -133,6 +163,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             mqtt_password=mqtt_password,
             mqtt_enabled=True,
             certificate_account=certificate_account,  # Pass certificate account for topics
+            command_sn=command_sn,
         )
         # Set up MQTT
         await coordinator.async_setup()
@@ -147,6 +178,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             device_type=entry.data.get(CONF_DEVICE_TYPE, "unknown"),
             update_interval=update_interval,
             config_entry=entry,
+            command_sn=command_sn,
         )
 
     # Fetch initial data
