@@ -413,7 +413,6 @@ DEVICE_SWITCH_MAP = {
     "powerstream_micro_inverter": POWERSTREAM_MICRO_INVERTER_SWITCH_DEFINITIONS,
     "Powerstream Micro Inverter": POWERSTREAM_MICRO_INVERTER_SWITCH_DEFINITIONS,
     DEVICE_TYPE_RIVER3PLUS: {},
-    "river3plus": {},
     "River 3 Plus": {},
     "smart_plug": SMART_PLUG_SWITCH_DEFINITIONS,
     "Smart Plug S401": SMART_PLUG_SWITCH_DEFINITIONS,

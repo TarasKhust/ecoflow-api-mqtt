@@ -18,9 +18,31 @@ from dataclasses import dataclass
 import logging
 import math
 import struct
-from typing import Any
+from typing import TypedDict
 
 _LOGGER = logging.getLogger(__name__)
+
+
+class River3PlusState(TypedDict, total=False):
+    """Decoded River 3 Plus telemetry.
+
+    All keys are optional: a single MQTT reply only carries a subset of the
+    envelopes, so the decoder returns whichever metrics it could read. Every
+    value is a rounded float, never a raw protobuf dict. Defined here (HA-free)
+    so the decoder has no Home Assistant dependency.
+    """
+
+    battery_level: float
+    temperature: float
+    ac_in_power: float
+    pow_in_sum_w: float
+    pow_out_sum_w: float
+    temp_pcs_dc: float
+    temp_pcs_ac: float
+    ac_in_voltage: float
+    ac_out_voltage: float
+    ac_in_current: float
+    ac_out_current: float
 
 _CMD_FUNC_BMS = 32
 _CMD_ID_BMS_HEARTBEAT = 50
@@ -47,12 +69,12 @@ class River3PlusProtoDecoder:
         self._soc: float = 0.0
         self._soc_modules: list[int] = []
 
-    def decode(self, payload: bytes) -> dict[str, Any] | None:
+    def decode(self, payload: bytes) -> River3PlusState | None:
         """Decode a raw `thing/property/get_reply` payload into sensor values."""
         try:
             raw_socs: list[int] = []
             valid_temps: list[float] = []
-            result: dict[str, Any] = {}
+            result: River3PlusState = {}
 
             for envelope in self._iter_envelopes(payload):
                 if (
@@ -134,9 +156,9 @@ class River3PlusProtoDecoder:
 
     def _decode_display_properties(
         self, payload: dict[int, int | float]
-    ) -> dict[str, Any]:
+    ) -> River3PlusState:
         """Extract stable read-only values from the display property upload."""
-        metrics: dict[str, Any] = {}
+        metrics: River3PlusState = {}
 
         total_input_power = self._read_float(payload, 3)
         total_output_power = self._read_float(payload, 4)
@@ -158,9 +180,9 @@ class River3PlusProtoDecoder:
 
     def _decode_runtime_properties(
         self, payload: dict[int, int | float]
-    ) -> dict[str, Any]:
+    ) -> River3PlusState:
         """Extract stable read-only values from the runtime property upload."""
-        metrics: dict[str, Any] = {}
+        metrics: River3PlusState = {}
 
         pcs_dc_temperature = self._read_float(payload, 26)
         pcs_ac_temperature = self._read_float(payload, 27)

@@ -565,7 +565,6 @@ DEVICE_BINARY_SENSOR_MAP = {
     "stream_ultra_x": STREAM_ULTRA_X_BINARY_SENSOR_DEFINITIONS,
     DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER: POWERSTREAM_MICRO_INVERTER_BINARY_SENSOR_DEFINITIONS,
     DEVICE_TYPE_RIVER3PLUS: {},
-    "river3plus": {},
     "River 3 Plus": {},
     # Smart Plug doesn't have binary sensors (no battery, charging states, etc.)
     DEVICE_TYPE_SMART_PLUG: {},

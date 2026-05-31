@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.16-alpha.1] - 2026-05-31
+
+### 🧪 Experimental: River 3 Plus support (PR #40, monitor-only)
+
+Initial **River 3 Plus** support, contributed by **@ShikyC** (PR #40) and tidied
+up against the project review. River 3 Plus is not exposed via the Developer REST
+quota API (it returns error 1006), so this uses **app-authenticated MQTT** with a
+hand-rolled protobuf decoder for `thing/property/get` polling.
+
+- New `River3PlusCoordinator` (MQTT-only, no REST polling) and a dedicated
+  `devices/river3plus/` module (decoder, device wrapper, entity definitions).
+- Monitor-only: all command paths raise `HomeAssistantError` (read-only device).
+- Sensors: battery SOC, temperature, AC input power, total in/out power, PCS
+  AC/DC temperature, AC in/out voltage and current.
+
+**Review fixes applied on top of the original PR:**
+- Decoder decoupled from Home Assistant; `River3PlusState` `TypedDict` removes all
+  `typing.Any` from the River 3 Plus modules.
+- Removed duplicate device-type dict keys across the platform routing tables.
+- `HomeAssistantError` (not `RuntimeError`) for the read-only guard; `NoReturn`
+  typing on the guard.
+- A dead MQTT link no longer serves stale data — the refresh fails so entities go
+  unavailable.
+- Removed a silent `except RuntimeError: pass` that hid decode errors.
+- Sensor definitions moved into `devices/river3plus/const.py`.
+- Added unit tests for the protobuf decoder (incl. the `field 28` regression).
+
+> 🧪 **Pre-release.** Could not be verified locally (no River 3 Plus hardware and
+> no Python toolchain in the build env). Some values (voltage/current) are known
+> to be approximate. River 3 Plus owners: testing + feedback very welcome.
+
+---
+
 ## [1.10.15] - 2026-05-30
 
 ### 🐛 Bug Fixes

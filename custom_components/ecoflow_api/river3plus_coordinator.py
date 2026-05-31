@@ -6,18 +6,20 @@ import logging
 import ssl
 import time
 import uuid
-from typing import Any
+from typing import NoReturn
 
 import paho.mqtt.client as mqtt
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import Event, HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from .api import EcoFlowApiClient
 from .const import DEVICE_TYPE_RIVER3PLUS
 from .coordinator import EcoFlowDataCoordinator
 from .devices.river3plus import River3PlusDevice
+from .devices.river3plus.proto_decoder import River3PlusState
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -112,7 +114,7 @@ class River3PlusCoordinator(EcoFlowDataCoordinator):
         self._app_username = app_username
         self._app_password = app_password
         self._device = River3PlusDevice(device_sn)
-        self._mqtt_data: dict[str, Any] = {}
+        self._mqtt_data: River3PlusState = {}
         self._paho_client: mqtt.Client | None = None
         self._mqtt_connected = False
         self._user_id: str | None = None
@@ -120,9 +122,14 @@ class River3PlusCoordinator(EcoFlowDataCoordinator):
         self._reply_event: asyncio.Event | None = None
         self._get_reply_topic: str | None = None
 
-    def _raise_read_only(self) -> None:
-        """Reject command paths for River 3 Plus."""
-        raise RuntimeError(
+    def _raise_read_only(self) -> NoReturn:
+        """Reject command paths for River 3 Plus.
+
+        Raises ``HomeAssistantError`` (HA's convention for user-visible
+        operational failures) so the UI surfaces a clear message instead of a
+        bare ``RuntimeError`` traceback.
+        """
+        raise HomeAssistantError(
             f"River 3 Plus [{self.device_sn[-4:]}] is read-only in this integration"
         )
 
@@ -176,7 +183,7 @@ class River3PlusCoordinator(EcoFlowDataCoordinator):
 
         return self._mqtt_connected
 
-    async def _async_handle_stop(self, _event: Any) -> None:
+    async def _async_handle_stop(self, _event: Event) -> None:
         """Shut down gracefully on Home Assistant stop."""
         await self.async_shutdown()
 
@@ -236,7 +243,7 @@ class River3PlusCoordinator(EcoFlowDataCoordinator):
         """Block command writes for River 3 Plus."""
         self._raise_read_only()
 
-    async def _async_update_data(self) -> dict[str, Any]:
+    async def _async_update_data(self) -> River3PlusState:
         """Poll River 3 Plus state through MQTT `thing/property/get`."""
         if not self._mqtt_connected or not self._paho_client or not self._user_id:
             raise UpdateFailed("River 3 Plus MQTT is not connected")
@@ -247,11 +254,15 @@ class River3PlusCoordinator(EcoFlowDataCoordinator):
         try:
             await asyncio.wait_for(self._reply_event.wait(), timeout=15)
         except asyncio.TimeoutError as err:
-            if self._mqtt_data:
-                return dict(self._mqtt_data)
-            raise UpdateFailed("Timed out waiting for River 3 Plus MQTT reply") from err
+            # Do NOT return the last snapshot here: a dead MQTT link (device
+            # offline, Wi-Fi drop, rotated credentials) would otherwise keep
+            # serving stale data and the entities would look healthy. Failing
+            # the refresh lets Home Assistant mark them unavailable.
+            raise UpdateFailed(
+                "Timed out waiting for River 3 Plus MQTT reply"
+            ) from err
 
-        return dict(self._mqtt_data)
+        return self._mqtt_data.copy()
 
     def _setup_paho_mqtt(
         self,
@@ -296,8 +307,8 @@ class River3PlusCoordinator(EcoFlowDataCoordinator):
     def _on_paho_connect(
         self,
         client: mqtt.Client,
-        userdata: Any,
-        flags: dict[str, Any],
+        userdata: object,
+        flags: dict[str, object],
         rc: int,
     ) -> None:
         """Handle MQTT connection state."""
@@ -319,7 +330,7 @@ class River3PlusCoordinator(EcoFlowDataCoordinator):
     def _on_paho_disconnect(
         self,
         client: mqtt.Client,
-        userdata: Any,
+        userdata: object,
         rc: int,
     ) -> None:
         """Handle MQTT disconnects."""
@@ -329,7 +340,7 @@ class River3PlusCoordinator(EcoFlowDataCoordinator):
     def _on_paho_message(
         self,
         client: mqtt.Client,
-        userdata: Any,
+        userdata: object,
         msg: mqtt.MQTTMessage,
     ) -> None:
         """Decode protobuf replies from the River 3 Plus."""
@@ -338,22 +349,24 @@ class River3PlusCoordinator(EcoFlowDataCoordinator):
 
         try:
             decoded = self._device.decode_packet(bytes(msg.payload))
-            if not decoded:
-                return
-
-            self._mqtt_data.update(decoded)
-            snapshot = dict(self._mqtt_data)
-            self.hass.loop.call_soon_threadsafe(self._async_handle_decoded_update, snapshot)
-        except RuntimeError:
-            pass
         except Exception as err:  # noqa: BLE001
             _LOGGER.error(
-                "River 3 Plus [%s]: error processing MQTT message: %s",
+                "River 3 Plus [%s]: error decoding MQTT message: %s",
                 self.device_sn[-4:],
                 err,
             )
+            return
 
-    def _async_handle_decoded_update(self, snapshot: dict[str, Any]) -> None:
+        if not decoded:
+            return
+
+        self._mqtt_data.update(decoded)
+        snapshot = self._mqtt_data.copy()
+        self.hass.loop.call_soon_threadsafe(
+            self._async_handle_decoded_update, snapshot
+        )
+
+    def _async_handle_decoded_update(self, snapshot: River3PlusState) -> None:
         """Push decoded data into Home Assistant from the main event loop."""
         self.async_set_updated_data(snapshot)
         if self._reply_event is not None and not self._reply_event.is_set():
