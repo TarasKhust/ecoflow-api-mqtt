@@ -48,6 +48,31 @@ class StreamBaseLoadMappingTest(unittest.TestCase):
         # Stable entity must not carry the alpha experimental flag.
         self.assertNotIn("experimental", number_config)
 
+    def test_stream_number_native_value_reads_resident_schedule(self) -> None:
+        """EcoFlowStreamNumber.native_value must decode the schedule, not float() it.
+
+        Regression for the "unknown" state in the entity pop-out/dashboard: the
+        read path used float(dayResidentLoadList_dict) -> None. It must route
+        resident_load_schedule entities through _extract_resident_load_power, the
+        same way EcoFlowNumber.native_value does.
+        """
+        source = NUMBER_PATH.read_text(encoding="utf-8")
+        tree = ast.parse(source)
+
+        stream_cls = next(
+            node
+            for node in ast.walk(tree)
+            if isinstance(node, ast.ClassDef) and node.name == "EcoFlowStreamNumber"
+        )
+        native_value = next(
+            node
+            for node in stream_cls.body
+            if isinstance(node, ast.FunctionDef) and node.name == "native_value"
+        )
+        segment = ast.get_source_segment(source, native_value) or ""
+        self.assertIn("resident_load_schedule", segment)
+        self.assertIn("_extract_resident_load_power", segment)
+
 
 if __name__ == "__main__":
     unittest.main()

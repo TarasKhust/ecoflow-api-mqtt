@@ -1265,6 +1265,12 @@ class EcoFlowStreamNumber(EcoFlowBaseEntity, NumberEntity):
         state_key = self._number_def["state_key"]
         value = self.coordinator.data.get(state_key)
 
+        # Resident-load schedule entities (Base Load Power) store a schedule
+        # dict, not a scalar. Decode the configured power instead of float()-ing
+        # the dict (which raised TypeError -> None -> "unknown" in the UI).
+        if self._number_def.get("resident_load_schedule"):
+            return _extract_resident_load_power(value)
+
         if value is None:
             return None
 
