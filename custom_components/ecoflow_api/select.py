@@ -19,6 +19,7 @@ from .const import (
     DEVICE_TYPE_DELTA_PRO,
     DEVICE_TYPE_DELTA_PRO_3,
     DEVICE_TYPE_DELTA_PRO_ULTRA,
+    DEVICE_TYPE_RIVER3PLUS,
     DEVICE_TYPE_SMART_PLUG,
     DEVICE_TYPE_STREAM_ULTRA_X,
     DOMAIN,
@@ -297,6 +298,9 @@ DEVICE_SELECT_MAP = {
     "stream_ultra_x": STREAM_ULTRA_X_SELECT_DEFINITIONS,
     DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER: POWERSTREAM_MICRO_INVERTER_SELECT_DEFINITIONS,
     # Smart Plug doesn't have select entities (no AC frequency, energy modes, etc.)
+    DEVICE_TYPE_RIVER3PLUS: {},
+    "river3plus": {},
+    "River 3 Plus": {},
     DEVICE_TYPE_SMART_PLUG: {},
     "smart_plug": {},
     "Smart Plug S401": {},
