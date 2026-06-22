@@ -17,7 +17,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from .api import EcoFlowApiClient, EcoFlowApiError
-from .const import DEVICE_TYPE_STREAM_ULTRA_X
+from .const import DEVICE_TYPE_STREAM_ULTRA_X, DEVICE_TYPE_STREAM_ULTRA
 from .coordinator import EcoFlowDataCoordinator
 from .data_holder import BoundFifoList
 from .mqtt_client import EcoFlowMQTTClient
@@ -114,7 +114,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         # Stream series is more sensitive to broker stalls after EcoFlow maintenance.
         self._mqtt_silence_threshold = (
             MQTT_SILENCE_THRESHOLD_STREAM
-            if device_type == DEVICE_TYPE_STREAM_ULTRA_X
+            if device_type in (DEVICE_TYPE_STREAM_ULTRA_X, DEVICE_TYPE_STREAM_ULTRA)
             else MQTT_SILENCE_THRESHOLD
         )
 
@@ -583,7 +583,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                             len(changed_fields) - 20,
                         )
 
-                if self.device_type == DEVICE_TYPE_STREAM_ULTRA_X:
+                if self.device_type in (DEVICE_TYPE_STREAM_ULTRA_X, DEVICE_TYPE_STREAM_ULTRA):
                     stream_debug_values = {
                         key: mqtt_data[key]
                         for key in STREAM_BASE_LOAD_DEBUG_FIELDS

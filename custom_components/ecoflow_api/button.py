@@ -53,6 +53,8 @@ DEVICE_BUTTON_MAP = {
     "delta_pro_ultra": DELTA_PRO_3_BUTTON_DEFINITIONS,
     "Delta Pro Ultra": DELTA_PRO_3_BUTTON_DEFINITIONS,
     "stream_ultra_x": STREAM_ULTRA_X_BUTTON_DEFINITIONS,
+    "stream_ultra": STREAM_ULTRA_X_BUTTON_DEFINITIONS,
+    "Stream Ultra": STREAM_ULTRA_X_BUTTON_DEFINITIONS,
     "stream_micro_inverter": {},
     "Stream Microinverter": {},
 }

@@ -15,7 +15,7 @@ Home Assistant integration for EcoFlow devices using the **official EcoFlow Deve
   - Device control via REST API (reliable commands)
   - Automatic fallback to REST polling if MQTT unavailable
 - ✅ **Official API** - Uses EcoFlow Developer REST API (stable & documented)
-- ✅ **Multi-device support** - Delta Pro 3, Delta Pro Ultra, Delta Pro, Delta 2, Delta 2 Max, Stream Ultra X, Smart Plug S401
+- ✅ **Multi-device support** - Delta Pro 3, Delta Pro Ultra, Delta Pro, Delta 2, Delta 2 Max, Stream Ultra X, Stream Ultra, Smart Plug S401
 - ✅ **Region support** - EU and US API endpoints
 - ✅ **Complete Delta Pro 3 support** - 100+ sensors, 13 binary sensors, 12 switches, 16 number controls, Power Off button
 - ✅ **Complete Delta 2 support** - 150+ sensors with value mapping, Extra Battery support
@@ -246,13 +246,16 @@ mode: single
 | Delta 2         | ✅ Full Support | 150+ sensors, Extra Battery, real device tested |
 | Delta 2 Max     | ✅ Full Support | Same as Delta 2, AC charging up to 2400W (Issue #26) |
 | Stream Ultra X  | ✅ Full Support | Home battery system (Issue #16)  |
+| Stream Ultra    | ✅ Full Support | BK11 series; shares the Stream Ultra X profile |
 | Smart Plug S401 | ✅ Full Support | Power monitoring & control (Issue #20) |
 | River 2         | 🔄 Planned      | Coming soon                      |
 | River 2 Max     | 🔄 Planned      | Coming soon                      |
 
-### Stream Ultra X
+### Stream Ultra X / Stream Ultra
 
 Stream Ultra X (BK61 series) is a home battery/balcony power system with grid connection support.
+The non-X **Stream Ultra** (BK11 series) shares the same telemetry and controls — select it from
+the device dropdown if your unit reports as a plain "Stream Ultra".
 
 | Feature | Details |
 | ------- | ------- |

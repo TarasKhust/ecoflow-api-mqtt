@@ -3170,12 +3170,53 @@ STREAM_ULTRA_X_SENSOR_DEFINITIONS = {
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:battery-low",
     },
+    "battery_cycles": {
+        "name": "Cycles",
+        "key": "cycles",
+        "state_class": SensorStateClass.TOTAL_INCREASING,
+        "icon": "mdi:battery-sync",
+        "entity_category": EntityCategory.DIAGNOSTIC,
+    },
     # ============================================================================
     # POWER - Real-time Power Flow
     # ============================================================================
     "solar_power": {
         "name": "Solar Input Power",
         "key": "powGetPvSum",
+        "unit": UnitOfPower.WATT,
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:solar-power",
+    },
+    # Per-MPPT solar input. Stream Ultra X has 4 PV inputs; the first uses the
+    # unsuffixed key (powGetPv), matching the Stream Microinverter convention.
+    "solar_power_pv1": {
+        "name": "PV1 Solar Power",
+        "key": "powGetPv",
+        "unit": UnitOfPower.WATT,
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:solar-power",
+    },
+    "solar_power_pv2": {
+        "name": "PV2 Solar Power",
+        "key": "powGetPv2",
+        "unit": UnitOfPower.WATT,
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:solar-power",
+    },
+    "solar_power_pv3": {
+        "name": "PV3 Solar Power",
+        "key": "powGetPv3",
+        "unit": UnitOfPower.WATT,
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:solar-power",
+    },
+    "solar_power_pv4": {
+        "name": "PV4 Solar Power",
+        "key": "powGetPv4",
         "unit": UnitOfPower.WATT,
         "device_class": SensorDeviceClass.POWER,
         "state_class": SensorStateClass.MEASUREMENT,
@@ -4235,6 +4276,9 @@ DEVICE_SENSOR_MAP = {
     "delta_2_max": DELTA_2_MAX_SENSOR_DEFINITIONS,
     DEVICE_TYPE_STREAM_ULTRA_X: STREAM_ULTRA_X_SENSOR_DEFINITIONS,
     DEVICE_TYPE_STREAM_MICRO_INVERTER: STREAM_MICRO_INVERTER_SENSOR_DEFINITIONS,
+    # "Stream Ultra" (non-X, BK11 series) shares the Stream Ultra X profile.
+    "stream_ultra": STREAM_ULTRA_X_SENSOR_DEFINITIONS,
+    "Stream Ultra": STREAM_ULTRA_X_SENSOR_DEFINITIONS,
     "Stream Ultra X": STREAM_ULTRA_X_SENSOR_DEFINITIONS,
     "Stream Microinverter": STREAM_MICRO_INVERTER_SENSOR_DEFINITIONS,
     DEVICE_TYPE_SMART_PLUG: SMART_PLUG_SENSOR_DEFINITIONS,

@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.18] - 2026-06-23
+
+### New Features
+
+- **Per-PV-input solar power for Stream Ultra X** — Exposes the four MPPT inputs
+  as individual power sensors, matching the per-string values shown in the
+  official EcoFlow app:
+  - **PV1 Solar Power** — `powGetPv`
+  - **PV2 Solar Power** — `powGetPv2`
+  - **PV3 Solar Power** — `powGetPv3`
+  - **PV4 Solar Power** — `powGetPv4`
+
+  Keys confirmed against live device telemetry (BK11 series). The existing
+  aggregate **Solar Input Power** (`powGetPvSum`) is unchanged.
+- **Battery cycle count for Stream Ultra X** — Adds a diagnostic **Cycles**
+  sensor (`cycles`) reporting the battery charge-cycle count.
+- **Added "Stream Ultra" device type** — The non-X Stream Ultra (BK11 series)
+  is now selectable in the device dropdown and reuses the full Stream Ultra X
+  sensor/control profile.
+
 ## [1.10.17] - 2026-06-02
 
 ### New Features
