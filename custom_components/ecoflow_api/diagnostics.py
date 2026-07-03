@@ -12,6 +12,8 @@ from .const import (
     CONF_ACCESS_KEY,
     CONF_SECRET_KEY,
     CONF_DEVICE_SN,
+    CONF_MQTT_PASSWORD,
+    CONF_MQTT_USERNAME,
     OPTS_DIAGNOSTIC_MODE,
 )
 from .coordinator import EcoFlowDataCoordinator
@@ -25,6 +27,10 @@ TO_REDACT = {
     "sn",
     "serial_number",
     "serialNumber",
+    CONF_MQTT_USERNAME,
+    CONF_MQTT_PASSWORD,
+    "certificateAccount",
+    "certificatePassword",
 }
 
 
@@ -48,6 +54,7 @@ async def async_get_config_entry_diagnostics(
     
     # Redact sensitive data from config entry
     redacted_config = async_redact_data(entry.data, TO_REDACT)
+    redacted_options = async_redact_data(entry.options, TO_REDACT)
     
     # Get device data (redacted)
     device_data = {}
@@ -73,17 +80,25 @@ async def async_get_config_entry_diagnostics(
         
         # REST requests
         if hasattr(coordinator, "rest_requests"):
-            diagnostic_data["rest_requests"] = list(coordinator.rest_requests)
+            diagnostic_data["rest_requests"] = async_redact_data(
+                list(coordinator.rest_requests), TO_REDACT
+            )
         
         # MQTT messages (if hybrid)
         if isinstance(coordinator, EcoFlowHybridCoordinator) and hasattr(coordinator, "mqtt_messages"):
-            diagnostic_data["mqtt_messages"] = list(coordinator.mqtt_messages)
+            diagnostic_data["mqtt_messages"] = async_redact_data(
+                list(coordinator.mqtt_messages), TO_REDACT
+            )
         
         # Set commands and replies
         if hasattr(coordinator, "set_commands"):
-            diagnostic_data["set_commands"] = list(coordinator.set_commands)
+            diagnostic_data["set_commands"] = async_redact_data(
+                list(coordinator.set_commands), TO_REDACT
+            )
         if hasattr(coordinator, "set_replies"):
-            diagnostic_data["set_replies"] = list(coordinator.set_replies)
+            diagnostic_data["set_replies"] = async_redact_data(
+                list(coordinator.set_replies), TO_REDACT
+            )
     
     return {
         "config_entry": {
@@ -92,7 +107,7 @@ async def async_get_config_entry_diagnostics(
             "domain": entry.domain,
             "title": entry.title,
             "data": redacted_config,
-            "options": dict(entry.options),
+            "options": redacted_options,
         },
         "coordinator": coordinator_info,
         "device_info": {
@@ -104,7 +119,6 @@ async def async_get_config_entry_diagnostics(
         "device_data": device_data,
         "diagnostic_data": diagnostic_data,
     }
-
 
 
 
