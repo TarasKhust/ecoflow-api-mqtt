@@ -402,6 +402,8 @@ DEVICE_SWITCH_MAP = {
     DEVICE_TYPE_DELTA_2: DELTA_2_SWITCH_DEFINITIONS,
     DEVICE_TYPE_DELTA_2_MAX: DELTA_2_MAX_SWITCH_DEFINITIONS,
     DEVICE_TYPE_STREAM_ULTRA_X: STREAM_ULTRA_X_SWITCH_DEFINITIONS,
+    "stream_ultra": STREAM_ULTRA_X_SWITCH_DEFINITIONS,
+    "Stream Ultra": STREAM_ULTRA_X_SWITCH_DEFINITIONS,
     DEVICE_TYPE_STREAM_MICRO_INVERTER: STREAM_MICRO_INVERTER_SWITCH_DEFINITIONS,
     DEVICE_TYPE_POWERSTREAM_MICRO_INVERTER: POWERSTREAM_MICRO_INVERTER_SWITCH_DEFINITIONS,
     DEVICE_TYPE_SMART_PLUG: SMART_PLUG_SWITCH_DEFINITIONS,
@@ -444,7 +446,9 @@ async def async_setup_entry(
         DEVICE_TYPE_DELTA_2, "delta_2",
         DEVICE_TYPE_DELTA_2_MAX, "delta_2_max", "Delta 2 Max",
     )
-    is_stream = device_type in (DEVICE_TYPE_STREAM_ULTRA_X, "stream_ultra_x")
+    is_stream = device_type in (
+        DEVICE_TYPE_STREAM_ULTRA_X, "stream_ultra_x", "stream_ultra", "Stream Ultra"
+    )
     is_smart_plug = device_type in (DEVICE_TYPE_SMART_PLUG, "smart_plug", "Smart Plug S401")
     is_delta_pro_ultra = device_type in (DEVICE_TYPE_DELTA_PRO_ULTRA, "delta_pro_ultra", "Delta Pro Ultra")
 
