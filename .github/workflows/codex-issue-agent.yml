@@ -44,9 +44,7 @@ jobs:
             local name="$1"
             local color="$2"
             local description="$3"
-            if ! gh label view "$name" >/dev/null 2>&1; then
-              gh label create "$name" --color "$color" --description "$description"
-            fi
+            gh label create "$name" --color "$color" --description "$description" --force
           }
           ensure_label "codex-ready" "5319e7" "Maintainer-approved issue for the Codex issue agent"
           ensure_label "needs-info" "d876e3" "Further information is required"
