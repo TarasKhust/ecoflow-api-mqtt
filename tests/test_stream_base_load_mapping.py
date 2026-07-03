@@ -9,6 +9,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 NUMBER_PATH = ROOT / "custom_components" / "ecoflow_api" / "number.py"
+SERVICES_PATH = ROOT / "custom_components" / "ecoflow_api" / "services.py"
 
 
 class StreamBaseLoadMappingTest(unittest.TestCase):
@@ -72,6 +73,64 @@ class StreamBaseLoadMappingTest(unittest.TestCase):
         segment = ast.get_source_segment(source, native_value) or ""
         self.assertIn("resident_load_schedule", segment)
         self.assertIn("_extract_resident_load_power", segment)
+
+    def test_base_load_schedule_service_uses_confirmed_command(self) -> None:
+        """The schedule service must write cfgDayResidentLoadList with load periods."""
+        source = SERVICES_PATH.read_text(encoding="utf-8")
+        tree = ast.parse(source)
+
+        constants = {
+            target.id: node.value
+            for node in ast.walk(tree)
+            if isinstance(node, ast.Assign)
+            for target in node.targets
+            if isinstance(target, ast.Name)
+        }
+
+        self.assertEqual(
+            ast.literal_eval(constants["SERVICE_SET_BASE_LOAD_SCHEDULE"]),
+            "set_base_load_schedule",
+        )
+        self.assertEqual(
+            ast.literal_eval(constants["STREAM_BASE_LOAD_PARAM_KEY"]),
+            "cfgDayResidentLoadList",
+        )
+        self.assertEqual(
+            ast.literal_eval(constants["STREAM_BASE_LOAD_STATE_KEY"]),
+            "dayResidentLoadList",
+        )
+
+        command_func = next(
+            node
+            for node in ast.walk(tree)
+            if isinstance(node, ast.FunctionDef)
+            and node.name == "_stream_base_load_command"
+        )
+        segment = ast.get_source_segment(source, command_func) or ""
+        self.assertIn('"cmdId": 17', segment)
+        self.assertIn('"cmdFunc": 254', segment)
+        self.assertIn('"needAck": True', segment)
+        self.assertIn("STREAM_BASE_LOAD_PARAM_KEY", segment)
+
+    def test_base_load_schedule_service_translates_period_keys(self) -> None:
+        """Service data uses HA-friendly keys and sends EcoFlow's API keys."""
+        source = SERVICES_PATH.read_text(encoding="utf-8")
+        tree = ast.parse(source)
+
+        payload_func = next(
+            node
+            for node in ast.walk(tree)
+            if isinstance(node, ast.FunctionDef)
+            and node.name == "_stream_base_load_payload"
+        )
+        segment = ast.get_source_segment(source, payload_func) or ""
+
+        self.assertIn('"startMin"', segment)
+        self.assertIn('"endMin"', segment)
+        self.assertIn('"loadPower"', segment)
+        self.assertIn("ATTR_START_MIN", segment)
+        self.assertIn("ATTR_END_MIN", segment)
+        self.assertIn("ATTR_LOAD_POWER", segment)
 
 
 if __name__ == "__main__":

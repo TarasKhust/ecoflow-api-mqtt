@@ -35,6 +35,7 @@ from .const import (
 from .coordinator import EcoFlowDataCoordinator
 from .hybrid_coordinator import EcoFlowHybridCoordinator
 from .migrations import async_migrate_entry
+from .services import async_setup_services, async_unload_services
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -166,6 +167,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     # Store coordinator
     hass.data[DOMAIN][entry.entry_id] = coordinator
+    await async_setup_services(hass)
 
     # Set up platforms
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -193,6 +195,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     if unload_ok := await hass.config_entries.async_unload_platforms(entry, PLATFORMS):
         hass.data[DOMAIN].pop(entry.entry_id)
+        await async_unload_services(hass)
         _LOGGER.info(
             "EcoFlow API integration unloaded for device %s", entry.data[CONF_DEVICE_SN]
         )
