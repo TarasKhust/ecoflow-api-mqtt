@@ -4511,6 +4511,42 @@ class EcoFlowPowerstreamSolarPowerSensor(EcoFlowBaseEntity, SensorEntity):
         return None
 
 
+class EcoFlowStreamMicroSolarPowerSensor(EcoFlowBaseEntity, SensorEntity):
+    """Combined solar input power sensor for Stream Microinverter."""
+
+    _attr_device_class = SensorDeviceClass.POWER
+    _attr_native_unit_of_measurement = UnitOfPower.WATT
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_icon = "mdi:solar-power"
+
+    def __init__(
+        self,
+        coordinator: EcoFlowDataCoordinator,
+        entry: ConfigEntry,
+    ) -> None:
+        """Initialize the sensor."""
+        super().__init__(coordinator, "stream_micro_solar_power")
+        self._attr_unique_id = f"{entry.entry_id}_stream_micro_solar_power"
+        self._attr_name = "Solar Input Power"
+        self._attr_has_entity_name = True
+        self._sensor_id = "stream_micro_solar_power"
+
+    @property
+    def native_value(self) -> float | None:
+        """Return PV1 + PV2 power in watts."""
+        if not self.coordinator.data:
+            return None
+
+        pv1_w = _get_nested_value(self.coordinator.data, "powGetPv")
+        pv2_w = _get_nested_value(self.coordinator.data, "powGetPv2")
+        values = [value for value in (pv1_w, pv2_w) if value is not None]
+
+        if not values:
+            return None
+
+        return round(sum(float(value) for value in values), 1)
+
+
 # ============================================================================
 # Sensor Setup
 # ============================================================================
@@ -4552,6 +4588,16 @@ async def async_setup_entry(
     if is_powerstream:
         entities.append(
             EcoFlowPowerstreamSolarPowerSensor(coordinator=coordinator, entry=entry)
+        )
+
+    is_stream_micro_inverter = device_type in (
+        DEVICE_TYPE_STREAM_MICRO_INVERTER,
+        "stream_micro_inverter",
+        "Stream Microinverter",
+    )
+    if is_stream_micro_inverter:
+        entities.append(
+            EcoFlowStreamMicroSolarPowerSensor(coordinator=coordinator, entry=entry)
         )
 
     # Add MQTT status sensors if using hybrid coordinator
@@ -4610,6 +4656,12 @@ async def async_setup_entry(
 
         # Powerstream: Combined Solar Input Power -> Energy (for Energy Dashboard)
         if isinstance(sensor, EcoFlowPowerstreamSolarPowerSensor):
+            energy_sensors.append(
+                EcoFlowIntegralEnergySensor(hass, sensor, enabled_default=True)
+            )
+
+        # Stream Microinverter: derived PV1 + PV2 solar power -> generated energy.
+        if isinstance(sensor, EcoFlowStreamMicroSolarPowerSensor):
             energy_sensors.append(
                 EcoFlowIntegralEnergySensor(hass, sensor, enabled_default=True)
             )

@@ -59,6 +59,33 @@ class StreamMicroinverterMappingTest(unittest.TestCase):
                 self.assertIn(DEVICE_TYPE, source)
                 self.assertIn(map_name, source)
 
+    def test_stream_microinverter_adds_derived_solar_energy_sensor(self) -> None:
+        source = _source("sensor.py")
+        self.assertIn("class EcoFlowStreamMicroSolarPowerSensor", source)
+        self.assertIn("powGetPv", source)
+        self.assertIn("powGetPv2", source)
+        self.assertIn(
+            "EcoFlowStreamMicroSolarPowerSensor(coordinator=coordinator, entry=entry)",
+            source,
+        )
+        self.assertIn("isinstance(sensor, EcoFlowStreamMicroSolarPowerSensor)", source)
+        self.assertIn(
+            "EcoFlowIntegralEnergySensor(hass, sensor, enabled_default=True)",
+            source,
+        )
+
+    def test_diagnostics_redacts_mqtt_credentials(self) -> None:
+        source = _source("diagnostics.py")
+        self.assertIn("CONF_MQTT_USERNAME", source)
+        self.assertIn("CONF_MQTT_PASSWORD", source)
+        self.assertIn('"certificateAccount"', source)
+        self.assertIn('"certificatePassword"', source)
+        self.assertIn(
+            "redacted_options = async_redact_data(entry.options, TO_REDACT)",
+            source,
+        )
+        self.assertIn('"options": redacted_options', source)
+
 
 if __name__ == "__main__":
     unittest.main()
