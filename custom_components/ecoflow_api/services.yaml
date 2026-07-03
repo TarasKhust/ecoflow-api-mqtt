@@ -1,0 +1,31 @@
+set_base_load_schedule:
+  name: Set base load schedule
+  description: Set the Stream base-load schedule time windows and power values.
+  fields:
+    device_sn:
+      name: Device serial number
+      description: EcoFlow device serial number. Use either this or device_id.
+      required: false
+      example: ABC123456789
+      selector:
+        text:
+    device_id:
+      name: Device
+      description: Home Assistant device. Use either this or device_sn.
+      required: false
+      selector:
+        device:
+          integration: ecoflow_api
+    schedule:
+      name: Schedule
+      description: List of schedule periods using minutes from midnight and watts.
+      required: true
+      example:
+        - start_min: 1410
+          end_min: 360
+          load_power: 510
+        - start_min: 360
+          end_min: 1020
+          load_power: 350
+      selector:
+        object:
