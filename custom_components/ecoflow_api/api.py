@@ -339,6 +339,25 @@ class EcoFlowApiClient:
             params={"sn": device_sn},
         )
 
+    async def get_main_device_sn(self, device_sn: str) -> str | None:
+        """Resolve the main device SN of a multi-device STREAM/BKW system.
+
+        In BKW systems with multiple stacked devices, control commands must be
+        sent to the main device SN. Given any device SN in the system, the API
+        returns the main device SN. For single-device systems this normally
+        returns the same SN.
+        """
+        result = await self._request(
+            "GET",
+            "/iot-open/sign/device/system/main/sn",
+            params={"sn": device_sn},
+        )
+        if isinstance(result, dict):
+            main_sn = result.get("sn")
+            if isinstance(main_sn, str) and main_sn:
+                return main_sn
+        return None
+
     async def set_device_quota(
         self,
         device_sn: str,

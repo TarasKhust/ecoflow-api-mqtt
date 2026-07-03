@@ -28,6 +28,8 @@ from .const import (
     CONF_REGION,
     CONF_SECRET_KEY,
     CONF_UPDATE_INTERVAL,
+    DEVICE_TYPE_STREAM_ULTRA,
+    DEVICE_TYPE_STREAM_ULTRA_X,
     DEFAULT_UPDATE_INTERVAL,
     DOMAIN,
     REGION_EU,
@@ -79,6 +81,32 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         or entry.data.get(CONF_UPDATE_INTERVAL)
         or DEFAULT_UPDATE_INTERVAL
     )
+
+    # STREAM/BKW multi-device systems require control commands to target the
+    # main device SN. State still comes from the configured SN. If resolution
+    # fails, keep the existing single-SN behavior.
+    configured_sn = entry.data[CONF_DEVICE_SN]
+    device_type = entry.data.get(CONF_DEVICE_TYPE, "unknown")
+    command_sn = configured_sn
+    if device_type in (DEVICE_TYPE_STREAM_ULTRA_X, DEVICE_TYPE_STREAM_ULTRA):
+        try:
+            main_sn = await client.get_main_device_sn(configured_sn)
+            if main_sn:
+                command_sn = main_sn
+            if command_sn != configured_sn:
+                _LOGGER.info(
+                    "BKW multi-device system: routing commands to main device "
+                    "SN %s (state read from %s)",
+                    command_sn[-4:],
+                    configured_sn[-4:],
+                )
+        except Exception as err:
+            _LOGGER.warning(
+                "Could not resolve BKW main device SN for %s (%s); routing "
+                "commands to the configured SN",
+                configured_sn[-4:],
+                err,
+            )
 
     # Get MQTT settings from options
     mqtt_enabled = entry.options.get(CONF_MQTT_ENABLED, False)
@@ -133,6 +161,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             mqtt_password=mqtt_password,
             mqtt_enabled=True,
             certificate_account=certificate_account,  # Pass certificate account for topics
+            command_sn=command_sn,
         )
         # Set up MQTT
         await coordinator.async_setup()
@@ -147,6 +176,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             device_type=entry.data.get(CONF_DEVICE_TYPE, "unknown"),
             update_interval=update_interval,
             config_entry=entry,
+            command_sn=command_sn,
         )
 
     # Fetch initial data
