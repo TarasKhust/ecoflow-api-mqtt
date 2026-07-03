@@ -67,6 +67,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y powershell
 
+      - name: Collect issue context
+        shell: pwsh
+        run: |
+          ./scripts/issue-agent-context.ps1 -IssueNumber $env:ISSUE_NUMBER |
+            Out-File -FilePath issue-agent-context.json -Encoding utf8
+
       - name: Run Codex issue agent
         id: codex
         uses: openai/codex-action@v1
@@ -80,10 +86,89 @@ jobs:
           sandbox: workspace-write
           safety-strategy: drop-sudo
 
+      - name: Apply Codex issue outcome
+        if: always()
+        shell: bash
+        env:
+          ISSUE_NUMBER: ${{ env.ISSUE_NUMBER }}
+        run: |
+          set -euo pipefail
+
+          if [ ! -s codex-issue-agent-output.md ]; then
+            echo "No Codex output file was produced."
+            exit 0
+          fi
+
+          outcome="$(grep -E '^ISSUE_AGENT_OUTCOME:' codex-issue-agent-output.md | tail -n1 | cut -d: -f2- | xargs || true)"
+          labels="$(grep -E '^ISSUE_AGENT_LABELS:' codex-issue-agent-output.md | tail -n1 | cut -d: -f2- | xargs || true)"
+          should_close="$(grep -E '^ISSUE_AGENT_CLOSE:' codex-issue-agent-output.md | tail -n1 | cut -d: -f2- | xargs || true)"
+          pr_title="$(grep -E '^ISSUE_AGENT_PR_TITLE:' codex-issue-agent-output.md | tail -n1 | cut -d: -f2- | sed 's/^ *//; s/ *$//' || true)"
+
+          sed '/^ISSUE_AGENT_/d' codex-issue-agent-output.md > issue-agent-comment.md
+
+          if [ -s issue-agent-comment.md ]; then
+            gh issue comment "$ISSUE_NUMBER" --body-file issue-agent-comment.md
+          fi
+
+          if [ -n "$labels" ] && [ "$labels" != "none" ]; then
+            IFS=',' read -ra label_array <<< "$labels"
+            for raw_label in "${label_array[@]}"; do
+              label="$(echo "$raw_label" | xargs)"
+              case "$label" in
+                needs-info|blocked|hardware-needed|enhancement|bug|question)
+                  gh issue edit "$ISSUE_NUMBER" --add-label "$label"
+                  ;;
+                ""|none)
+                  ;;
+                *)
+                  echo "Ignoring unsupported label from Codex output: $label"
+                  ;;
+              esac
+            done
+          fi
+
+          if [ "$should_close" = "true" ]; then
+            gh issue close "$ISSUE_NUMBER"
+          fi
+
+          if [ "$outcome" = "draft-pr" ]; then
+            if git diff --quiet; then
+              echo "Codex requested draft-pr but produced no file changes."
+              exit 1
+            fi
+
+            branch="codex/issue-${ISSUE_NUMBER}-agent-$(date +%Y%m%d%H%M%S)"
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git switch -c "$branch"
+            git add -A
+            git commit -m "fix: address issue #${ISSUE_NUMBER}"
+            git push -u origin "$branch"
+
+            if [ -z "$pr_title" ] || [ "$pr_title" = "none" ]; then
+              pr_title="fix: address issue #${ISSUE_NUMBER}"
+            fi
+
+            {
+              echo "## Summary"
+              echo
+              echo "Automated draft PR from the Codex issue agent for #${ISSUE_NUMBER}."
+              echo
+              echo "## Agent output"
+              echo
+              cat issue-agent-comment.md
+            } > issue-agent-pr-body.md
+
+            pr_url="$(gh pr create --draft --base main --head "$branch" --title "$pr_title" --body-file issue-agent-pr-body.md)"
+            gh issue comment "$ISSUE_NUMBER" --body "Opened draft PR: ${pr_url}"
+          fi
+
       - name: Upload Codex output
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: codex-issue-agent-${{ env.ISSUE_NUMBER }}
-          path: codex-issue-agent-output.md
+          path: |
+            codex-issue-agent-output.md
+            issue-agent-context.json
           if-no-files-found: ignore
