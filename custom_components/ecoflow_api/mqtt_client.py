@@ -48,6 +48,7 @@ class EcoFlowMQTTClient:
         certificate_account: str | None = None,
         on_auth_failure_callback: Callable[[int], None] | None = None,
         loop: asyncio.AbstractEventLoop | None = None,
+        command_sn: str | None = None,
     ) -> None:
         """Initialize MQTT client.
 
@@ -63,10 +64,14 @@ class EcoFlowMQTTClient:
                 coordinator uses this signal to re-fetch fresh credentials from the
                 EcoFlow API after maintenance-window rotations.
             loop: Event loop to dispatch ACK futures on (required for ACK tracking).
+            command_sn: SN for command topics (/set, /set_reply). In a
+                multi-device STREAM/BKW system this is the main device SN, while
+                state topics remain bound to device_sn.
         """
         self.username = username
         self.password = password
         self.device_sn = device_sn
+        self.command_sn = command_sn or device_sn
         self.on_message_callback = on_message_callback
         self.on_status_callback = on_status_callback
         self.on_auth_failure_callback = on_auth_failure_callback
@@ -83,8 +88,8 @@ class EcoFlowMQTTClient:
         self._certificate_account = certificate_account or username
         self._quota_topic = f"/open/{self._certificate_account}/{device_sn}/quota"
         self._status_topic = f"/open/{self._certificate_account}/{device_sn}/status"
-        self._set_topic = f"/open/{self._certificate_account}/{device_sn}/set"
-        self._set_reply_topic = f"/open/{self._certificate_account}/{device_sn}/set_reply"
+        self._set_topic = f"/open/{self._certificate_account}/{self.command_sn}/set"
+        self._set_reply_topic = f"/open/{self._certificate_account}/{self.command_sn}/set_reply"
         
     @property
     def is_connected(self) -> bool:
@@ -434,4 +439,3 @@ class EcoFlowMQTTClient:
             _LOGGER.error("Failed to decode MQTT message: %s", err)
         except Exception as err:
             _LOGGER.error("Error handling MQTT message: %s", err)
-

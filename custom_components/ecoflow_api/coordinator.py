@@ -38,6 +38,7 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         device_type: str,
         update_interval: int = 15,
         config_entry: ConfigEntry | None = None,
+        command_sn: str | None = None,
     ) -> None:
         """Initialize coordinator.
         
@@ -48,6 +49,8 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             device_type: Device type identifier
             update_interval: Update interval in seconds (default: 15)
             config_entry: Config entry reference
+            command_sn: SN to route control commands to. For multi-device
+                STREAM/BKW systems this is the resolved main device SN.
         """
         super().__init__(
             hass,
@@ -58,6 +61,7 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         self.client = client
         self.api_client = client  # Alias for compatibility
         self.device_sn = device_sn
+        self.command_sn = command_sn or device_sn
         self.device_type = device_type
         self.update_interval_seconds = update_interval
         self._last_data: dict[str, Any] = {}
@@ -206,18 +210,21 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         Returns:
             True if command sent successfully
         """
+        if isinstance(command, dict):
+            command["sn"] = self.command_sn
+
         _LOGGER.debug(
             "Sending command via REST API for %s: params=%s",
-            self.device_sn[-4:],
+            self.command_sn[-4:],
             command.get("params", {}),
         )
         result = await self.client.set_device_quota(
-            device_sn=self.device_sn,
+            device_sn=self.command_sn,
             cmd_code=command,
         )
         _LOGGER.debug(
             "Command sent via REST API for %s: response=%s",
-            self.device_sn[-4:],
+            self.command_sn[-4:],
             result,
         )
         return True
@@ -432,5 +439,4 @@ class EcoFlowDataCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         
         # Force immediate refresh with new interval
         await self.async_request_refresh()
-
 
