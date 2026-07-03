@@ -71,6 +71,12 @@ venv.bak/
 # Temporary API response files
 api_response_*.json
 
+# GitHub issue-agent runtime artifacts
+codex-issue-agent-output.md
+issue-agent-comment.md
+issue-agent-context.json
+issue-agent-pr-body.md
+
 # OS
 .DS_Store
 Thumbs.db
