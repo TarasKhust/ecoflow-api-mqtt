@@ -1,0 +1,91 @@
+name: Codex issue agent
+
+on:
+  workflow_dispatch:
+    inputs:
+      issue_number:
+        description: "Issue number to triage or fix"
+        required: true
+        type: number
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: write
+  issues: write
+  pull-requests: write
+
+concurrency:
+  group: codex-issue-agent-${{ github.event.issue.number || inputs.issue_number }}
+  cancel-in-progress: false
+
+jobs:
+  run:
+    name: Run Codex on issue
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'issues' && github.event.label.name == 'codex-ready')
+    env:
+      ISSUE_NUMBER: ${{ github.event.issue.number || inputs.issue_number }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - name: Checkout main
+        uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0
+
+      - name: Ensure triage labels exist
+        shell: bash
+        run: |
+          set -euo pipefail
+          ensure_label() {
+            local name="$1"
+            local color="$2"
+            local description="$3"
+            if ! gh label view "$name" >/dev/null 2>&1; then
+              gh label create "$name" --color "$color" --description "$description"
+            fi
+          }
+          ensure_label "codex-ready" "5319e7" "Maintainer-approved issue for the Codex issue agent"
+          ensure_label "needs-info" "d876e3" "Further information is required"
+          ensure_label "blocked" "b60205" "Blocked by external information or state"
+          ensure_label "hardware-needed" "fbca04" "Needs confirmation on real hardware"
+
+      - name: Install PowerShell
+        shell: bash
+        run: |
+          set -euo pipefail
+          if command -v pwsh >/dev/null 2>&1; then
+            exit 0
+          fi
+          sudo apt-get update
+          sudo apt-get install -y wget apt-transport-https software-properties-common
+          source /etc/os-release
+          wget -q "https://packages.microsoft.com/config/ubuntu/${VERSION_ID}/packages-microsoft-prod.deb"
+          sudo dpkg -i packages-microsoft-prod.deb
+          rm packages-microsoft-prod.deb
+          sudo apt-get update
+          sudo apt-get install -y powershell
+
+      - name: Run Codex issue agent
+        id: codex
+        uses: openai/codex-action@v1
+        env:
+          ISSUE_NUMBER: ${{ env.ISSUE_NUMBER }}
+          GH_TOKEN: ${{ github.token }}
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          prompt-file: .github/codex/prompts/issue-agent.md
+          output-file: codex-issue-agent-output.md
+          sandbox: workspace-write
+          safety-strategy: drop-sudo
+
+      - name: Upload Codex output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: codex-issue-agent-${{ env.ISSUE_NUMBER }}
+          path: codex-issue-agent-output.md
+          if-no-files-found: ignore
