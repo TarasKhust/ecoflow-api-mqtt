@@ -206,6 +206,7 @@ DELTA_2_SWITCH_DEFINITIONS = {
         "module_type": 5,  # MPPT
         "operate_type": "acOutCfg",
         "param_key": "enabled",
+        "extra_params": {"out_voltage": -1, "out_freq": 255, "xboost": 255},
         "icon_on": "mdi:power-socket",
         "icon_off": "mdi:power-socket-off",
         "device_class": SwitchDeviceClass.OUTLET,
@@ -263,9 +264,73 @@ DELTA_2_SWITCH_DEFINITIONS = {
     },
 }
 
-# Delta 2 Max uses the same switch definitions as Delta 2
-# (identical API format and switch keys)
-DELTA_2_MAX_SWITCH_DEFINITIONS = DELTA_2_SWITCH_DEFINITIONS
+# Delta 2 Max differs from the Delta 2: AC output is on the inverter module
+# (moduleType 3, inv.* keys) instead of MPPT, and quiet mode uses quietCfg.
+DELTA_2_MAX_SWITCH_DEFINITIONS = {
+    "ac_output": {
+        "name": "AC Output",
+        "state_key": "inv.cfgAcEnabled",
+        "module_type": 3,  # INV (inverter)
+        "operate_type": "acOutCfg",
+        "param_key": "enabled",
+        "extra_params": {"out_voltage": -1, "out_freq": 255, "xboost": 255},
+        "icon_on": "mdi:power-socket",
+        "icon_off": "mdi:power-socket-off",
+        "device_class": SwitchDeviceClass.OUTLET,
+    },
+    "x_boost": {
+        "name": "X-Boost",
+        "state_key": "inv.cfgAcXboost",
+        "module_type": 3,  # INV (inverter)
+        "operate_type": "acOutCfg",
+        "param_key": "xboost",
+        "icon_on": "mdi:lightning-bolt",
+        "icon_off": "mdi:lightning-bolt-outline",
+        "device_class": SwitchDeviceClass.SWITCH,
+    },
+    "dc_usb_output": {
+        "name": "DC/USB Output",
+        "state_key": "pd.dcOutState",
+        "module_type": 1,  # PD
+        "operate_type": "dcOutCfg",
+        "param_key": "enabled",
+        "icon_on": "mdi:usb",
+        "icon_off": "mdi:usb-off",
+        "device_class": SwitchDeviceClass.OUTLET,
+    },
+    "car_charger": {
+        "name": "Car Charger",
+        "state_key": "mppt.carState",
+        "module_type": 5,  # MPPT
+        "operate_type": "mpptCar",
+        "param_key": "enabled",
+        "icon_on": "mdi:car",
+        "icon_off": "mdi:car-off",
+        "device_class": SwitchDeviceClass.SWITCH,
+    },
+    "beeper": {
+        "name": "Beeper",
+        "state_key": "pd.beepMode",
+        "module_type": 1,  # PD
+        "operate_type": "quietCfg",
+        "param_key": "enabled",
+        "inverted": True,  # 0=beeper on (normal), 1=beeper off (silent mode)
+        "icon_on": "mdi:volume-high",
+        "icon_off": "mdi:volume-off",
+        "device_class": SwitchDeviceClass.SWITCH,
+    },
+    "ac_always_on": {
+        "name": "AC Always On",
+        "state_key": "pd.newAcAutoOnCfg",
+        "module_type": 1,  # PD
+        "operate_type": "newAcAutoOnCfg",
+        "param_key": "enabled",
+        "extra_params": {"minAcSoc": 5},
+        "icon_on": "mdi:power-plug",
+        "icon_off": "mdi:power-plug-off",
+        "device_class": SwitchDeviceClass.SWITCH,
+    },
+}
 
 # ============================================================================
 # STREAM ULTRA X - Switch Definitions
@@ -793,13 +858,15 @@ class EcoFlowDelta2Switch(EcoFlowBaseEntity, SwitchEntity):
         param_key = self._switch_def["param_key"]
 
         # Build command payload according to Delta 2 API format
+        params = {param_key: state}
+        params.update(self._switch_def.get("extra_params", {}))
         payload = {
             "id": int(time.time() * 1000),
             "version": "1.0",
             "sn": device_sn,
             "moduleType": module_type,
             "operateType": operate_type,
-            "params": {param_key: state},
+            "params": params,
         }
 
         try:
