@@ -53,6 +53,7 @@ coverage.xml
 # Environments
 .env
 .venv
+.venv-test/
 env/
 venv/
 ENV/

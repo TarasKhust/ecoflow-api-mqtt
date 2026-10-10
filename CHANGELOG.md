@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.26] - 2026-10-10
+
+### Fixed
+
+- **Stream MQTT watchdog reconnect storm (issue #75, PR #82)** — PV-only Stream units (e.g. microinverters) legitimately emit no MQTT telemetry overnight, and the fixed 90 s silence threshold made the watchdog force a reconnect about every 2 minutes all night. The first silence is still retried promptly, but each consecutive silent reconnect now extends the effective threshold by 60 s, capped at 3600 s (about one reconnect per hour at most).
+  - The backoff resets only when an MQTT message carries new or changed data; an identical replay (e.g. a retained snapshot re-delivered on reconnect) does not reset it.
+  - Non-Stream devices keep the fixed 180 s threshold.
+  - The watchdog warning now logs the effective threshold instead of the base one.
+
+### Validation
+
+- Added `tests/test_stream_watchdog_backoff.py` (8 tests) covering prompt first retry, growing and capped thresholds, a simulated quiet night, reset on new data, identical replay, and non-Stream behaviour.
+- Hardware validation over ~44 hours on a Stream Micro, Ultra X and AC Pro: about 90% fewer watchdog reconnects on the microinverter overnight, no regressions on the other devices.
+- 39 of 40 tests pass; the one failure (`test_energy_sensor_can_be_constructed`) is a pre-existing incompatibility with the installed Home Assistant test version and is unrelated.
+
+### Chore
+
+- Ignore the local `.venv-test/` virtual environment.
+
 ## [1.10.25] - 2026-09-13
 
 ### Added
