@@ -52,8 +52,9 @@ MQTT_WATCHDOG_INTERVAL = 60
 # solar; without backoff the 90 s threshold re-fires on a ~2 minute cycle all
 # night. The first silence is still retried promptly, but each consecutive
 # silent reconnect extends the effective threshold by one step, bounded so an
-# offline unit reconnects at most about once per hour. Any genuine MQTT
-# message resets the backoff immediately.
+# offline unit reconnects at most about once per hour. The backoff resets
+# only when an MQTT message carries new or changed data; an identical replay
+# (e.g. a retained snapshot re-delivered on reconnect) does not reset it.
 MQTT_WATCHDOG_BACKOFF_STEP_STREAM = 60
 MQTT_WATCHDOG_MAX_THRESHOLD_STREAM = 3600
 
@@ -453,7 +454,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                 "⚠️ MQTT silent for %.0fs on device %s (threshold=%ds) — forcing reconnect",
                 silence,
                 self.device_sn[-4:],
-                self._mqtt_silence_threshold,
+                threshold,
             )
             self._mqtt_silent_reconnects += 1
 
