@@ -47,6 +47,17 @@ MQTT_SILENCE_THRESHOLD = 180
 MQTT_SILENCE_THRESHOLD_STREAM = 90
 MQTT_WATCHDOG_INTERVAL = 60
 
+# Backoff for repeated watchdog reconnects on Stream devices (issue #75).
+# PV-only units (e.g. microinverters) go legitimately quiet overnight with no
+# solar; without backoff the 90 s threshold re-fires on a ~2 minute cycle all
+# night. The first silence is still retried promptly, but each consecutive
+# silent reconnect extends the effective threshold by one step, bounded so an
+# offline unit reconnects at most about once per hour. The backoff resets
+# only when an MQTT message carries new or changed data; an identical replay
+# (e.g. a retained snapshot re-delivered on reconnect) does not reset it.
+MQTT_WATCHDOG_BACKOFF_STEP_STREAM = 60
+MQTT_WATCHDOG_MAX_THRESHOLD_STREAM = 3600
+
 # Rate limit on credential re-fetches triggered by broker auth failures,
 # so a persistently-wrong credential does not hammer the REST API.
 MQTT_CREDENTIAL_REFRESH_COOLDOWN = 300
@@ -146,6 +157,9 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         self._mqtt_watchdog_timer: asyncio.TimerHandle | None = None
         self._mqtt_watchdog_task: asyncio.Task | None = None
         self._shutting_down = False
+        # Consecutive watchdog reconnects with no new MQTT information since.
+        # Used to back off Stream retries (issue #75); reset on changed data.
+        self._mqtt_silent_reconnects = 0
 
         # Timer for periodic REST updates (independent of MQTT)
         self._rest_update_timer: asyncio.TimerHandle | None = None
@@ -425,15 +439,24 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                 return
 
             silence = time.time() - last
-            if silence < self._mqtt_silence_threshold:
+            threshold = self._mqtt_silence_threshold
+            if self.is_stream_device and self._mqtt_silent_reconnects:
+                threshold = min(
+                    threshold
+                    + self._mqtt_silent_reconnects
+                    * MQTT_WATCHDOG_BACKOFF_STEP_STREAM,
+                    MQTT_WATCHDOG_MAX_THRESHOLD_STREAM,
+                )
+            if silence < threshold:
                 return
 
             _LOGGER.warning(
                 "⚠️ MQTT silent for %.0fs on device %s (threshold=%ds) — forcing reconnect",
                 silence,
                 self.device_sn[-4:],
-                self._mqtt_silence_threshold,
+                threshold,
             )
+            self._mqtt_silent_reconnects += 1
 
             try:
                 await self._mqtt_client.async_disconnect()
@@ -577,6 +600,16 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             mqtt_data = payload
             self._last_mqtt_message_time = time.time()
             previous_data = self._merge_data()
+            # Reset the watchdog backoff only on genuinely new information
+            # (issue #75): a broker replay of an identical snapshot (e.g. a
+            # retained message re-delivered on reconnect, or an unknown-topic
+            # echo) proves the session is up but says nothing about the
+            # device, so it must not clear backoff built up while quiet.
+            if any(
+                key not in previous_data or previous_data[key] != value
+                for key, value in mqtt_data.items()
+            ):
+                self._mqtt_silent_reconnects = 0
             
             # Debug logging (only if logger level is DEBUG)
             if _LOGGER.isEnabledFor(logging.DEBUG):
