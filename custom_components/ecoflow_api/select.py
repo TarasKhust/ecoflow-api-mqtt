@@ -10,6 +10,7 @@ from typing import Any
 from homeassistant.components.select import SelectEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import (
@@ -705,12 +706,60 @@ class EcoFlowDelta2Select(EcoFlowBaseEntity, SelectEntity):
             raise
 
 
+# Device types on which the app "Custom" schedule mode has been observed.
+# Conservative scope for issue #68: Ultra X and AC Pro entities display Custom.
+# Plain "Stream Ultra" (non-X) and untested models are deliberately excluded.
+_CUSTOM_DISPLAY_DEVICE_TYPES = (
+    DEVICE_TYPE_STREAM_ULTRA_X,
+    "stream_ultra_x",
+    DEVICE_TYPE_STREAM_AC_PRO,
+    "Stream AC Pro",
+)
+
+
+def _other_strategy_flag_active(data: dict[str, Any]) -> bool:
+    """Return True if any non-Self/AI strategy flag is truthy.
+
+    Scans both flat dotted keys ("energyStrategyOperateMode.<flag>") and a
+    nested "energyStrategyOperateMode" dict, so unknown future flags also
+    block the Custom display rather than being mislabeled.
+    """
+    if not isinstance(data, dict):
+        return False
+    prefix = "energyStrategyOperateMode."
+    for key, value in data.items():
+        if key == "energyStrategyOperateMode" and isinstance(value, dict):
+            candidates = value.values()
+        elif (
+            isinstance(key, str)
+            and key.startswith(prefix)
+            and key[len(prefix):]
+            not in (
+                "operateSelfPoweredOpen",
+                "operateIntelligentScheduleModeOpen",
+            )
+        ):
+            candidates = (value,)
+        else:
+            continue
+        if any(candidates):
+            return True
+    return False
+
+
 class EcoFlowStreamSelect(EcoFlowBaseEntity, SelectEntity):
     """Representation of an EcoFlow Stream select entity.
 
     Uses the Stream API format with cmdId, cmdFunc, dirDest, dirSrc, dest parameters.
     Supported devices: STREAM Ultra, STREAM Pro, STREAM AC Pro, STREAM Ultra X,
                       STREAM Ultra (US), STREAM Max
+
+    Display-only Custom mode (issue #68): on Ultra X and AC Pro the EcoFlow app
+    "Custom" charging/discharging schedule reports both known strategy flags as
+    explicit False. Home Assistant displays this as "Custom" but cannot select
+    it: no confirmed command payload exists (other Stream models reject
+    non-Self/AI strategy writes), so selecting Custom raises instead of sending
+    anything.
     """
 
     def __init__(
@@ -737,6 +786,18 @@ class EcoFlowStreamSelect(EcoFlowBaseEntity, SelectEntity):
         # Create reverse map for value to option
         self._value_to_option = {v: k for k, v in self._options_map.items()}
 
+        # Custom schedule mode has been observed on Ultra X and AC Pro, so
+        # only those entities offer it as a display option. Other Stream
+        # models keep the previous option set.
+        self._supports_custom_display = (
+            self._select_key == "operating_mode"
+            and coordinator.device_type in _CUSTOM_DISPLAY_DEVICE_TYPES
+        )
+        if self._supports_custom_display:
+            self._options_map = {**self._options_map, "Custom": "custom"}
+            self._attr_options = list(self._options_map.keys())
+            self._value_to_option = {v: k for k, v in self._options_map.items()}
+
     @property
     def current_option(self) -> str | None:
         """Return the current selected option."""
@@ -745,14 +806,39 @@ class EcoFlowStreamSelect(EcoFlowBaseEntity, SelectEntity):
 
         # Special handling for operating mode
         if self._select_key == "operating_mode":
-            if self.coordinator.data.get(
-                "energyStrategyOperateMode.operateSelfPoweredOpen", False
-            ):
+            self_powered = _get_nested_value(
+                self.coordinator.data,
+                "energyStrategyOperateMode.operateSelfPoweredOpen",
+            )
+            ai_mode = _get_nested_value(
+                self.coordinator.data,
+                "energyStrategyOperateMode.operateIntelligentScheduleModeOpen",
+            )
+
+            # Other models keep the original truthiness interpretation and never
+            # show Custom; only Ultra X and AC Pro get the strict both-False
+            # handling.
+            if not self._supports_custom_display:
+                if self_powered:
+                    return "Self-Powered"
+                if ai_mode:
+                    return "AI Mode"
+                return None
+
+            if self_powered is True:
                 return "Self-Powered"
-            elif self.coordinator.data.get(
-                "energyStrategyOperateMode.operateIntelligentScheduleModeOpen", False
-            ):
+            if ai_mode is True:
                 return "AI Mode"
+            # Custom is only the explicit both-False state on the observed
+            # models. Missing,
+            # None, 0 or string values stay unknown, as does any other active
+            # strategy flag we do not model.
+            if (
+                self_powered is False
+                and ai_mode is False
+                and not _other_strategy_flag_active(self.coordinator.data)
+            ):
+                return "Custom"
             return None
 
         return None
@@ -774,12 +860,23 @@ class EcoFlowStreamSelect(EcoFlowBaseEntity, SelectEntity):
                         "operateSelfPoweredOpen": True,
                     }
                 }
-            else:  # AI Mode
+            elif option == "AI Mode":
                 params = {
                     "cfgEnergyStrategyOperateMode": {
                         "operateIntelligentScheduleModeOpen": True,
                     }
                 }
+            elif option == "Custom":
+                # Display-only (issue #68): no confirmed command payload exists
+                # for entering Custom, and other Stream models reject non-Self/AI
+                # strategy writes. Fail loudly without any device request.
+                raise HomeAssistantError(
+                    "Custom operating mode can only be switched in the EcoFlow "
+                    "app; Home Assistant displays it but cannot select it."
+                )
+            else:  # Defensive: unreachable via the options check above.
+                _LOGGER.error("Invalid option %s for %s", option, self._select_key)
+                return
         else:
             params = {}
 

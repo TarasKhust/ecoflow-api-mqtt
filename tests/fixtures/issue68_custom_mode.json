@@ -1,0 +1,19 @@
+{
+  "ultra_x_ai": {
+    "energyStrategyOperateMode.operateIntelligentScheduleModeOpen": true,
+    "energyStrategyOperateMode.operateSelfPoweredOpen": false
+  },
+  "ultra_x_custom": {
+    "energyStrategyOperateMode.operateIntelligentScheduleModeOpen": false,
+    "energyStrategyOperateMode.operateSelfPoweredOpen": false
+  },
+  "ac_pro_ai": {
+    "energyStrategyOperateMode.operateIntelligentScheduleModeOpen": true,
+    "energyStrategyOperateMode.operateSelfPoweredOpen": false
+  },
+  "ac_pro_custom": {
+    "energyStrategyOperateMode.operateIntelligentScheduleModeOpen": false,
+    "energyStrategyOperateMode.operateSelfPoweredOpen": false
+  },
+  "note": "Sanitized operating-mode flags only (issue #68), captured from Stream Ultra X and Stream AC Pro during a user-confirmed active Custom balanced grid+solar charging task (no task flag change) and after restoring Intelligent. No serials, tokens, entry IDs, power, or other quota fields."
+}
