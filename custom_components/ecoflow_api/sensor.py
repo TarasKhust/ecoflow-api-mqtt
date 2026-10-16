@@ -3625,7 +3625,7 @@ POWERSTREAM_MICRO_INVERTER_SENSOR_DEFINITIONS = {
         "icon": "mdi:lightning-bolt",
         "value_map": lambda x: x / 10 if x is not None else None,
     },
-        "inverter_output_power": {
+    "inverter_output_power": {
         "name": "Inverter Output Power",
         "key": "20_1.invOutputWatts",
         "unit": UnitOfPower.WATT,
