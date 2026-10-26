@@ -43,7 +43,7 @@ class EcoFlowMQTTClient:
         username: str,
         password: str,
         device_sn: str,
-        on_message_callback: Callable[[dict[str, Any]], None] | None = None,
+        on_message_callback: Callable[..., None] | None = None,
         on_status_callback: Callable[[bool], None] | None = None,
         certificate_account: str | None = None,
         on_auth_failure_callback: Callable[[int], None] | None = None,
@@ -56,7 +56,10 @@ class EcoFlowMQTTClient:
             username: EcoFlow account username/email (for MQTT authentication)
             password: EcoFlow account password (for MQTT authentication)
             device_sn: Device serial number
-            on_message_callback: Callback function for received messages
+            on_message_callback: Callback function for received messages.
+                Receives ``(payload, is_telemetry=...)``. Only quota-topic
+                payloads are device telemetry (``is_telemetry=True``);
+                unknown-topic echoes arrive with ``is_telemetry=False``.
             on_status_callback: Callback function for connection status changes (True=connected)
             certificate_account: Certificate account/user_id for topics (if None, uses username)
             on_auth_failure_callback: Called with the MQTT CONNACK code when the broker
@@ -406,6 +409,11 @@ class EcoFlowMQTTClient:
         if self.on_status_callback:
             self.on_status_callback(False)
 
+    def _emit_message(self, payload: dict[str, Any], *, is_telemetry: bool) -> None:
+        """Forward a payload tagged as device telemetry or not."""
+        if self.on_message_callback is not None:
+            self.on_message_callback(payload, is_telemetry=is_telemetry)
+
     def _on_message(
         self,
         client: mqtt.Client,
@@ -428,7 +436,7 @@ class EcoFlowMQTTClient:
                     quota_data = payload
                 
                 if self.on_message_callback:
-                    self.on_message_callback(quota_data)
+                    self._emit_message(quota_data, is_telemetry=True)
                     
             elif msg.topic == self._status_topic:
                 # Status topic: payload has "params.status" (0=offline, 1=online)
@@ -465,9 +473,10 @@ class EcoFlowMQTTClient:
                         )
                 
             else:
-                # Unknown topic
+                # Unknown topic: legacy forwarding preserved, tagged as
+                # non-telemetry. Status and set_reply never reach here.
                 if self.on_message_callback:
-                    self.on_message_callback(payload)
+                    self._emit_message(payload, is_telemetry=False)
                 
         except json.JSONDecodeError as err:
             _LOGGER.error("Failed to decode MQTT message: %s", err)

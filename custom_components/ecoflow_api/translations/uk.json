@@ -242,6 +242,12 @@
       },
       "extra_battery_2_cur": {
         "name": "Додаткова батарея 2 - Струм"
+      },
+      "last_mqtt_message_received": {
+        "name": "Останнє отримане MQTT-повідомлення"
+      },
+      "consecutive_silent_watchdog_reconnects": {
+        "name": "Послідовні тихі перепідключення сторожового таймера"
       }
     },
     "binary_sensor": {

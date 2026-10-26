@@ -356,6 +356,27 @@ You can monitor the connection mode via the `sensor.ecoflow_delta_pro_3_connecti
 - `mqtt_standby` - MQTT connected but not actively used
 - `rest_only` - REST API only (MQTT unavailable or disabled)
 
+### MQTT diagnostics
+
+REST polling may return cached readings while a device is silent, and a
+broker connection alone is not device telemetry. Two diagnostic sensors
+(requested with supporting evidence by kristiansnelling-art) tell them apart:
+
+- `Last MQTT message received` — the last quota-telemetry receipt (UTC).
+  Advanced only by device telemetry; broker connect/reconnect, REST polls,
+  command ACKs and other topics never move it. The state is published at most
+  once per minute (the first receipt immediately) to keep the Home Assistant
+  database small, so it can lag the real last receipt by up to a minute.
+- `Consecutive silent watchdog reconnects` — watchdog reconnects since the
+  last genuinely new MQTT data. The reset stays data-change-based: identical
+  live values and broker replays never reset it.
+
+Limitations: every quota receipt counts, including broker replays, so an
+identical live reading and a replayed snapshot are indistinguishable here.
+The receipt timestamp is separate from the watchdog silence baseline, which
+also resets when the broker connects or reconnects. Neither diagnostic proves
+the physical device is online.
+
 ## 🐛 Debug Mode
 
 To enable debug logging for troubleshooting, add the following to your `/homeassistant/configuration.yaml`:

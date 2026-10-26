@@ -4799,6 +4799,20 @@ async def async_setup_entry(
                 sensor_id="connection_mode",
             )
         )
+        entities.append(
+            EcoFlowLastMqttMessageSensor(
+                coordinator=coordinator,
+                entry=entry,
+                sensor_id="last_mqtt_message_received",
+            )
+        )
+        entities.append(
+            EcoFlowSilentReconnectsSensor(
+                coordinator=coordinator,
+                entry=entry,
+                sensor_id="consecutive_silent_watchdog_reconnects",
+            )
+        )
         _LOGGER.info("Added MQTT status sensors for hybrid coordinator")
 
     async_add_entities(entities)
@@ -5140,3 +5154,146 @@ class EcoFlowMQTTModeSensor(EcoFlowBaseEntity, SensorEntity):
         elif mode == "mqtt_standby":
             return "mdi:cloud-sync"
         return "mdi:cloud-off"
+
+
+# The receipt timestamp changes on every telemetry message (about every few
+# seconds per device). Writing each one would add a state_changed event, and a
+# recorder row, per message. Offline detection needs minute-level resolution
+# at most, so a new value is published only when it is at least this much
+# later than the one already published.
+MQTT_RECEIPT_PUBLISH_INTERVAL = timedelta(seconds=60)
+
+
+class EcoFlowLastMqttMessageSensor(EcoFlowBaseEntity, SensorEntity):
+    """Last device quota-telemetry receipt (TIMESTAMP, diagnostic).
+
+    The state is published at most once per ``MQTT_RECEIPT_PUBLISH_INTERVAL``
+    (the first receipt is published immediately), so it may lag the real last
+    receipt by up to that interval.
+    """
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    _attr_icon = "mdi:message-text-clock-outline"
+
+    def __init__(
+        self,
+        coordinator: EcoFlowHybridCoordinator,
+        entry: ConfigEntry,
+        sensor_id: str = "last_mqtt_message_received",
+    ) -> None:
+        """Initialize the last-telemetry sensor."""
+        super().__init__(coordinator, sensor_id)
+        self._coordinator: EcoFlowHybridCoordinator = coordinator
+        self._attr_name = "Last MQTT message received"
+        self._attr_unique_id = f"{entry.entry_id}_{sensor_id}"
+        self._attr_translation_key = sensor_id
+        self._last_published: datetime | None = self.native_value
+
+    @property
+    def native_value(self) -> datetime | None:
+        """Last quota-telemetry receipt (None before the first one)."""
+        return self._coordinator.last_mqtt_message_received
+
+    @property
+    def available(self) -> bool:
+        """Stay available without telemetry and on REST failure."""
+        return True
+
+    async def async_added_to_hass(self) -> None:
+        """Subscribe to diagnostic updates in addition to coordinator polls."""
+        await super().async_added_to_hass()
+        self.async_on_remove(
+            self._coordinator.async_add_mqtt_diagnostic_listener(
+                self._handle_mqtt_diagnostic_update
+            )
+        )
+
+    @callback
+    def _handle_mqtt_diagnostic_update(self) -> None:
+        """Publish the telemetry timestamp, at most once per interval."""
+        self._write_if_due()
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Publish the telemetry timestamp, at most once per interval."""
+        self._write_if_due()
+
+    def _write_if_due(self) -> None:
+        """Write HA state when the timestamp changed enough since the last publish.
+
+        The first receipt (None -> value) is always published. After that a
+        newer value is skipped until it is ``MQTT_RECEIPT_PUBLISH_INTERVAL``
+        later than the published one. A value that moved backwards (clock
+        adjustment) is published immediately so the state never stays ahead.
+        """
+        new_value = self.native_value
+        published = self._last_published
+        if new_value == published:
+            return
+        if (
+            new_value is not None
+            and published is not None
+            and new_value >= published
+            and new_value - published < MQTT_RECEIPT_PUBLISH_INTERVAL
+        ):
+            return
+        self._last_published = new_value
+        self.async_write_ha_state()
+
+
+class EcoFlowSilentReconnectsSensor(EcoFlowBaseEntity, SensorEntity):
+    """Consecutive silent watchdog reconnects (diagnostic counter)."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_icon = "mdi:counter"
+
+    def __init__(
+        self,
+        coordinator: EcoFlowHybridCoordinator,
+        entry: ConfigEntry,
+        sensor_id: str = "consecutive_silent_watchdog_reconnects",
+    ) -> None:
+        """Initialize the silent-reconnect counter sensor."""
+        super().__init__(coordinator, sensor_id)
+        self._coordinator: EcoFlowHybridCoordinator = coordinator
+        self._attr_name = "Consecutive silent watchdog reconnects"
+        self._attr_unique_id = f"{entry.entry_id}_{sensor_id}"
+        self._attr_translation_key = sensor_id
+        self._last_published: int = self.native_value
+
+    @property
+    def native_value(self) -> int:
+        """Current silent-reconnect count."""
+        return self._coordinator.mqtt_silent_reconnects
+
+    @property
+    def available(self) -> bool:
+        """Stay available without telemetry and on REST failure."""
+        return True
+
+    async def async_added_to_hass(self) -> None:
+        """Subscribe to diagnostic updates in addition to coordinator polls."""
+        await super().async_added_to_hass()
+        self.async_on_remove(
+            self._coordinator.async_add_mqtt_diagnostic_listener(
+                self._handle_mqtt_diagnostic_update
+            )
+        )
+
+    @callback
+    def _handle_mqtt_diagnostic_update(self) -> None:
+        """Write state only when the counter actually changed."""
+        self._write_if_changed()
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        """Write state only when the counter actually changed."""
+        self._write_if_changed()
+
+    def _write_if_changed(self) -> None:
+        """Write HA state when the counter differs from the last publish."""
+        new_value = self.native_value
+        if new_value != self._last_published:
+            self._last_published = new_value
+            self.async_write_ha_state()

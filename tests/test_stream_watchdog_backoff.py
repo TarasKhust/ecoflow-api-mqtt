@@ -74,6 +74,8 @@ def make_watchdog_coordinator(
     )
     coordinator._mqtt_silent_reconnects = 0
     coordinator._last_mqtt_message_time = clock["now"]
+    coordinator._last_mqtt_telemetry_time = None
+    coordinator._mqtt_diagnostic_listeners = set()
     coordinator._mqtt_watchdog_timer = None
     coordinator._shutting_down = False
     coordinator._mqtt_data = {}

@@ -358,6 +358,12 @@
       },
       "quota_device_ts": {
         "name": "Device Timestamp"
+      },
+      "last_mqtt_message_received": {
+        "name": "Last MQTT message received"
+      },
+      "consecutive_silent_watchdog_reconnects": {
+        "name": "Consecutive silent watchdog reconnects"
       }
     },
     "binary_sensor": {
