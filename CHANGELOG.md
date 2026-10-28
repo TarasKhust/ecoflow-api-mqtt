@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Fixed
+
+- **Stream grid direction binary sensors (#88)** — `Grid Feed-in` now turns on when Grid Connection Power is positive (exporting) and `Grid Consuming` when it is negative (importing), matching the Stream Ultra X, Stream Ultra and AC Pro sign convention. The existing ±10 W deadband is unchanged. Numeric sensors are unchanged, but automations that relied on the previous reversed binary sensor states will now see corrected states. Thanks to @kristiansnelling-art for the report and multi-unit evidence.
+
 ## [1.10.27] - 2026-10-26
 
 ### Added

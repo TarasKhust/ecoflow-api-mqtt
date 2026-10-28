@@ -3249,7 +3249,7 @@ STREAM_ULTRA_X_SENSOR_DEFINITIONS = {
         "device_class": SensorDeviceClass.POWER,
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:transmission-tower",
-        # Positive = consuming from grid, Negative = feeding to grid
+        # Positive = feeding to grid, Negative = consuming from grid
     },
     "battery_power": {
         "name": "Battery Power",
@@ -3422,7 +3422,7 @@ STREAM_AC_PRO_SENSOR_DEFINITIONS = {
         "device_class": SensorDeviceClass.POWER,
         "state_class": SensorStateClass.MEASUREMENT,
         "icon": "mdi:transmission-tower",
-        # Positive = consuming from grid, Negative = feeding to grid
+        # Positive = feeding to grid, Negative = consuming from grid
     },
     "battery_power": {
         "name": "Battery Power",
