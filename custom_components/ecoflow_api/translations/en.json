@@ -99,6 +99,15 @@
   },
   "entity": {
     "sensor": {
+      "unit_battery_level": {
+        "name": "Unit Battery Level"
+      },
+      "unit_output_power": {
+        "name": "Unit Output Power"
+      },
+      "unit_role": {
+        "name": "Unit Role"
+      },
       "bms_batt_soc": {
         "name": "Battery Level"
       },

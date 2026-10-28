@@ -99,6 +99,15 @@
   },
   "entity": {
     "sensor": {
+      "unit_battery_level": {
+        "name": "Рівень заряду пристрою"
+      },
+      "unit_output_power": {
+        "name": "Вихідна потужність пристрою"
+      },
+      "unit_role": {
+        "name": "Роль пристрою"
+      },
       "soc": {
         "name": "Рівень заряду батареї"
       },

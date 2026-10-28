@@ -270,6 +270,34 @@ the device dropdown if your unit reports as a plain "Stream Ultra".
 - STREAM Max, STREAM AC
 - STREAM Ultra (US)
 
+### Stream battery units in a linked system
+
+Stream Ultra X, Stream Ultra and Stream AC Pro have three per-unit sensors:
+
+| Sensor | EcoFlow field |
+| --- | --- |
+| Unit Battery Level | `bmsBattSoc` |
+| Unit Output Power | `outputWatts` |
+| Unit Role | `distributedDeviceStatus` |
+
+The two readings use only that unit's fields, with no fallback to system totals.
+Zero is a valid reading; a missing field stays unknown. Unit Role shows EcoFlow's
+reported value, such as `MASTER`, `SLAVE` or `ELECTION`, and updates when it changes.
+The main unit can change during normal operation.
+
+The existing **Battery Level** sensor still reads `cmsBattSoc` (the system state of
+charge), falling back to `actSoc` when it is missing or zero. That fallback can
+differ from the unit's own charge level shown in the EcoFlow app. Use **Unit
+Battery Level** for automations that need an individual battery's charge level.
+**System Load Power** still reads `powGetSysLoad`, falling back to `outputWatts`
+when missing or zero. System battery, grid and solar power fields are populated
+on the main unit; other units can show zero or stale values. Existing sensors,
+IDs and history are unchanged.
+
+These additions come from the patch and multi-unit testing shared by
+@kristiansnelling-art in issue #87. A per-unit solar total has not been verified;
+the existing per-string PV sensors remain available on supported models.
+
 ### Smart Plug S401
 
 Smart Plug S401 is a WiFi-enabled smart plug with power monitoring and control capabilities.
