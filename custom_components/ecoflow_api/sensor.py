@@ -4497,8 +4497,12 @@ class EcoFlowIntegralEnergySensor(IntegrationSensor):
         # (home-assistant/core#177596). Pass it only when the installed
         # IntegrationSensor still accepts it, so both pre- and post-2026.8
         # keep working.
-        if "hass" in inspect.signature(IntegrationSensor.__init__).parameters:
+        parameters = inspect.signature(IntegrationSensor.__init__).parameters
+        if "hass" in parameters:
             integration_kwargs["hass"] = hass
+        # HA 2026.11 requires an explicit device_class. Keep auto-detection.
+        if "device_class" in parameters:
+            integration_kwargs["device_class"] = None
         super().__init__(**integration_kwargs)
         # Copy device info from power sensor
         self._attr_device_info = power_sensor.device_info
