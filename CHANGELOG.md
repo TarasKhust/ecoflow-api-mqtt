@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.10.29] - 2026-11-14
+
+### Fixed
+
+- **Stream Custom operating mode shown as Unknown (#68, PR #81)** — On Stream Ultra X and Stream AC Pro, the operating mode select now shows `Custom` when the EcoFlow app uses a Custom schedule (both `operateSelfPoweredOpen` and `operateIntelligentScheduleModeOpen` are `false`), instead of Unknown. Missing or malformed values and any other active strategy flag are never shown as Custom. This is display-only: selecting Custom from Home Assistant raises a clear error asking you to switch modes in the EcoFlow app, and no command is sent. Self-Powered and AI Mode commands are unchanged, and other Stream models keep their previous behaviour. Thanks to @ArseBandit for the fix and the live telemetry from a linked Ultra X and AC Pro setup.
+
+### Validation
+
+- Added `tests/test_stream_custom_mode_display.py` with an anonymised fixture covering flat and nested telemetry, missing and malformed values, extra active flags, unsupported models and the rejected Custom selection.
+- 147 tests and 36 subtests pass on Home Assistant 2026.11.0.
+
 ## [1.10.28] - 2026-11-14
 
 ### Added
