@@ -4787,10 +4787,15 @@ async def async_setup_entry(
     )
 
     # Create sensor entities
+    sensor_class = (
+        EcoFlowStreamMicroSensor
+        if sensor_definitions is STREAM_MICRO_INVERTER_SENSOR_DEFINITIONS
+        else EcoFlowSensor
+    )
     entities = []
     for sensor_id, sensor_config in sensor_definitions.items():
         entities.append(
-            EcoFlowSensor(
+            sensor_class(
                 coordinator=coordinator,
                 entry=entry,
                 sensor_id=sensor_id,
@@ -5126,6 +5131,24 @@ class EcoFlowSensor(EcoFlowBaseEntity, SensorEntity):
             return "on" if value else "off"
 
         return value
+
+
+class EcoFlowStreamMicroSensor(EcoFlowSensor):
+    """Avoid rewriting unchanged Stream Microinverter readings on MQTT updates."""
+
+    _last_reported_reading: tuple[bool, Any] | None = None
+
+    @callback
+    def _handle_coordinator_update(self) -> None:
+        available = self.available
+        reading = (available, self.native_value if available else None)
+        if (
+            getattr(self.coordinator, "publishing_mqtt", False)
+            and reading == self._last_reported_reading
+        ):
+            return
+        super()._handle_coordinator_update()
+        self._last_reported_reading = reading
 
 
 class EcoFlowMQTTStatusSensor(EcoFlowBaseEntity, SensorEntity):

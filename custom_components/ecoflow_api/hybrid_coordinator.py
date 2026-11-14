@@ -89,6 +89,8 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
     - Merges data from both sources
     """
 
+    publishing_mqtt = False
+
     def __init__(
         self,
         hass: HomeAssistant,
@@ -737,7 +739,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             # Schedule update in HA event loop from MQTT thread
             # async_set_updated_data is a sync method (despite the async_ prefix)
             # Use call_soon_threadsafe to schedule it in the correct event loop
-            self.hass.loop.call_soon_threadsafe(lambda: self.async_set_updated_data(merged_data))
+            self.hass.loop.call_soon_threadsafe(lambda: self._async_publish_mqtt_data(merged_data))
             
         except RuntimeError:
             # Event loop closed during shutdown - ignore silently
@@ -745,6 +747,15 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         except Exception as err:
             _LOGGER.error("Error handling MQTT message: %s", err)
 
+
+    @callback
+    def _async_publish_mqtt_data(self, data: dict[str, Any]) -> None:
+        """Let entity listeners distinguish MQTT updates from REST refreshes."""
+        self.publishing_mqtt = True
+        try:
+            self.async_set_updated_data(data)
+        finally:
+            self.publishing_mqtt = False
 
     def _merge_data(self) -> dict[str, Any]:
         """Merge REST API and MQTT data.
