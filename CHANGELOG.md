@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Stream per-unit readings (#87)** — Adds Unit Battery Level, Unit Output Power and Unit Role for Stream Ultra X, Ultra and AC Pro, using the unit's own fields. Existing sensors are unchanged; the README explains their system/unit fallbacks. Based on @kristiansnelling-art's patch and testing across 11 units.
+
 ## [1.10.27] - 2026-10-26
 
 ### Added

@@ -3134,7 +3134,37 @@ DELTA_2_MAX_SENSOR_DEFINITIONS = DELTA_2_SENSOR_DEFINITIONS
 # Based on EcoFlow Developer API documentation for STREAM system (BKW)
 # ============================================================================
 
+# Per-unit Stream readings, kept separate from the system totals.
+STREAM_UNIT_SENSOR_DEFINITIONS = {
+    "unit_battery_level": {
+        "name": "Unit Battery Level",
+        "key": "bmsBattSoc",
+        "unit": PERCENTAGE,
+        "device_class": SensorDeviceClass.BATTERY,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:battery-heart-variant",
+    },
+    "unit_output_power": {
+        "name": "Unit Output Power",
+        "key": "outputWatts",
+        "unit": UnitOfPower.WATT,
+        "device_class": SensorDeviceClass.POWER,
+        "state_class": SensorStateClass.MEASUREMENT,
+        "icon": "mdi:flash-outline",
+    },
+    "unit_role": {
+        "name": "Unit Role",
+        "key": "distributedDeviceStatus",
+        "unit": None,
+        "device_class": None,
+        "state_class": None,
+        "icon": "mdi:crown-outline",
+    },
+}
+
+
 STREAM_ULTRA_X_SENSOR_DEFINITIONS = {
+    **STREAM_UNIT_SENSOR_DEFINITIONS,
     # ============================================================================
     # BATTERY
     # ============================================================================
@@ -3351,6 +3381,7 @@ STREAM_ULTRA_X_SENSOR_DEFINITIONS = {
 # and no cycles counter, so those Ultra X keys are omitted here.
 # ============================================================================
 STREAM_AC_PRO_SENSOR_DEFINITIONS = {
+    **STREAM_UNIT_SENSOR_DEFINITIONS,
     # ============================================================================
     # BATTERY
     # ============================================================================
