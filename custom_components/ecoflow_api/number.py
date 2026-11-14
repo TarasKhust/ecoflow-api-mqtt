@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import math
 import time
 from datetime import datetime
 from typing import Any
@@ -1443,6 +1444,37 @@ def _get_nested_value(data: dict[str, Any], key: str) -> Any:
     return value
 
 
+# PowerStream AC output ratings are reported by the device in deciwatts
+# (ratedPower 8000 == 800 W, 6000 == 600 W), matching the deciwatt protocol
+# used by the permanent_watts command (UI watts * 10). The Custom Load Power
+# slider maximum follows the hardware rating instead of a hardcoded value.
+POWERSTREAM_RATED_POWER_KEY = "20_1.ratedPower"
+POWERSTREAM_PERMANENT_WATTS_FALLBACK_MAX = 600.0
+POWERSTREAM_PERMANENT_WATTS_UPPER_BOUND = 800.0
+
+
+def powerstream_permanent_watts_max(data: dict[str, Any] | None) -> float:
+    """Resolve the Custom Load Power slider maximum in watts.
+
+    Uses the device-reported rated power when it is a usable number and
+    clamps it into the conservative [600, 800] W window; falls back to 600 W
+    for missing, malformed, non-finite, boolean, zero/negative, or below-600
+    readings so 600 W models can never regress.
+    """
+    if not isinstance(data, dict):
+        return POWERSTREAM_PERMANENT_WATTS_FALLBACK_MAX
+    raw = _get_nested_value(data, POWERSTREAM_RATED_POWER_KEY)
+    if raw is None or isinstance(raw, bool):
+        return POWERSTREAM_PERMANENT_WATTS_FALLBACK_MAX
+    try:
+        watts = float(raw) / 10.0
+    except (TypeError, ValueError, OverflowError):
+        return POWERSTREAM_PERMANENT_WATTS_FALLBACK_MAX
+    if not math.isfinite(watts) or watts < 600.0:
+        return POWERSTREAM_PERMANENT_WATTS_FALLBACK_MAX
+    return min(watts, POWERSTREAM_PERMANENT_WATTS_UPPER_BOUND)
+
+
 class EcoFlowPowerstreamNumber(EcoFlowBaseEntity, NumberEntity):
     """Representation of a Powerstream Micro Inverter number entity.
 
@@ -1472,6 +1504,18 @@ class EcoFlowPowerstreamNumber(EcoFlowBaseEntity, NumberEntity):
         self._attr_native_unit_of_measurement = number_def.get("unit")
         self._attr_mode = number_def.get("mode", NumberMode.AUTO)
         self._attr_icon = number_def.get("icon")
+
+    @property
+    def native_max_value(self) -> float:
+        """Return the maximum value.
+
+        Custom Load Power follows the device-reported rating so 800 W models
+        are not blocked at 600 W; it tracks coordinator updates at runtime.
+        Every other number keeps its static definition maximum.
+        """
+        if self._number_key == "permanent_watts":
+            return powerstream_permanent_watts_max(self.coordinator.data)
+        return self._number_def["max"]
 
     @property
     def native_value(self) -> float | None:
