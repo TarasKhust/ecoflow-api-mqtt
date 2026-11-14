@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **Stream per-unit readings (#87)** — Adds Unit Battery Level, Unit Output Power and Unit Role for Stream Ultra X, Ultra and AC Pro, using the unit's own fields. Existing sensors are unchanged; the README explains their system/unit fallbacks. Based on @kristiansnelling-art's patch and testing across 11 units.
+
 ### Fixed
 
 - **Stream grid direction binary sensors (#88)** — `Grid Feed-in` now turns on when Grid Connection Power is positive (exporting) and `Grid Consuming` when it is negative (importing), matching the Stream Ultra X, Stream Ultra and AC Pro sign convention. The existing ±10 W deadband is unchanged. Numeric sensors are unchanged, but automations that relied on the previous reversed binary sensor states will now see corrected states. Thanks to @kristiansnelling-art for the report and multi-unit evidence.
