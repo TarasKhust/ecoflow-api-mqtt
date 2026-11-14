@@ -4439,10 +4439,9 @@ DELTA_PRO_ULTRA_SENSOR_DEFINITIONS = {
         "name": "Network Type",
         "key": "hs_yj751_pd_appshow_addr.wireless4GSta",
         "unit": None,
-        "device_class": SensorDeviceClass.ENUM,
+        # The API returns numeric codes whose meanings are unverified.
         "state_class": None,
         "icon": "mdi:network",
-        "options": ["wifi", "4g", "wlan"],
     },
     "wireless_4g_con": {
         "name": "4G Connection Status",
