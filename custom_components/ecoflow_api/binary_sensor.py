@@ -419,7 +419,7 @@ STREAM_ULTRA_X_BINARY_SENSOR_DEFINITIONS = {
         "icon_on": "mdi:transmission-tower-export",
         "icon_off": "mdi:transmission-tower",
         "derived": True,
-        "derive_condition": lambda v: v is not None and v < -10,
+        "derive_condition": lambda v: v is not None and v > 10,
     },
     "grid_consuming": {
         "name": "Grid Consuming",
@@ -428,7 +428,7 @@ STREAM_ULTRA_X_BINARY_SENSOR_DEFINITIONS = {
         "icon_on": "mdi:transmission-tower-import",
         "icon_off": "mdi:transmission-tower",
         "derived": True,
-        "derive_condition": lambda v: v is not None and v > 10,
+        "derive_condition": lambda v: v is not None and v < -10,
     },
 }
 
