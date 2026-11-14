@@ -5,15 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.10.28] - 2026-11-14
 
 ### Added
 
-- **Stream per-unit readings (#87)** — Adds Unit Battery Level, Unit Output Power and Unit Role for Stream Ultra X, Ultra and AC Pro, using the unit's own fields. Existing sensors are unchanged; the README explains their system/unit fallbacks. Based on @kristiansnelling-art's patch and testing across 11 units.
+- **Stream per-unit readings (#87, PR #90)** — Adds Unit Battery Level, Unit Output Power and Unit Role for Stream Ultra X, Ultra and AC Pro, using the unit's own fields. Existing sensors are unchanged; the README explains their system/unit fallbacks. Based on @kristiansnelling-art's patch and testing across 11 units.
+- **Per-device MQTT diagnostics (#84, PR #85)** — Adds two diagnostic sensors on hybrid devices: `Last MQTT message received` (when device telemetry last arrived on its MQTT quota topic, updated at most once a minute) and `Consecutive silent watchdog reconnects`. Broker reconnects, REST polls and command acknowledgements do not count as telemetry. A replayed broker message still counts as received, so neither sensor proves that a device is online. Thanks to @kristiansnelling-art for the request and testing on 14 devices.
 
 ### Fixed
 
-- **Stream grid direction binary sensors (#88)** — `Grid Feed-in` now turns on when Grid Connection Power is positive (exporting) and `Grid Consuming` when it is negative (importing), matching the Stream Ultra X, Stream Ultra and AC Pro sign convention. The existing ±10 W deadband is unchanged. Numeric sensors are unchanged, but automations that relied on the previous reversed binary sensor states will now see corrected states. Thanks to @kristiansnelling-art for the report and multi-unit evidence.
+- **Sensor setup on Home Assistant 2026.11 (#92, PR #93)** — Home Assistant 2026.11 requires a `device_class` argument for the energy helper sensors, so the EcoFlow sensor platform failed to load. The integration now passes it while keeping Home Assistant's automatic energy class detection, and still works on older Home Assistant versions. Thanks to @edk333 for the report and @ArseBandit for the fix.
+- **Stream grid direction binary sensors (#88, PR #89)** — `Grid Feed-in` now turns on when Grid Connection Power is positive (exporting) and `Grid Consuming` when it is negative (importing), matching the Stream Ultra X, Stream Ultra and AC Pro sign convention. The existing ±10 W deadband is unchanged. Numeric sensors are unchanged, but automations that relied on the previous reversed binary sensor states will now see corrected states. Thanks to @kristiansnelling-art for the report and multi-unit evidence.
+
+### Changed
+
+- **Fewer state writes from Stream Microinverters (#75, PR #95)** — The ten standard Stream Microinverter sensors no longer write their state on MQTT updates when the reading and availability are unchanged. Changed readings, recovery from unavailable and regular REST updates still write. For these sensors, an unchanged MQTT message no longer advances Home Assistant's `last_reported` timestamp. Tested by @kristiansnelling-art for 24 hours on three Microinverters.
+
+### Validation
+
+- 130 tests and 16 subtests pass on Home Assistant 2026.11.0. The HA-fixture MQTT diagnostics tests were run by the contributor; they need POSIX modules (`fcntl`) that are not available on Windows, so they were not rerun for this release.
+- The per-unit sensors, MQTT diagnostics and Microinverter write change were tested together for 24 hours on 11 Stream batteries and 3 Microinverters on Home Assistant 2026.10.4. The Home Assistant 2026.11 fix was checked on a live 2026.11.0 install with three EcoFlow entries.
 
 ## [1.10.27] - 2026-10-26
 
