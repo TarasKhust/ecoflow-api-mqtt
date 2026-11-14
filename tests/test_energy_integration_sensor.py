@@ -1,4 +1,4 @@
-"""Regression coverage for EcoFlowIntegralEnergySensor on HA 2026.8+.
+"""Regression coverage for EcoFlowIntegralEnergySensor constructor changes.
 
 home-assistant/core PR #177596 ("Do not set a device on YAML integration
 entities", merged 2026-07-30) removed the ``hass`` parameter from
@@ -13,12 +13,12 @@ prior warning.
 These tests exercise the real construction path against whatever
 ``homeassistant`` version is installed, and also verify that ``hass`` is
 still forwarded when the installed ``IntegrationSensor`` predates the
-breaking change.
+breaking change. HA 2026.11 also requires a device_class keyword.
 """
 
 from __future__ import annotations
 
-from datetime import timedelta
+from inspect import signature
 
 from homeassistant.components.integration.sensor import IntegrationSensor
 from homeassistant.core import HomeAssistant
@@ -44,9 +44,11 @@ async def test_energy_sensor_can_be_constructed(tmp_path) -> None:
     power_sensor = _FakePowerSensor()
 
     hass = HomeAssistant(str(tmp_path))
-    hass.data[dr.DATA_REGISTRY] = dr.DeviceRegistry(hass)
-    await dr.async_load(hass, load_empty=True)
-    await er.async_load(hass, load_empty=True)
+    # Only older constructors look up the source device during construction.
+    if "hass" in signature(IntegrationSensor.__init__).parameters:
+        hass.data[dr.DATA_REGISTRY] = dr.DeviceRegistry(hass)
+        await dr.async_load(hass, load_empty=True)
+        await er.async_load(hass, load_empty=True)
     sensor = EcoFlowIntegralEnergySensor(hass, power_sensor, enabled_default=True)
 
     assert sensor.name == "Test Power Energy"
@@ -109,3 +111,29 @@ def test_hass_omitted_when_unsupported(monkeypatch) -> None:
     EcoFlowIntegralEnergySensor(object(), power_sensor)
 
     assert received.get("called") is True
+
+
+def test_device_class_forwarded_when_required(monkeypatch) -> None:
+    """HA 2026.11 requires an explicit device class, even for auto-detection."""
+    received = {}
+
+    def fake_init(
+        self,
+        *,
+        integration_method,
+        name,
+        round_digits,
+        source_entity,
+        unique_id,
+        device_class,
+        unit_prefix,
+        unit_time,
+        max_sub_interval,
+        device=None,
+    ):
+        received["device_class"] = device_class
+
+    monkeypatch.setattr(IntegrationSensor, "__init__", fake_init)
+    EcoFlowIntegralEnergySensor(object(), _FakePowerSensor())
+
+    assert received == {"device_class": None}

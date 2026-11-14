@@ -9,11 +9,12 @@ from __future__ import annotations
 import asyncio
 import logging
 import time
-from datetime import datetime, timedelta
+from collections.abc import Callable
+from datetime import datetime, timedelta, timezone
 from typing import Any
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.update_coordinator import UpdateFailed
 
 from .api import EcoFlowApiClient, EcoFlowApiError
@@ -47,6 +48,17 @@ MQTT_SILENCE_THRESHOLD = 180
 MQTT_SILENCE_THRESHOLD_STREAM = 90
 MQTT_WATCHDOG_INTERVAL = 60
 
+# Backoff for repeated watchdog reconnects on Stream devices (issue #75).
+# PV-only units (e.g. microinverters) go legitimately quiet overnight with no
+# solar; without backoff the 90 s threshold re-fires on a ~2 minute cycle all
+# night. The first silence is still retried promptly, but each consecutive
+# silent reconnect extends the effective threshold by one step, bounded so an
+# offline unit reconnects at most about once per hour. The backoff resets
+# only when an MQTT message carries new or changed data; an identical replay
+# (e.g. a retained snapshot re-delivered on reconnect) does not reset it.
+MQTT_WATCHDOG_BACKOFF_STEP_STREAM = 60
+MQTT_WATCHDOG_MAX_THRESHOLD_STREAM = 3600
+
 # Rate limit on credential re-fetches triggered by broker auth failures,
 # so a persistently-wrong credential does not hammer the REST API.
 MQTT_CREDENTIAL_REFRESH_COOLDOWN = 300
@@ -76,6 +88,8 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
     - Automatic fallback to REST polling if MQTT unavailable
     - Merges data from both sources
     """
+
+    publishing_mqtt = False
 
     def __init__(
         self,
@@ -146,6 +160,15 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         self._mqtt_watchdog_timer: asyncio.TimerHandle | None = None
         self._mqtt_watchdog_task: asyncio.Task | None = None
         self._shutting_down = False
+        # Consecutive watchdog reconnects with no new MQTT information since.
+        # Used to back off Stream retries (issue #75); reset on changed data.
+        self._mqtt_silent_reconnects = 0
+        # Last device quota-telemetry receipt (UTC, None until the first one).
+        # Advanced only in _handle_mqtt_message for quota telemetry.
+        self._last_mqtt_telemetry_time: datetime | None = None
+        # Diagnostic listeners: updated on counter increments that carry no
+        # coordinator data update, avoiding fan-out to telemetry entities.
+        self._mqtt_diagnostic_listeners: set[Callable[[], None]] = set()
 
         # Timer for periodic REST updates (independent of MQTT)
         self._rest_update_timer: asyncio.TimerHandle | None = None
@@ -172,6 +195,40 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             return "mqtt_standby"
         else:
             return "rest_only"
+
+    @property
+    def last_mqtt_message_received(self) -> datetime | None:
+        """Last device quota-telemetry receipt (UTC), or None if none yet."""
+        return self._last_mqtt_telemetry_time
+
+    @property
+    def mqtt_silent_reconnects(self) -> int:
+        """Consecutive silent watchdog reconnects."""
+        return self._mqtt_silent_reconnects
+
+    @callback
+    def async_add_mqtt_diagnostic_listener(
+        self, listener: Callable[[], None]
+    ) -> Callable[[], None]:
+        """Add a listener notified on diagnostic-only changes.
+
+        Returns:
+            A removal callback.
+        """
+        self._mqtt_diagnostic_listeners.add(listener)
+
+        def _remove() -> None:
+            self._mqtt_diagnostic_listeners.discard(listener)
+
+        return _remove
+
+    def async_update_mqtt_diagnostics(self) -> None:
+        """Notify diagnostic listeners of a diagnostic-only change."""
+        for listener in list(self._mqtt_diagnostic_listeners):
+            try:
+                listener()
+            except Exception as err:  # pragma: no cover - defensive
+                _LOGGER.debug("MQTT diagnostic listener raised: %s", err)
 
     async def async_setup(self) -> bool:
         """Set up the coordinator (including MQTT if enabled).
@@ -425,15 +482,26 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
                 return
 
             silence = time.time() - last
-            if silence < self._mqtt_silence_threshold:
+            threshold = self._mqtt_silence_threshold
+            if self.is_stream_device and self._mqtt_silent_reconnects:
+                threshold = min(
+                    threshold
+                    + self._mqtt_silent_reconnects
+                    * MQTT_WATCHDOG_BACKOFF_STEP_STREAM,
+                    MQTT_WATCHDOG_MAX_THRESHOLD_STREAM,
+                )
+            if silence < threshold:
                 return
 
             _LOGGER.warning(
                 "⚠️ MQTT silent for %.0fs on device %s (threshold=%ds) — forcing reconnect",
                 silence,
                 self.device_sn[-4:],
-                self._mqtt_silence_threshold,
+                threshold,
             )
+            self._mqtt_silent_reconnects += 1
+            # Counter-only change: notify diagnostics even if reconnect fails.
+            self.async_update_mqtt_diagnostics()
 
             try:
                 await self._mqtt_client.async_disconnect()
@@ -561,22 +629,39 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
 
         await self._async_setup_mqtt()
 
-    def _handle_mqtt_message(self, payload: dict[str, Any]) -> None:
+    def _handle_mqtt_message(
+        self, payload: dict[str, Any], is_telemetry: bool = True
+    ) -> None:
         """Handle MQTT message from device.
 
         Args:
             payload: MQTT message payload (already extracted from quota topic params)
+            is_telemetry: True only for quota telemetry; unknown-topic echoes
+                keep legacy merge/baseline handling without advancing receipt.
         """
         try:
             # Check if event loop is still running (Home Assistant not shutting down)
             if not self.hass.loop.is_running() or self.hass.loop.is_closed():
                 return
-            
+
             # MQTT client already extracts params from quota topic
             # So payload here is the actual device data
             mqtt_data = payload
             self._last_mqtt_message_time = time.time()
+            if is_telemetry and isinstance(mqtt_data, dict):
+                # Every quota receipt counts, including identical replays.
+                self._last_mqtt_telemetry_time = datetime.now(timezone.utc)
             previous_data = self._merge_data()
+            # Reset the watchdog backoff only on genuinely new information
+            # (issue #75): a broker replay of an identical snapshot (e.g. a
+            # retained message re-delivered on reconnect, or an unknown-topic
+            # echo) proves the session is up but says nothing about the
+            # device, so it must not clear backoff built up while quiet.
+            if any(
+                key not in previous_data or previous_data[key] != value
+                for key, value in mqtt_data.items()
+            ):
+                self._mqtt_silent_reconnects = 0
             
             # Debug logging (only if logger level is DEBUG)
             if _LOGGER.isEnabledFor(logging.DEBUG):
@@ -654,7 +739,7 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
             # Schedule update in HA event loop from MQTT thread
             # async_set_updated_data is a sync method (despite the async_ prefix)
             # Use call_soon_threadsafe to schedule it in the correct event loop
-            self.hass.loop.call_soon_threadsafe(lambda: self.async_set_updated_data(merged_data))
+            self.hass.loop.call_soon_threadsafe(lambda: self._async_publish_mqtt_data(merged_data))
             
         except RuntimeError:
             # Event loop closed during shutdown - ignore silently
@@ -662,6 +747,15 @@ class EcoFlowHybridCoordinator(EcoFlowDataCoordinator):
         except Exception as err:
             _LOGGER.error("Error handling MQTT message: %s", err)
 
+
+    @callback
+    def _async_publish_mqtt_data(self, data: dict[str, Any]) -> None:
+        """Let entity listeners distinguish MQTT updates from REST refreshes."""
+        self.publishing_mqtt = True
+        try:
+            self.async_set_updated_data(data)
+        finally:
+            self.publishing_mqtt = False
 
     def _merge_data(self) -> dict[str, Any]:
         """Merge REST API and MQTT data.
