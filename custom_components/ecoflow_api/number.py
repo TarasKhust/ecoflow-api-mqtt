@@ -482,8 +482,11 @@ DELTA_2_NUMBER_DEFINITIONS = {
 # the Delta 2 Max never reports.
 # ============================================================================
 
+# AC standby time is dropped on the Max: it lives in inv.standbyMin, the
+# Delta 2 MPPT command (moduleType 5, standbyTime) is silently ignored, and
+# the correct inverter command is not known.
 DELTA_2_MAX_NUMBER_DEFINITIONS = {
-    **DELTA_2_NUMBER_DEFINITIONS,
+    **{k: v for k, v in DELTA_2_NUMBER_DEFINITIONS.items() if k != "ac_standby_time"},
     "ac_charging_power": {
         "name": "AC Charging Power",
         "state_key": "inv.SlowChgWatts",
