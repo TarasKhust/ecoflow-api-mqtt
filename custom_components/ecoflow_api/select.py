@@ -203,9 +203,15 @@ DELTA_2_SELECT_DEFINITIONS = {
     },
 }
 
-# Delta 2 Max uses the same select definitions as Delta 2
-# (identical API format and select keys)
-DELTA_2_MAX_SELECT_DEFINITIONS = DELTA_2_SELECT_DEFINITIONS
+# Delta 2 Max uses the same select definitions as Delta 2, but reports the
+# solar charging priority as pd.pvChargePrioSet (not pd.pvChgPrioSet).
+DELTA_2_MAX_SELECT_DEFINITIONS = {
+    **DELTA_2_SELECT_DEFINITIONS,
+    "solar_priority": {
+        **DELTA_2_SELECT_DEFINITIONS["solar_priority"],
+        "state_key": "pd.pvChargePrioSet",
+    },
+}
 
 # ============================================================================
 # STREAM ULTRA X - Select Definitions

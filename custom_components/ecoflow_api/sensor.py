@@ -1782,8 +1782,9 @@ DELTA_2_SENSOR_DEFINITIONS = {
         "device_class": SensorDeviceClass.ENUM,
         "state_class": None,
         "icon": "mdi:battery-sync",
-        "options": ["not_charging", "charging", "discharging", "unknown"],
-        "value_map": {0: "not_charging", 1: "charging", 2: "discharging", "default": "unknown"},
+        # 2 is reported while charging (constant-voltage stage), not discharging
+        "options": ["not_charging", "charging", "unknown"],
+        "value_map": {0: "not_charging", 1: "charging", 2: "charging", "default": "unknown"},
     },
     "bms_target_soc": {
         "name": "Battery Target SOC",
@@ -2125,8 +2126,17 @@ DELTA_2_SENSOR_DEFINITIONS = {
         "device_class": SensorDeviceClass.ENUM,
         "state_class": None,
         "icon": "mdi:battery-charging",
-        "options": ["not_charging", "charging", "discharging", "unknown"],
-        "value_map": {0: "not_charging", 1: "charging", 2: "discharging", "default": "unknown"},
+        # 0 disabled, 1 CC, 2 CV, 3 UPS (AC passes through, battery idle at
+        # the charge limit), 4 charging error
+        "options": ["not_charging", "charging", "ups", "error", "unknown"],
+        "value_map": {
+            0: "not_charging",
+            1: "charging",
+            2: "charging",
+            3: "ups",
+            4: "error",
+            "default": "unknown",
+        },
     },
     "ems_chg_cmd": {
         "name": "EMS Charge Command",
@@ -2211,7 +2221,9 @@ DELTA_2_SENSOR_DEFINITIONS = {
         "state_class": None,
         "icon": "mdi:power-plug",
         "options": ["unplugged", "plugged"],
-        "value_map": {0: "unplugged", 1: "plugged"},
+        # Not a 0/1 flag: devices report e.g. 34 with AC connected, so treat
+        # any non-zero value as plugged.
+        "value_map": lambda x: None if x is None else ("plugged" if int(x) else "unplugged"),
     },
     # ============================================================================
     # PD - Power Distribution (Input/Output)
@@ -2733,8 +2745,9 @@ DELTA_2_SENSOR_DEFINITIONS = {
         "device_class": SensorDeviceClass.ENUM,
         "state_class": None,
         "icon": "mdi:ev-plug-type2",
-        "options": ["none", "ac", "dc_adapter", "solar", "cc", "bc"],
-        "value_map": {0: "none", 1: "ac", 2: "dc_adapter", 3: "solar", 4: "cc", 5: "bc"},
+        "options": ["none", "ac", "dc_adapter", "solar", "cc", "bc", "idle"],
+        # 255 is reported while the unit is not charging
+        "value_map": {0: "none", 1: "ac", 2: "dc_adapter", 3: "solar", 4: "cc", 5: "bc", 255: "idle"},
     },
     "inv_discharge_type": {
         "name": "Inverter Discharge Type",
@@ -3119,14 +3132,50 @@ DELTA_2_SENSOR_DEFINITIONS = {
         "device_class": SensorDeviceClass.ENUM,
         "state_class": None,
         "icon": "mdi:power-plug",
-        "options": ["not_detected", "mppt", "adapter"],
-        "value_map": {0: "not_detected", 1: "mppt", 2: "adapter"},
+        "options": ["not_detected", "mppt", "adapter", "unknown"],
+        # Delta 2 Max reports undocumented values (e.g. 3)
+        "value_map": {0: "not_detected", 1: "mppt", 2: "adapter", "default": "unknown"},
     },
 }
 
-# Delta 2 Max uses the same sensor definitions as Delta 2
-# (identical quota keys and API format)
-DELTA_2_MAX_SENSOR_DEFINITIONS = DELTA_2_SENSOR_DEFINITIONS
+# Delta 2 Max uses the same sensor definitions as Delta 2, except the AC
+# charging limit: the Max reports it on the inverter (inv.SlowChgWatts) and
+# never sends mppt.cfgChgWatts. A few other keys are named differently on the
+# Max, and the MPPT copies of AC/beeper/standby settings are never reported
+# (the inv.* / pd.* sensors already expose the same values).
+_DELTA_2_MAX_KEY_OVERRIDES = {
+    "mppt_cfg_chg_watts": "inv.SlowChgWatts",
+    "inv_standby_mins": "inv.standbyMin",
+    "pd_min_ac_out_soc": "pd.minAcSoc",
+    "pd_pv_chg_prio_set": "pd.pvChargePrioSet",
+}
+_DELTA_2_MAX_UNSUPPORTED_SENSORS = {
+    "mppt_cfg_ac_enabled",
+    "mppt_cfg_ac_xboost",
+    "mppt_cfg_ac_out_vol",
+    "mppt_cfg_ac_out_freq",
+    "mppt_beep_state",
+    "mppt_discharge_type",
+    "mppt_pow_standby_min",
+    "mppt_scr_standby_min",
+    "mppt_ac_standby_mins",
+    # Duplicates of inv.cfgAcEnabled / inv.chargerType, not reported by the Max
+    "pd_ac_enabled",
+    "pd_charger_type",
+    # Delta 2 extension ports; the Max reports none of these keys
+    "pd_ext_3p8_port",
+    "pd_ext_4p8_port",
+    "pd_ext_rj45_port",
+}
+DELTA_2_MAX_SENSOR_DEFINITIONS = {
+    sensor_id: (
+        {**config, "key": _DELTA_2_MAX_KEY_OVERRIDES[sensor_id]}
+        if sensor_id in _DELTA_2_MAX_KEY_OVERRIDES
+        else config
+    )
+    for sensor_id, config in DELTA_2_SENSOR_DEFINITIONS.items()
+    if sensor_id not in _DELTA_2_MAX_UNSUPPORTED_SENSORS
+}
 
 
 # ============================================================================
