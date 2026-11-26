@@ -348,9 +348,24 @@ DELTA_2_BINARY_SENSOR_DEFINITIONS = {
     },
 }
 
-# Delta 2 Max uses the same binary sensor definitions as Delta 2
-# (identical quota keys and API format)
-DELTA_2_MAX_BINARY_SENSOR_DEFINITIONS = DELTA_2_BINARY_SENSOR_DEFINITIONS
+# Delta 2 Max uses the Delta 2 definitions, except that AC output settings
+# live on the inverter (inv.*) and quiet mode is pd.beepMode (1 = silent);
+# the Max never reports mppt.cfgAcEnabled / mppt.cfgAcXboost / mppt.beepState.
+DELTA_2_MAX_BINARY_SENSOR_DEFINITIONS = {
+    **DELTA_2_BINARY_SENSOR_DEFINITIONS,
+    "ac_out_enabled": {
+        **DELTA_2_BINARY_SENSOR_DEFINITIONS["ac_out_enabled"],
+        "key": "inv.cfgAcEnabled",
+    },
+    "x_boost_enabled": {
+        **DELTA_2_BINARY_SENSOR_DEFINITIONS["x_boost_enabled"],
+        "key": "inv.cfgAcXboost",
+    },
+    "beeper_silent": {
+        **DELTA_2_BINARY_SENSOR_DEFINITIONS["beeper_silent"],
+        "key": "pd.beepMode",
+    },
+}
 
 # ============================================================================
 # STREAM ULTRA X Binary Sensor Definitions

@@ -477,15 +477,30 @@ DELTA_2_NUMBER_DEFINITIONS = {
 
 # ============================================================================
 # DELTA 2 MAX - Number Definitions
-# Based on Delta 2 but with higher AC charging power max (2400W vs 1200W)
+# Based on Delta 2, but AC charging is configured on the inverter module
+# (moduleType 3, inv.SlowChgWatts) instead of MPPT (mppt.cfgChgWatts), which
+# the Delta 2 Max never reports.
 # ============================================================================
 
-# Create Delta 2 Max definitions by copying Delta 2 and adjusting ac_charging_power
 DELTA_2_MAX_NUMBER_DEFINITIONS = {
-    key: (
-        {**value, "max": 2400} if key == "ac_charging_power" else value
-    )
-    for key, value in DELTA_2_NUMBER_DEFINITIONS.items()
+    **DELTA_2_NUMBER_DEFINITIONS,
+    "ac_charging_power": {
+        "name": "AC Charging Power",
+        "state_key": "inv.SlowChgWatts",
+        "module_type": 3,  # INV (inverter)
+        "operate_type": "acChgCfg",
+        "param_key": "slowChgWatts",
+        "extra_params": {"chgPauseFlag": 0},
+        # acChgCfg carries both limits; resend the current fast-charge value
+        # so changing the slow limit does not overwrite it.
+        "state_params": {"fastChgWatts": "inv.FastChgWatts"},
+        "min": 200,
+        "max": 2400,
+        "step": 100,
+        "unit": UnitOfPower.WATT,
+        "icon": "mdi:lightning-bolt",
+        "mode": NumberMode.SLIDER,
+    },
 }
 
 # ============================================================================
@@ -1211,13 +1226,20 @@ class EcoFlowDelta2Number(EcoFlowBaseEntity, NumberEntity):
         int_value = int(value)
 
         # Build command payload according to Delta 2 API format
+        params: dict[str, Any] = {param_key: int_value}
+        params.update(self._number_def.get("extra_params", {}))
+        data = self.coordinator.data or {}
+        for param, state_key in self._number_def.get("state_params", {}).items():
+            current = data.get(state_key)
+            if current is not None:
+                params[param] = int(current)
         payload = {
             "id": int(time.time() * 1000),
             "version": "1.0",
             "sn": device_sn,
             "moduleType": module_type,
             "operateType": operate_type,
-            "params": {param_key: int_value},
+            "params": params,
         }
 
         try:
