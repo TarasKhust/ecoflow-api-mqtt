@@ -37,6 +37,18 @@ def test_inverter_charger_type_idle(raw: int, expected: str) -> None:
     assert _value("inv_charger_type", {"inv.chargerType": raw}) == expected
 
 
+@pytest.mark.parametrize(
+    ("raw", "expected"), [(0, "not_charging"), (1, "charging"), (2, "charging"), (3, "ups"), (4, "error")]
+)
+def test_ems_charge_state(raw: int, expected: str) -> None:
+    assert _value("ems_chg_state", {"bms_emsStatus.chgState": raw}) == expected
+
+
+@pytest.mark.parametrize(("raw", "expected"), [(0, "not_charging"), (2, "charging")])
+def test_battery_charge_state_cv_is_charging(raw: int, expected: str) -> None:
+    assert _value("bms_chg_state", {"bms_bmsStatus.chgState": raw}) == expected
+
+
 @pytest.mark.parametrize(("raw", "expected"), [(1, "mppt"), (3, "unknown")])
 def test_xt60_charge_type_unknown_value(raw: int, expected: str) -> None:
     assert _value("mppt_x60_chg_type", {"mppt.x60ChgType": raw}) == expected

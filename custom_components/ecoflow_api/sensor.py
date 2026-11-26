@@ -1782,8 +1782,9 @@ DELTA_2_SENSOR_DEFINITIONS = {
         "device_class": SensorDeviceClass.ENUM,
         "state_class": None,
         "icon": "mdi:battery-sync",
-        "options": ["not_charging", "charging", "discharging", "unknown"],
-        "value_map": {0: "not_charging", 1: "charging", 2: "discharging", "default": "unknown"},
+        # 2 is reported while charging (constant-voltage stage), not discharging
+        "options": ["not_charging", "charging", "unknown"],
+        "value_map": {0: "not_charging", 1: "charging", 2: "charging", "default": "unknown"},
     },
     "bms_target_soc": {
         "name": "Battery Target SOC",
@@ -2125,8 +2126,17 @@ DELTA_2_SENSOR_DEFINITIONS = {
         "device_class": SensorDeviceClass.ENUM,
         "state_class": None,
         "icon": "mdi:battery-charging",
-        "options": ["not_charging", "charging", "discharging", "unknown"],
-        "value_map": {0: "not_charging", 1: "charging", 2: "discharging", "default": "unknown"},
+        # 0 disabled, 1 CC, 2 CV, 3 UPS (AC passes through, battery idle at
+        # the charge limit), 4 charging error
+        "options": ["not_charging", "charging", "ups", "error", "unknown"],
+        "value_map": {
+            0: "not_charging",
+            1: "charging",
+            2: "charging",
+            3: "ups",
+            4: "error",
+            "default": "unknown",
+        },
     },
     "ems_chg_cmd": {
         "name": "EMS Charge Command",
